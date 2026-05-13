@@ -75,13 +75,15 @@ export type PartnerSiteData = {
   categories: CategoryEntry[];          // QUICK nav + RankingTabs 재료
 };
 
+// 안마의자(massage)/건조기(dryer)는 일시 비활성 — 컨슈머 노출 안 함.
+// 추후 활성화 시 아래 주석 풀면 됨 (DB 데이터는 그대로 보존).
 const CATEGORY_META: Record<string, { label: string; icon: string; rankPriority: number }> = {
   water:    { label: "정수기",     icon: "💧", rankPriority: 1 },
   air:      { label: "공기청정기", icon: "💨", rankPriority: 2 },
   bidet:    { label: "비데",       icon: "🚿", rankPriority: 3 },
   mattress: { label: "매트리스",   icon: "🛏",  rankPriority: 4 },
-  massage:  { label: "안마의자",   icon: "💆", rankPriority: 5 },
-  dryer:    { label: "건조기",     icon: "🌬", rankPriority: 6 },
+  // massage:  { label: "안마의자",   icon: "💆", rankPriority: 5 },
+  // dryer:    { label: "건조기",     icon: "🌬", rankPriority: 6 },
   kitchen:  { label: "주방가전",   icon: "🍳", rankPriority: 7 },
 };
 

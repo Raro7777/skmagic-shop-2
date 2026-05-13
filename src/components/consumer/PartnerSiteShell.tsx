@@ -171,7 +171,7 @@ export default async function PartnerSiteShell({
           />
         )}
 
-        {/* QUICK nav — 활성 카테고리 자동 + 이벤트 단축 */}
+        {/* QUICK nav — 활성 카테고리만 (이벤트 단축 비활성) */}
         <nav className="bg-white px-3 py-3.5 border-b border-rk-line grid grid-cols-4 gap-y-1">
           {data.categories.map(c => (
             <Link
@@ -188,18 +188,6 @@ export default async function PartnerSiteShell({
               </div>
             </Link>
           ))}
-          <Link
-            href={`/p/${partner.partnerCode}/events`}
-            className="flex flex-col items-center gap-1.5 text-rk-text px-1 py-1.5 text-[13px] font-medium text-center leading-tight no-underline cursor-pointer"
-          >
-            <div className="w-11 h-11 rounded-xl grid place-items-center text-[22px] bg-rk-tint-orange">🎁</div>
-            <div>
-              이벤트
-              {data.banners.length > 0 && (
-                <small className="block text-[9px] text-rk-sale font-semibold mt-px">{data.banners.length}건 진행중</small>
-              )}
-            </div>
-          </Link>
         </nav>
 
         <div className="bg-rk-tint-orange px-3.5 py-2 text-[14px] text-rk-orange-deep flex items-center gap-1.5 border-b border-[#F4DCC9]">
@@ -214,16 +202,7 @@ export default async function PartnerSiteShell({
           rankingsByCategory={data.rankingsByCategory}
         />
 
-        <section className="bg-white px-4 py-3.5 border-b-8 border-rk-soft">
-          <Link href={`/p/${partner.partnerCode}/events`} className="rounded-lg p-3.5 flex items-center gap-3 bg-rk-tint-orange border border-[#F4DCC9] cursor-pointer no-underline text-inherit">
-            <div>
-              <span className="bg-rk-orange text-white text-[12px] font-semibold px-1.5 py-0.5 rounded">EVENT</span>
-              <h4 className="text-sm text-rk-orange-deep mt-1 mb-0">친구 초대 시 5,000원 적립</h4>
-              <small className="text-[13px] text-rk-orange-deep opacity-80">가입 첫 달 즉시 차감 · {partner.partnerName} 한정</small>
-            </div>
-            <span className="ml-auto text-rk-orange-deep">→</span>
-          </Link>
-        </section>
+        {/* 이벤트 단축 박스 비활성 — 추후 다시 켤 때 주석 풀면 됨 */}
 
         <section className="bg-white px-4 pt-4.5 pb-4 border-b-8 border-rk-soft">
           <div className="flex justify-between items-baseline mb-3">
