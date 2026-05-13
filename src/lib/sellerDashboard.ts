@@ -27,6 +27,9 @@ export type SellerLeadRow = {
   rivalCompensationRequested: boolean;
   status: LeadStatus;
   statusLabel: string;
+  // 환수 진행 여부 — 영업자에게는 표기만 (계약은 본사 ↔ 협력점)
+  refundStatus: string | null;
+  sellerPayout: number;        // 정산된 영업자수수료 (Settlement 가 있을 때)
 };
 
 export type SellerProfile = {
@@ -96,6 +99,16 @@ export async function getSellerDashboard(userId: string): Promise<SellerDashboar
     }),
   ]);
 
+  // 영업자 lead 별 환수 진행 + 정산 결과 lookup (표기용)
+  const recentLeadIds = recentLeads.map(l => l.id);
+  const leadSettlements = recentLeadIds.length > 0
+    ? await prisma.settlement.findMany({
+        where: { leadId: { in: recentLeadIds } },
+        select: { leadId: true, sellerPayout: true, refundStatus: true },
+      })
+    : [];
+  const settlementByLead = new Map(leadSettlements.map(s => [s.leadId, s]));
+
   const countOf = (s: string) => statusCounts.find(r => r.status === s)?._count._all ?? 0;
   // 영업자 수수료 = Settlement.sellerPayout (영업점수수료 - 영업점마진).
   // 환원·환수는 영업점 책임이므로 영업자 표기에는 반영 안 함.
@@ -106,6 +119,7 @@ export async function getSellerDashboard(userId: string): Promise<SellerDashboar
     const age = ageLabel(ageMs);
     const isKnown = (LEAD_STATUSES as readonly string[]).includes(l.status);
     const stage = (isKnown ? l.status : "consult_wish") as LeadStatus;
+    const settle = settlementByLead.get(l.id);
     return {
       id: l.id,
       receivedAt: fmtDate(l.createdAt),
@@ -121,6 +135,8 @@ export async function getSellerDashboard(userId: string): Promise<SellerDashboar
       rivalCompensationRequested: l.rivalCompensationRequested,
       status: stage,
       statusLabel: STATUS_LABEL_MAP[stage] ?? stage,
+      refundStatus: settle?.refundStatus ?? null,
+      sellerPayout: settle?.sellerPayout ?? 0,
     };
   });
 

@@ -3,14 +3,15 @@
 import { useState } from "react";
 import { getUtm } from "@/components/consumer/UtmTracker";
 
-const PRODUCTS: { label: string; code: string | null }[] = [
-  { label: "정수기 PURE+",       code: "WPU-A700C" },
-  { label: "에코미니 RO 정수기", code: "WPU-M200C" },
-  { label: "얼음정수기 ICE COOL", code: "WPU-IAC302" },
-  { label: "슬림형 정수기 II",   code: "WPU-S210C" },
-  { label: "비데 BIDET PRO",     code: "BID-S17D" },
-  { label: "기타 / 상담 후 결정", code: null },
-];
+/**
+ * 상담 신청 모달.
+ *
+ *   - 상품 페이지에서 호출 시: defaultProductCode + defaultProductLabel 받아서
+ *     그 상품으로 lock. PriceConfigurator 가 sessionStorage 에 저장한
+ *     선택 옵션(mode/contractPeriod/색상 등)을 함께 lead 에 전송.
+ *   - 히어로/메인 등 일반 진입 시: defaultProductCode 없음 → 사용자가 "관심 상품" 텍스트 입력.
+ *     productCode = null 로 lead 저장.
+ */
 
 type Submitted = { leadId: string; assignedPartnerId: string | null; message: string };
 
@@ -33,23 +34,22 @@ export default function ConsultForm({
   buttonLabel?: string;
   buttonClassName?: string;
 }) {
-  const initialProduct = defaultProductLabel
-    ? defaultProductLabel
-    : defaultProductCode
-      ? PRODUCTS.find(p => p.code === defaultProductCode)?.label ?? PRODUCTS[0].label
-      : PRODUCTS[0].label;
+  const isLocked = !!defaultProductCode && !!defaultProductLabel;
 
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [product, setProduct] = useState(initialProduct);
+  // 상품 페이지에서 진입한 경우 defaultProductLabel 그대로, 일반 진입은 빈 텍스트 (사용자 자유 입력)
+  const [productLabel, setProductLabel] = useState(defaultProductLabel ?? "");
   const [region, setRegion] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<Submitted | null>(null);
 
   const reset = () => {
-    setName(""); setPhone(""); setProduct(initialProduct); setRegion("");
+    setName(""); setPhone("");
+    setProductLabel(defaultProductLabel ?? "");
+    setRegion("");
     setError(null); setDone(null); setBusy(false);
   };
   const close = () => { reset(); setOpen(false); };
@@ -59,13 +59,16 @@ export default function ConsultForm({
     if (!name.trim() || !phone.trim()) return setError("이름과 휴대폰을 입력해주세요.");
     const digits = phone.replace(/\D/g, "");
     if (digits.length !== 11 || !digits.startsWith("010")) return setError("휴대폰은 010으로 시작하는 11자리여야 합니다.");
+    if (!isLocked && !productLabel.trim()) return setError("관심 상품을 입력해주세요.");
 
     setBusy(true);
     try {
-      const productCode = PRODUCTS.find(p => p.label === product)?.code ?? null;
+      // 상품 페이지에서 진입한 경우 defaultProductCode 그대로. 일반 진입은 null.
+      const productCode = isLocked ? defaultProductCode! : null;
+      const productInterest = isLocked ? defaultProductLabel! : productLabel.trim();
       const utm = getUtm();
 
-      // PriceConfigurator가 sessionStorage에 저장한 선택 옵션 첨부 (해당 productCode와 일치할 때만)
+      // PriceConfigurator 가 sessionStorage 에 저장한 선택 옵션 첨부 (productCode 일치 시만)
       let purchaseConfig: {
         selectedMode?: "방문형" | "셀프형" | null;
         selectedContractPeriod?: number;
@@ -76,7 +79,7 @@ export default function ConsultForm({
       } | null = null;
       try {
         const raw = sessionStorage.getItem("rk:purchase-config");
-        if (raw) {
+        if (raw && productCode) {
           const parsed = JSON.parse(raw);
           if (parsed?.productCode === productCode) {
             purchaseConfig = {
@@ -97,7 +100,7 @@ export default function ConsultForm({
         body: JSON.stringify({
           customerName: name,
           phone: digits,
-          productInterest: product,
+          productInterest,
           productCode,
           region,
           landingType: sellerCode ? "consumer_seller" : "consumer_partner",
@@ -177,13 +180,24 @@ export default function ConsultForm({
                 </Field>
 
                 <Field label="관심 상품" required>
-                  <select
-                    value={product}
-                    onChange={e => setProduct(e.target.value)}
-                    className="w-full px-3 py-2 border border-rk-line rounded text-[13px] outline-none bg-white focus:border-rk-navy"
-                  >
-                    {PRODUCTS.map(p => <option key={p.label} value={p.label}>{p.label}</option>)}
-                  </select>
+                  {isLocked ? (
+                    <div className="w-full px-3 py-2 border border-rk-line rounded text-[13px] bg-rk-soft-2 flex items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <b className="text-rk-ink block truncate">{defaultProductLabel}</b>
+                        {defaultProductCode && (
+                          <small className="text-rk-faint font-mono text-[11px]">{defaultProductCode}</small>
+                        )}
+                      </div>
+                      <span className="text-[11px] text-rk-success font-medium whitespace-nowrap">✓ 이 상품 상담</span>
+                    </div>
+                  ) : (
+                    <input
+                      value={productLabel}
+                      onChange={e => setProductLabel(e.target.value)}
+                      placeholder="예: 정수기 PURE+, 16평 공기청정기, 비데 등"
+                      className="w-full px-3 py-2 border border-rk-line rounded text-[13px] outline-none focus:border-rk-navy"
+                    />
+                  )}
                 </Field>
 
                 <Field label="설치 희망 지역">
@@ -237,10 +251,11 @@ export default function ConsultForm({
                   </div>
                 </div>
                 <button
+                  type="button"
                   onClick={close}
                   className="w-full bg-rk-navy hover:bg-rk-navy-deep text-white border-0 py-2.5 rounded text-[13px] font-semibold cursor-pointer transition-colors"
                 >
-                  닫기
+                  확인
                 </button>
               </>
             )}
@@ -253,12 +268,12 @@ export default function ConsultForm({
 
 function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
   return (
-    <div className="mb-3">
-      <label className="block text-[13px] text-rk-muted mb-1">
+    <label className="block mb-3">
+      <span className="block text-[12px] text-rk-muted mb-1">
         {label}
         {required && <span className="text-rk-sale ml-0.5">*</span>}
-      </label>
+      </span>
       {children}
-    </div>
+    </label>
   );
 }

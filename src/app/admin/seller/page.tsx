@@ -64,7 +64,20 @@ export default async function SellerDashboardPage() {
                     </div>
                   )}
                 </div>
-                <span className={"text-[12px] px-1.5 py-px rounded font-medium " + STATUS_PILL[l.status]}>{l.statusLabel}</span>
+                <div className="flex flex-col items-end gap-1">
+                  <span className={"text-[12px] px-1.5 py-px rounded font-medium " + STATUS_PILL[l.status]}>{l.statusLabel}</span>
+                  {l.sellerPayout > 0 && (
+                    <small className="text-[11px] rk-num text-rk-success">+₩{fmt(l.sellerPayout)}</small>
+                  )}
+                  {l.refundStatus && (
+                    <span
+                      className="text-[10px] px-1 py-px rounded bg-rk-tint-orange text-rk-orange-deep font-medium"
+                      title="환수 진행 — 본사와 협력점 간 처리. 영업자 정산에는 영향 없음."
+                    >
+                      🔄 환수 {l.refundStatus === "refund_pending" ? "예정" : l.refundStatus === "refund_progress" ? "진행" : "완료"}
+                    </span>
+                  )}
+                </div>
               </div>
             ))}
           </div>

@@ -52,6 +52,7 @@ const numOrNull = (s: string): number | null => {
 
 export default function PolicyEditor() {
   const [items, setItems] = useState<PartnerProduct[]>([]);
+  const [sellerMarginDefault, setSellerMarginDefault] = useState<{ type: string; amount: number; percent: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editingCode, setEditingCode] = useState<string | null>(null);
@@ -71,6 +72,7 @@ export default function PolicyEditor() {
       }
       const data = await res.json();
       setItems(data.products);
+      setSellerMarginDefault(data.sellerMarginDefault ?? null);
       setError(null);
     } catch {
       setError("정책 데이터 로드 실패");
@@ -263,6 +265,30 @@ export default function PolicyEditor() {
           const isOver = limit > 0 && used > limit;
           const isWarn = pct >= 80 && !isOver;
 
+          // 영업자 있는 lead 의 협력점 실수령 시뮬레이션 (A안: 영업점이 환원 부담)
+          //   sellerMargin = override 있으면 그 값, 없으면 sellerMarginDefault
+          //   netForSeller = sellerMargin - 환원 (음수 가능)
+          let sellerMarginEstimate = 0;
+          if (isEditing && draft) {
+            if (draft.marginType === "fixed") sellerMarginEstimate = numOrNull(draft.marginAmount) ?? 0;
+            else if (draft.marginType === "percent") sellerMarginEstimate = Math.floor(partnerCommission * ((Number(draft.marginPercent) || 0) / 100));
+            else if (sellerMarginDefault) {
+              sellerMarginEstimate = sellerMarginDefault.type === "fixed"
+                ? sellerMarginDefault.amount
+                : Math.floor(partnerCommission * sellerMarginDefault.percent);
+            }
+          } else if (myPolicy?.sellerMarginAmount != null) {
+            sellerMarginEstimate = myPolicy.sellerMarginAmount;
+          } else if (myPolicy?.sellerMarginPercent != null) {
+            sellerMarginEstimate = Math.floor(partnerCommission * myPolicy.sellerMarginPercent);
+          } else if (sellerMarginDefault) {
+            sellerMarginEstimate = sellerMarginDefault.type === "fixed"
+              ? sellerMarginDefault.amount
+              : Math.floor(partnerCommission * sellerMarginDefault.percent);
+          }
+          const netIfSeller = sellerMarginEstimate - used;
+          const showSellerWarning = sellerMarginEstimate > 0 && netIfSeller < 0 && used > 0;
+
           return (
             <div
               key={p.productCode}
@@ -452,6 +478,14 @@ export default function PolicyEditor() {
                   )
                 )}
               </div>
+
+              {showSellerWarning && (
+                <div className="px-3 py-1.5 text-[12px] border-t border-rk-tint-orange bg-rk-tint-orange text-rk-orange-deep leading-[1.5]">
+                  ⚠ <b>영업자 있는 lead</b> 의 경우 협력점 실수령 = 영업점마진 ₩{fmt(sellerMarginEstimate)} − 환원 ₩{fmt(used)} =
+                  <b className="ml-1 text-rk-sale">−₩{fmt(Math.abs(netIfSeller))}</b> (영업점이 환원 부담).
+                  영업자 단독 링크로 받는 lead 가 발생하면 손해 — 영업자 마진을 더 크게 잡거나 환원을 줄이세요.
+                </div>
+              )}
 
               {message?.code === p.productCode && (
                 <div
