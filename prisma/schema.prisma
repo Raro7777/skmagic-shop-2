@@ -41,6 +41,9 @@ model Partner {
   // 협력점 단일 렌탈지원금 (총액) — 개통 시 1회 캐시백.
   // 상품 옵션별 수수료 한도 초과 시 그 옵션은 0 표기 (UI 측 한도 검증).
   rentalSupportAmount  Int       @default(0)
+  // 소비자 사이트(/p/<code>) 의 PriceConfigurator 에서 렌탈지원금 박스를 노출할지 토글.
+  // false 면 amount > 0 이라도 박스 자체를 숨김 (정산 로직과 무관 — UI 표시만).
+  rentalSupportEnabled Boolean   @default(true)
   // 영업자 마진 기본값 — 협력점이 영업자에게 단독 링크 제공 시 영업점수수료에서 협력점이 떼는 몫.
   // PartnerPolicy.sellerMargin* 상품별 override 가 있으면 그게 우선.
   sellerMarginType     String    @default("fixed") // "fixed" | "percent"

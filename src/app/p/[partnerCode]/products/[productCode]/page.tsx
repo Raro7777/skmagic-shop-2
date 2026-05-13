@@ -154,6 +154,7 @@ export default async function ProductDetailPage({
           rivalCompensation={detail.rivalCompensation}
           colorOptions={(detail.specs?.["색상"] ?? "").split(",").map(s => s.trim()).filter(Boolean)}
           partnerRentalSupportAmount={detail.partnerRentalSupportAmount}
+          partnerRentalSupportEnabled={detail.partnerRentalSupportEnabled}
           partnerGiftAmount={detail.giftAmount}
           partnerInstallAmount={detail.partnerInstallAmount}
         />

@@ -86,7 +86,7 @@ export default async function SettingsPage() {
         }}
       />
 
-      <RentalSupportInput initial={partner.rentalSupportAmount} />
+      <RentalSupportInput initial={partner.rentalSupportAmount} initialEnabled={partner.rentalSupportEnabled} />
 
       <SellerMarginInput
         initial={{

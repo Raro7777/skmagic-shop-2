@@ -51,6 +51,7 @@ export async function PATCH(req: Request) {
     sellerMarginType: "fixed" | "percent";
     sellerMarginAmount: number;
     sellerMarginPercent: number;
+    rentalSupportEnabled: boolean;
   }>;
 
   const data: Parameters<typeof prisma.partner.update>[0]["data"] = {};
@@ -116,6 +117,9 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ error: "영업자 마진(금액) 은 0 이상 정수여야 합니다." }, { status: 400 });
     }
     data.sellerMarginAmount = n;
+  }
+  if (b.rentalSupportEnabled !== undefined) {
+    data.rentalSupportEnabled = !!b.rentalSupportEnabled;
   }
   if (b.sellerMarginPercent !== undefined) {
     const n = Number(b.sellerMarginPercent);

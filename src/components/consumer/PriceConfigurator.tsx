@@ -22,6 +22,8 @@ type Props = {
   colorOptions?: string[]; // specs["색상"] split — 가격 영향 X, 표시·선택용
   // 협력점 렌탈지원금 — 옵션별 수수료 한도 ≥ 설정값이면 노출, 부족 시 0 표기
   partnerRentalSupportAmount?: number;
+  // 협력점 사이트 표시 ON/OFF 토글 (Partner.rentalSupportEnabled). false 면 박스 자체 숨김.
+  partnerRentalSupportEnabled?: boolean;
   partnerGiftAmount?: number;
   partnerInstallAmount?: number;
 };
@@ -55,6 +57,7 @@ export default function PriceConfigurator({
   rivalCompensation,
   colorOptions = [],
   partnerRentalSupportAmount = 0,
+  partnerRentalSupportEnabled = true,
   partnerGiftAmount = 0,
   partnerInstallAmount = 0,
 }: Props) {
@@ -257,7 +260,7 @@ export default function PriceConfigurator({
       )}
 
       {/* 협력점 렌탈지원금 — 옵션의 baseCommission 한도 ≥ 협력점 설정값이면 노출, 부족 시 0 */}
-      {partnerRentalSupportAmount > 0 && (
+      {partnerRentalSupportEnabled && partnerRentalSupportAmount > 0 && (
         <div className="mt-2 flex items-start justify-between gap-2 px-2.5 py-2 rounded border border-[#F4DCC9] bg-rk-tint-orange">
           <div className="flex-1 text-[14px] leading-[1.4]">
             <b className="text-rk-orange-deep">🎁 협력점 렌탈지원금</b>

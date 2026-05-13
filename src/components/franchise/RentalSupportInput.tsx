@@ -5,10 +5,17 @@ import { useRouter } from "next/navigation";
 
 const fmt = (n: number) => n.toLocaleString("ko-KR");
 
-export default function RentalSupportInput({ initial }: { initial: number }) {
+export default function RentalSupportInput({
+  initial,
+  initialEnabled = true,
+}: {
+  initial: number;
+  initialEnabled?: boolean;
+}) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [value, setValue] = useState(String(initial));
+  const [enabled, setEnabled] = useState(initialEnabled);
   const [busy, setBusy] = useState(false);
   const [flash, setFlash] = useState<{ tone: "ok" | "err"; text: string } | null>(null);
 
@@ -16,7 +23,7 @@ export default function RentalSupportInput({ initial }: { initial: number }) {
   // 만원 단위 절사 — 입력 시점에도 미리 보여줘 협력점이 헷갈리지 않게
   const parsed = Math.floor(rawParsed / 10000) * 10000;
   const truncated = rawParsed > parsed ? rawParsed - parsed : 0;
-  const dirty = parsed !== initial;
+  const dirty = parsed !== initial || enabled !== initialEnabled;
 
   const save = async () => {
     setBusy(true);
@@ -25,11 +32,16 @@ export default function RentalSupportInput({ initial }: { initial: number }) {
       const res = await fetch("/api/franchise/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rentalSupportAmount: parsed }),
+        body: JSON.stringify({ rentalSupportAmount: parsed, rentalSupportEnabled: enabled }),
       });
       const j = await res.json();
       if (!res.ok) { setFlash({ tone: "err", text: j.error ?? "저장 실패" }); return; }
-      setFlash({ tone: "ok", text: `저장됨. 상품 옵션마다 수수료 한도 내에서 자동 노출됩니다.` });
+      setFlash({
+        tone: "ok",
+        text: enabled
+          ? `저장됨. 소비자 사이트에 상품 옵션별 수수료 한도 내에서 자동 노출.`
+          : `저장됨. 렌탈지원금이 소비자 사이트에서 숨김 처리됩니다 (정산 로직과 무관).`,
+      });
       startTransition(() => router.refresh());
     } catch {
       setFlash({ tone: "err", text: "네트워크 오류" });
@@ -44,6 +56,29 @@ export default function RentalSupportInput({ initial }: { initial: number }) {
       </div>
 
       <div className="grid grid-cols-[120px_1fr] gap-x-3 gap-y-2.5 text-[13px] items-center">
+        {/* 소비자 사이트 노출 토글 */}
+        <span className="text-rk-muted">소비자 사이트 표시</span>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setEnabled(v => !v)}
+            disabled={busy}
+            title={enabled ? "끄면 소비자 사이트에 렌탈지원금 박스가 숨겨집니다" : "켜면 소비자 사이트에 렌탈지원금이 노출됩니다"}
+            className={
+              "relative w-10 h-[22px] rounded-full transition-colors border-0 cursor-pointer disabled:opacity-50 " +
+              (enabled ? "bg-rk-success" : "bg-rk-line")
+            }
+          >
+            <span
+              className="absolute top-0.5 w-[18px] h-[18px] bg-white rounded-full shadow transition-all"
+              style={{ left: enabled ? 20 : 2 }}
+            />
+          </button>
+          <span className={"text-[13px] font-medium " + (enabled ? "text-rk-success" : "text-rk-muted")}>
+            {enabled ? "ON · 노출 중" : "OFF · 숨김 (정산 로직과 무관)"}
+          </span>
+        </div>
+
         <label htmlFor="rentalSupport" className="text-rk-muted">지원 금액 (총액)</label>
         <div className="flex items-center gap-2">
           <span className="text-rk-muted">₩</span>

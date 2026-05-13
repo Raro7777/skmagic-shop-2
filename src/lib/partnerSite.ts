@@ -357,6 +357,7 @@ export type ProductDetail = ConsumerProduct & {
   };
   // 협력점 렌탈지원금 — 옵션별 한도 검증해 표기 (rentalSupport.ts helper 사용)
   partnerRentalSupportAmount: number;
+  partnerRentalSupportEnabled: boolean;
   partnerInstallAmount: number;
   reviews: ReviewSummary;
   partner: PartnerSiteData["partner"];
@@ -429,6 +430,7 @@ export async function getPartnerProductDetail(
     giftLabel: policy?.giftLabel ?? null,
     installFreed: (policy?.installAmount ?? 0) > 0,
     partnerRentalSupportAmount: partner.rentalSupportAmount ?? 0,
+    partnerRentalSupportEnabled: partner.rentalSupportEnabled ?? true,
     partnerInstallAmount: policy?.installAmount ?? 0,
     cardDiscountSavings,
     finalAfterCard: effectiveCard,
