@@ -48,6 +48,9 @@ export async function PATCH(req: Request) {
     rentalSupportAmount: number;
     businessNumber: string | null;
     commerceNumber: string | null;
+    sellerMarginType: "fixed" | "percent";
+    sellerMarginAmount: number;
+    sellerMarginPercent: number;
   }>;
 
   const data: Parameters<typeof prisma.partner.update>[0]["data"] = {};
@@ -101,6 +104,26 @@ export async function PATCH(req: Request) {
     // 만원 단위 절사 — UI에서 이미 미리 알려주지만 API 레벨에서도 강제
     data.rentalSupportAmount = Math.floor(raw / 10000) * 10000;
   }
+  if (b.sellerMarginType !== undefined) {
+    if (b.sellerMarginType !== "fixed" && b.sellerMarginType !== "percent") {
+      return NextResponse.json({ error: "sellerMarginType 은 fixed 또는 percent" }, { status: 400 });
+    }
+    data.sellerMarginType = b.sellerMarginType;
+  }
+  if (b.sellerMarginAmount !== undefined) {
+    const n = Math.floor(Number(b.sellerMarginAmount));
+    if (!Number.isFinite(n) || n < 0) {
+      return NextResponse.json({ error: "영업자 마진(금액) 은 0 이상 정수여야 합니다." }, { status: 400 });
+    }
+    data.sellerMarginAmount = n;
+  }
+  if (b.sellerMarginPercent !== undefined) {
+    const n = Number(b.sellerMarginPercent);
+    if (!Number.isFinite(n) || n < 0 || n > 1) {
+      return NextResponse.json({ error: "영업자 마진(비율) 은 0~1 범위여야 합니다." }, { status: 400 });
+    }
+    data.sellerMarginPercent = n;
+  }
   if (b.kakaoChannelUrl !== undefined) {
     if (!b.kakaoChannelUrl || b.kakaoChannelUrl.trim() === "") {
       data.kakaoChannelUrl = null;
@@ -127,6 +150,7 @@ export async function PATCH(req: Request) {
       partnerCode: true, partnerName: true, brandLabel: true, region: true, address: true,
       ownerName: true, hotlineNumber: true, phone: true, kakaoChannelUrl: true,
       businessNumber: true, commerceNumber: true, rentalSupportAmount: true,
+      sellerMarginType: true, sellerMarginAmount: true, sellerMarginPercent: true,
     },
   });
   return NextResponse.json({ ok: true, partner: updated });

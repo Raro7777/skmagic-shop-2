@@ -3,6 +3,7 @@ import { getEffectivePartner } from "@/lib/effectivePartner";
 import KakaoChannelInput from "@/components/franchise/KakaoChannelInput";
 import PartnerProfileEditor from "@/components/franchise/PartnerProfileEditor";
 import RentalSupportInput from "@/components/franchise/RentalSupportInput";
+import SellerMarginInput from "@/components/franchise/SellerMarginInput";
 
 export const metadata = { title: "사이트 설정 · 협력점 콘솔" };
 export const dynamic = "force-dynamic";
@@ -86,6 +87,14 @@ export default async function SettingsPage() {
       />
 
       <RentalSupportInput initial={partner.rentalSupportAmount} />
+
+      <SellerMarginInput
+        initial={{
+          type: partner.sellerMarginType as "fixed" | "percent",
+          amount: partner.sellerMarginAmount,
+          percent: partner.sellerMarginPercent,
+        }}
+      />
 
       <KakaoChannelInput initial={partner.kakaoChannelUrl} />
 

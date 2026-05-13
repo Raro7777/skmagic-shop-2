@@ -12,11 +12,11 @@ type PartnerProduct = {
   contractPeriod: number;
   managementType: string;
   hqPolicy: {
-    baseCommission: number;
-    monthIncentive: number;
+    baseCommission: number;      // 본사 수수료 (참고용)
+    hqMargin: number;            // 본사 마진
+    partnerCommission: number;   // 영업점수수료 ★ 정책 표기 + 환수 기준
     refundLimitRatio: number;
     installSubsidy: number;
-    // 한도 산정 기준 옵션 (최소 수수료 옵션)
     limitOptionMode?: string;
     limitOptionPeriod?: number;
     optionCount?: number;
@@ -25,6 +25,8 @@ type PartnerProduct = {
     giftAmount: number;
     giftLabel: string | null;
     installAmount: number;
+    sellerMarginAmount: number | null;
+    sellerMarginPercent: number | null;
   } | null;
 };
 
@@ -32,6 +34,10 @@ type Draft = {
   giftLabel: string;
   giftAmount: string;
   installAmount: string;
+  // 영업자 마진 override — marginType=null 이면 "협력점 기본값 사용"
+  marginType: "fixed" | "percent" | null;
+  marginAmount: string;
+  marginPercent: string;
 };
 
 type Filter = "all" | "missing" | "set";
@@ -93,10 +99,21 @@ export default function PolicyEditor() {
   const startEdit = (p: PartnerProduct) => {
     setMessage(null);
     setEditingCode(p.productCode);
+    const sm = p.myPolicy;
+    const marginType: "fixed" | "percent" | null = sm?.sellerMarginAmount != null
+      ? "fixed"
+      : sm?.sellerMarginPercent != null
+        ? "percent"
+        : null;
     setDraft({
-      giftLabel: p.myPolicy?.giftLabel ?? "",
-      giftAmount: String(p.myPolicy?.giftAmount ?? ""),
-      installAmount: String(p.myPolicy?.installAmount ?? ""),
+      giftLabel: sm?.giftLabel ?? "",
+      giftAmount: String(sm?.giftAmount ?? ""),
+      installAmount: String(sm?.installAmount ?? ""),
+      marginType,
+      marginAmount: sm?.sellerMarginAmount != null ? String(sm.sellerMarginAmount) : "",
+      marginPercent: sm?.sellerMarginPercent != null
+        ? ((sm.sellerMarginPercent * 100).toFixed(2).replace(/\.?0+$/, ""))
+        : "",
     });
   };
   const cancelEdit = () => {
@@ -117,12 +134,20 @@ export default function PolicyEditor() {
       return;
     }
 
+    // 영업자 마진 override
+    const marginPayload =
+      draft.marginType == null
+        ? { sellerMarginAmount: null, sellerMarginPercent: null }
+        : draft.marginType === "fixed"
+          ? { sellerMarginAmount: numOrNull(draft.marginAmount) ?? 0, sellerMarginPercent: null }
+          : { sellerMarginAmount: null, sellerMarginPercent: (Number(draft.marginPercent) || 0) / 100 };
+
     setSaving(true);
     try {
       const res = await fetch(`/api/policies/partner/${editingCode}`, {
         method: "PATCH",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ giftAmount, giftLabel, installAmount }),
+        body: JSON.stringify({ giftAmount, giftLabel, installAmount, ...marginPayload }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -213,9 +238,8 @@ export default function PolicyEditor() {
       </div>
 
       <div className="bg-rk-tint-blue text-rk-info px-2.5 py-2 rounded text-[13px] mb-3 leading-[1.5]">
-        💡 본사 수수료의 <b>최대 ⅔까지</b> 사은품 + 설치비로 환원할 수 있습니다. 한도 초과 시 본사 승인이 필요합니다.
-        <br />입력한 환원 금액은 <b>약정기간·운영모드와 무관하게 모든 옵션에 동일 적용</b>되며,
-        한도는 해당 상품의 <b>가장 낮은 수수료 옵션</b> 기준으로 산정됩니다 (어느 옵션이든 ⅔ 초과 방지).
+        💡 카드 메인 숫자는 <b>영업점수수료</b>(=본사수수료 − 본사마진) 입니다. 사은품·설치 환원은 영업점수수료에서 별도로 차감.
+        <br />환원 한도는 <b>가장 낮은 수수료 옵션</b>의 영업점수수료 ⅔ 기준. 환수는 영업점수수료 기준으로 처리됩니다.
       </div>
 
       <div className="flex flex-col gap-1.5">
@@ -224,14 +248,17 @@ export default function PolicyEditor() {
           const myPolicy = p.myPolicy;
           const isMissing = !((myPolicy?.giftAmount ?? 0) > 0 || (myPolicy?.installAmount ?? 0) > 0);
 
-          const baseCommission = p.hqPolicy ? p.hqPolicy.baseCommission + p.hqPolicy.monthIncentive : 0;
-          const limit = p.hqPolicy ? Math.floor(baseCommission * p.hqPolicy.refundLimitRatio) : 0;
+          // 정책 표기 = 영업점수수료 (= 본사수수료 - 본사마진). 환수 한도도 이 기준.
+          const baseCommission = p.hqPolicy?.baseCommission ?? 0;
+          const hqMargin = p.hqPolicy?.hqMargin ?? 0;
+          const partnerCommission = p.hqPolicy?.partnerCommission ?? 0;
+          const limit = p.hqPolicy ? Math.floor(partnerCommission * p.hqPolicy.refundLimitRatio) : 0;
 
           // Live calc from draft if editing
           const liveGift = isEditing && draft ? (numOrNull(draft.giftAmount) ?? 0) : (myPolicy?.giftAmount ?? 0);
           const liveInstall = isEditing && draft ? (numOrNull(draft.installAmount) ?? 0) : (myPolicy?.installAmount ?? 0);
           const used = liveGift + liveInstall;
-          const remaining = baseCommission - used;
+          const remaining = partnerCommission - used;
           const pct = limit > 0 ? Math.min(100, Math.round((used / limit) * 100)) : 0;
           const isOver = limit > 0 && used > limit;
           const isWarn = pct >= 80 && !isOver;
@@ -259,13 +286,16 @@ export default function PolicyEditor() {
                     )}
                   </div>
                   <small className="text-[12px] text-rk-faint font-mono">
-                    {p.modelName} · 월 ₩{fmt(p.rentalPrice)} · 최소 수수료 ₩{fmt(baseCommission)}
+                    {p.modelName} · 월 ₩{fmt(p.rentalPrice)} · 영업점수수료 <b className="text-rk-ink">₩{fmt(partnerCommission)}</b>
                     {p.hqPolicy?.limitOptionMode && p.hqPolicy?.limitOptionPeriod != null && (
                       <span className="ml-1 text-rk-orange-deep">
                         ({p.hqPolicy.limitOptionMode} {p.hqPolicy.limitOptionPeriod}개월
                         {(p.hqPolicy.optionCount ?? 0) > 1 && ` · 총 ${p.hqPolicy.optionCount}옵션`})
                       </span>
                     )}
+                  </small>
+                  <small className="text-[11px] text-rk-faint block">
+                    본사수수료 ₩{fmt(baseCommission)} − 본사마진 ₩{fmt(hqMargin)} = 영업점수수료 ₩{fmt(partnerCommission)}
                   </small>
                 </div>
 
@@ -343,6 +373,46 @@ export default function PolicyEditor() {
                           placeholder="0"
                           hint={`(최대 ${fmt(p.hqPolicy.installSubsidy)})`}
                         />
+                      </div>
+
+                      {/* 영업자 마진 override */}
+                      <div className="bg-rk-soft border border-rk-line-2 rounded px-2.5 py-2 mt-1">
+                        <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                          <span className="text-[12px] text-rk-muted">영업자 마진 (상품별 override)</span>
+                          <div className="flex gap-0.5">
+                            <button
+                              type="button"
+                              onClick={() => setDraft(d => d ? { ...d, marginType: null } : d)}
+                              className={"px-1.5 py-0.5 rounded text-[11px] border " + (draft.marginType == null ? "bg-rk-orange border-rk-orange text-white" : "bg-white border-rk-line text-rk-muted")}
+                            >협력점 기본값</button>
+                            <button
+                              type="button"
+                              onClick={() => setDraft(d => d ? { ...d, marginType: "fixed" } : d)}
+                              className={"px-1.5 py-0.5 rounded text-[11px] border " + (draft.marginType === "fixed" ? "bg-rk-orange border-rk-orange text-white" : "bg-white border-rk-line text-rk-muted")}
+                            >₩</button>
+                            <button
+                              type="button"
+                              onClick={() => setDraft(d => d ? { ...d, marginType: "percent" } : d)}
+                              className={"px-1.5 py-0.5 rounded text-[11px] border " + (draft.marginType === "percent" ? "bg-rk-orange border-rk-orange text-white" : "bg-white border-rk-line text-rk-muted")}
+                            >%</button>
+                          </div>
+                        </div>
+                        {draft.marginType === "fixed" && (
+                          <NumInput
+                            label="영업점이 가져갈 금액"
+                            value={draft.marginAmount}
+                            onChange={v => setDraft(d => d ? { ...d, marginAmount: v } : d)}
+                            placeholder="0"
+                          />
+                        )}
+                        {draft.marginType === "percent" && (
+                          <NumInput
+                            label="영업점이 가져갈 비율 (%)"
+                            value={draft.marginPercent}
+                            onChange={v => setDraft(d => d ? { ...d, marginPercent: v } : d)}
+                            placeholder="0"
+                          />
+                        )}
                       </div>
                       <div className="flex justify-between items-center mt-1 text-[13px] flex-wrap gap-2">
                         <div className="flex items-center gap-2 flex-1 min-w-[200px]">
