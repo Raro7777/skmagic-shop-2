@@ -1,218 +1,282 @@
 import Link from "next/link";
+import { prisma } from "@/lib/prisma";
 import { listActivePartners } from "@/lib/partnerSite";
 import { listAllRegionSlugs } from "@/lib/regionSeo";
+import Footer from "@/components/hub/Footer";
+
+export const dynamic = "force-dynamic";
+export const metadata = {
+  title: "렌트왕 — 동네 SK매직 공식 협력점 한 번에 비교",
+  description: "정수기·공기청정기·비데·매트리스 렌탈 — 동네 협력점에서 사은품 차별화된 가격으로 상담받으세요.",
+};
+
+const CATEGORY_LABEL: Record<string, string> = {
+  water: "정수기", air: "공기청정기", bidet: "비데", mattress: "매트리스",
+  massage: "안마의자", dryer: "건조기", kitchen: "주방가전",
+};
+const CATEGORY_ICON: Record<string, string> = {
+  water: "💧", air: "💨", bidet: "🚿", mattress: "🛏️",
+  massage: "💆", dryer: "🧺", kitchen: "🍳",
+};
 
 export default async function HubPage() {
-  const [partners, regions] = await Promise.all([
+  const [partners, regions, featuredProducts, categoryCounts] = await Promise.all([
     listActivePartners(),
     listAllRegionSlugs(),
+    prisma.product.findMany({
+      where: { status: "active", isFeatured: true },
+      orderBy: [{ rentalPrice: "asc" }],
+      take: 6,
+      select: { productCode: true, name: true, modelName: true, category: true, rentalPrice: true, cardDiscountPrice: true, imageUrl: true, imageUrls: true },
+    }),
+    prisma.product.groupBy({
+      by: ["category"],
+      where: { status: "active" },
+      _count: { _all: true },
+    }),
   ]);
+
+  const defaultPartner = partners[0]?.partnerCode ?? "gangnam-skmagic";
+  const counts: Record<string, number> = {};
+  for (const r of categoryCounts) counts[r.category] = r._count._all;
+  const activeCategories = Object.keys(CATEGORY_LABEL).filter(k => (counts[k] ?? 0) > 0);
+
   return (
-    <div className="bg-rk-soft-2 min-h-screen">
-      <div className="max-w-[1100px] mx-auto px-8 py-12 pb-20">
-        <header className="flex justify-between items-center mb-10 flex-wrap gap-3">
-          <div className="flex items-center gap-2.5 font-bold text-[18px] text-rk-ink">
-            <div className="w-[30px] h-[30px] bg-rk-orange text-white rounded grid place-items-center font-bold text-sm">RK</div>
-            <span>렌트왕 협력점 플랫폼</span>
-          </div>
-          <div className="flex gap-4 items-center text-[12px] text-rk-muted flex-wrap">
-            <Link href="/apply" className="bg-rk-orange hover:bg-rk-orange-deep text-white px-3 py-1.5 rounded-full text-[11px] font-medium no-underline transition-colors">
-              📝 분양 신청
+    <div className="bg-rk-soft-2 min-h-screen flex flex-col">
+      {/* ─────────────────────── 헤더 ─────────────────────── */}
+      <header className="bg-white border-b border-rk-line">
+        <div className="max-w-[1100px] mx-auto px-6 py-4 flex justify-between items-center flex-wrap gap-3">
+          <Link href="/" className="flex items-center gap-2.5 no-underline">
+            <div className="w-8 h-8 bg-rk-orange text-white rounded grid place-items-center font-bold text-[14px]">RK</div>
+            <span className="text-[17px] font-bold text-rk-ink">렌트왕</span>
+            <span className="text-[11px] text-rk-muted hidden sm:inline">SK매직 공식 협력점 분양 플랫폼</span>
+          </Link>
+          <div className="flex gap-2 items-center">
+            <Link
+              href="/apply"
+              className="bg-rk-orange hover:bg-rk-orange-deep text-white px-3.5 py-2 rounded text-[13px] font-semibold no-underline transition-colors"
+            >
+              📝 협력점 분양 신청
             </Link>
-            <span><b className="text-rk-ink">SK매직</b> 시범 분양 · 2026.05</span>
-            <span>로그인: <b className="text-rk-ink">본사 마스터</b></span>
-          </div>
-        </header>
-
-        <section className="mb-8 max-w-[720px]">
-          <h1 className="text-[32px] font-bold tracking-[-.025em] leading-[1.25] mb-2.5 text-rk-ink">
-            본사–<b className="text-rk-orange">협력점</b>–소비자, 3계층 렌탈 분양 운영 콘솔
-          </h1>
-          <p className="text-sm text-rk-muted leading-[1.65] m-0">
-            본사가 SK매직 등 종합 렌탈 상품과 기준 정책을 잡고, 동종업계 협력점이 자기 도메인으로
-            분양받아 운영합니다. 별도 본사 브랜드 사이트는 두지 않으며, 모든 소비자 트래픽은
-            협력점 사이트에서 발생합니다.
-          </p>
-        </section>
-
-        <div className="grid grid-cols-4 gap-3 mb-9">
-          <Stat label="활성 협력점"     num="87"     unit="점"     delta="▲ 이번 달 +6" />
-          <Stat label="이번 달 GMV"     num="12.4"   unit="억원"   delta="▲ 8.2% MoM" />
-          <Stat label="등록 상품"       num="142"    unit="종"     note="SK매직 · LG · 코웨이" />
-          <Stat label="최저 월렌탈가"   num="15,900" unit="원~"    note="비데 BID-S17D 기준" />
-        </div>
-
-        <div className="flex items-baseline gap-3 mb-3.5">
-          <h2 className="text-[18px] font-bold text-rk-ink">3개 화면</h2>
-          <small className="text-[11px] text-rk-muted tracking-[.08em]">SCREEN MAP / 클릭하여 진입</small>
-        </div>
-
-        <nav className="grid grid-cols-3 gap-4">
-          <RoleCard
-            href="/admin/franchise"
-            num="02 / DEALER"
-            device="DESKTOP 1280"
-            title={<>협력점 운영<br /><span className="text-rk-orange">관리자</span></>}
-            desc="협력점주가 자기 사이트를 직접 운영. 모델 진열·이벤트 배너 예약·정책 +/- 마진 조정·주문 관리·매출 대시보드."
-            chips={["진열 드래그", "배너 예약", "+/- 마진", "매출 보드"]}
-            cta="분양주 콘솔 →"
-          />
-          <RoleCard
-            href="/admin/super"
-            dark
-            num="03 / HQ SUPER ADMIN"
-            device="DESKTOP 1440"
-            title={<>분양 슈퍼관리자<br /><span style={{ color: "#FFB374" }}>본사 콘솔</span></>}
-            desc="본사 운영팀이 전체 협력점 + 정책 + 정산 관리. 협력점 신규 승인 및 일괄 공지."
-            chips={["대시보드", "정책", "정산", "협력점 승인"]}
-            cta="슈퍼관리자 진입 →"
-          />
-          <RoleCard
-            href={`/p/${partners[0]?.partnerCode ?? "gangnam-skmagic"}`}
-            num="01 / END USER"
-            device="MOBILE 390"
-            title={<>분양된 <br /><span className="text-rk-orange">협력점 사이트</span></>}
-            desc="소비자가 보는 모바일 쇼핑몰. 협력점마다 사은품·차별화가 다르게 노출됩니다."
-            chips={[`${partners.length}개 협력점`, "모바일", "DB 연동"]}
-            cta="첫 협력점 사이트 →"
-          />
-        </nav>
-
-        {/* 지역으로 시작 — SEO landing entry */}
-        <div className="bg-white border border-rk-line rounded-lg p-5 mt-6">
-          <div className="flex items-baseline gap-2 mb-3">
-            <h3 className="text-[14px] font-bold text-rk-ink">🌐 지역으로 시작 ({regions.length})</h3>
-            <small className="text-[11px] text-rk-muted">우리 동네 협력점 + 추천 상품 한 번에 보기</small>
-          </div>
-          <div className="grid grid-cols-4 gap-2">
-            {regions.map(r => (
-              <Link
-                key={r.slug}
-                href={`/region/${r.slug}`}
-                className="bg-rk-tint-blue hover:bg-rk-info hover:text-white border border-[#D8E4F4] rounded p-2.5 text-rk-info no-underline transition-colors"
-              >
-                <b className="block text-[12px]">{r.label}</b>
-                <small className="block text-[10px] opacity-80 mt-0.5">{r.partners.length}개 협력점</small>
-              </Link>
-            ))}
           </div>
         </div>
+      </header>
 
-        {/* All partner sites */}
-        <div className="bg-white border border-rk-line rounded-lg p-5 mt-6">
-          <div className="flex items-baseline gap-2 mb-3">
-            <h3 className="text-[14px] font-bold text-rk-ink">활성 분양 사이트 ({partners.length})</h3>
-            <small className="text-[11px] text-rk-muted">동일한 상품 마스터, 협력점마다 다른 사은품·차별화</small>
-          </div>
-          <div className="grid grid-cols-3 gap-3">
-            {partners.map(p => (
-              <Link
-                key={p.partnerCode}
-                href={`/p/${p.partnerCode}`}
-                className="block bg-rk-soft-2 hover:bg-white hover:border-rk-navy border border-rk-line-2 rounded-md p-3 text-decoration-none no-underline transition-colors"
-              >
-                <div className="font-mono text-[10px] text-rk-faint">/p/{p.partnerCode}</div>
-                <b className="block text-rk-ink mt-0.5 text-[14px]">{p.partnerName}</b>
-                <small className="block text-rk-muted text-[11px] mt-0.5">{p.brandLabel}</small>
-                <small className="block text-rk-muted text-[11px] mt-0.5">📍 {p.region}</small>
-              </Link>
-            ))}
-          </div>
-        </div>
+      <main className="flex-1">
+        <div className="max-w-[1100px] mx-auto px-6 py-10">
+          {/* ─────────────────────── 히어로 ─────────────────────── */}
+          <section className="mb-10">
+            <h1 className="text-[28px] md:text-[34px] font-bold tracking-[-.025em] leading-[1.25] mb-3 text-rk-ink">
+              우리 동네 <span className="text-rk-orange">SK매직 공식 협력점</span>을<br className="hidden md:block" />
+              한 번에 비교하세요
+            </h1>
+            <p className="text-[14px] md:text-[15px] text-rk-muted leading-[1.65] max-w-[640px]">
+              정수기·공기청정기·비데·매트리스 렌탈을 동네 협력점에서 상담받으세요.
+              협력점마다 사은품·설치비 혜택이 다르며, 본사 표준 정책 아래 안전하게 거래됩니다.
+            </p>
 
-        <div className="bg-white border border-rk-line rounded-lg p-5 mt-8 grid grid-cols-[200px_1fr] gap-6">
-          <div>
-            <h3 className="text-[14px] mb-1 text-rk-ink">Next.js 포팅 현황</h3>
-            <span className="text-rk-muted text-[12px]">3개 화면 모두 통합 완료</span>
-          </div>
-          <div>
-            <ol className="m-0 pl-5 text-[13px] text-rk-text leading-[1.8]">
-              <li><b className="text-rk-ink">소비자 모바일 사이트</b> — 히어로 자동 페이저 · 카테고리 탭 · 좋아요 토글</li>
-              <li><b className="text-rk-ink">협력점 콘솔</b> — 9개 섹션 분해, 정책 편집기 라이브 미리보기, PIN 토글</li>
-              <li><b className="text-rk-ink">슈퍼관리자</b> — KPI · 승인 큐 · 지역 그리드 · TOP/부진 · 정산 · 공지</li>
-            </ol>
-            <div className="bg-rk-tint-blue text-rk-info px-2.5 py-2 rounded text-[12px] font-medium mt-2.5 flex gap-1.5 items-start">
-              <span>ⓘ</span>
-              <span>
-                정적 HTML 레퍼런스 버전도 비교용으로{" "}
-                <a href="https://rentking.vercel.app" className="underline" target="_blank">rentking.vercel.app</a>
-                에 유지되고 있습니다.
-              </span>
+            {/* 카테고리 진입 그리드 — 기본 협력점 사이트의 카테고리 라우트로 */}
+            <div className="grid grid-cols-3 md:grid-cols-6 gap-2 md:gap-3 mt-6">
+              {activeCategories.map(k => (
+                <Link
+                  key={k}
+                  href={`/p/${defaultPartner}/category/${k}`}
+                  className="bg-white border border-rk-line rounded-lg px-3 py-4 text-center hover:border-rk-orange hover:shadow-[0_2px_8px_rgba(20,25,40,.06)] transition-all no-underline"
+                >
+                  <div className="text-[26px] mb-1">{CATEGORY_ICON[k]}</div>
+                  <b className="text-[13px] text-rk-ink block">{CATEGORY_LABEL[k]}</b>
+                  <small className="text-[11px] text-rk-muted">{counts[k]}종</small>
+                </Link>
+              ))}
             </div>
-          </div>
+          </section>
+
+          {/* ─────────────────────── 인기 상품 ─────────────────────── */}
+          {featuredProducts.length > 0 && (
+            <section className="mb-10">
+              <div className="flex items-baseline gap-2 mb-3">
+                <h2 className="text-[18px] font-bold text-rk-ink">🌟 추천 인기 모델</h2>
+                <small className="text-[12px] text-rk-muted">본사 추천 상품 · 협력점마다 사은품 다름</small>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {featuredProducts.map(p => {
+                  const thumb = p.imageUrls?.[0] ?? p.imageUrl;
+                  const card = p.cardDiscountPrice != null && p.cardDiscountPrice < p.rentalPrice ? p.cardDiscountPrice : null;
+                  return (
+                    <Link
+                      key={p.productCode}
+                      href={`/p/${defaultPartner}/products/${p.productCode}`}
+                      className="bg-white border border-rk-line rounded-lg p-3 hover:border-rk-navy transition-colors no-underline"
+                    >
+                      <div className="aspect-[4/3] bg-rk-soft-2 rounded mb-2 overflow-hidden">
+                        {thumb && (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={thumb} alt={p.name} className="w-full h-full object-contain" loading="lazy" />
+                        )}
+                      </div>
+                      <small className="text-[11px] text-rk-faint font-mono">{CATEGORY_LABEL[p.category] ?? p.category}</small>
+                      <b className="block text-[14px] text-rk-ink mt-0.5 leading-[1.3]">{p.name}</b>
+                      <div className="mt-1.5 flex items-baseline gap-1.5 flex-wrap">
+                        <b className="text-[15px] text-rk-orange-deep rk-num">월 {p.rentalPrice.toLocaleString("ko-KR")}원</b>
+                        {card && (
+                          <small className="text-[11px] text-rk-sale rk-num">카드 {card.toLocaleString("ko-KR")}원~</small>
+                        )}
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </section>
+          )}
+
+          {/* ─────────────────────── 지역으로 시작 ─────────────────────── */}
+          {regions.length > 0 && (
+            <section className="bg-white border border-rk-line rounded-lg p-5 mb-6">
+              <div className="flex items-baseline gap-2 mb-3">
+                <h3 className="text-[15px] font-bold text-rk-ink">🌐 지역으로 시작</h3>
+                <small className="text-[12px] text-rk-muted">우리 동네 협력점 + 추천 상품 한 번에</small>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                {regions.map(r => (
+                  <Link
+                    key={r.slug}
+                    href={`/region/${r.slug}`}
+                    className="bg-rk-tint-blue hover:bg-rk-info hover:text-white border border-[#D8E4F4] rounded p-2.5 text-rk-info no-underline transition-colors"
+                  >
+                    <b className="block text-[12px]">{r.label}</b>
+                    <small className="block text-[10px] opacity-80 mt-0.5">{r.partners.length}개 협력점</small>
+                  </Link>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* ─────────────────────── 전체 협력점 ─────────────────────── */}
+          <section className="bg-white border border-rk-line rounded-lg p-5 mb-12">
+            <div className="flex items-baseline gap-2 mb-3 flex-wrap">
+              <h3 className="text-[15px] font-bold text-rk-ink">🏪 전체 협력점 ({partners.length})</h3>
+              <small className="text-[12px] text-rk-muted">동일한 상품 마스터, 협력점마다 다른 사은품·차별화</small>
+            </div>
+            {partners.length === 0 ? (
+              <div className="bg-rk-tint-orange text-rk-orange-deep px-3 py-2 rounded text-[13px]">
+                현재 등록된 활성 협력점이 없습니다. 협력점 사장님이시면{" "}
+                <Link href="/apply" className="underline">분양 신청</Link>해주세요.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                {partners.map(p => (
+                  <Link
+                    key={p.partnerCode}
+                    href={`/p/${p.partnerCode}`}
+                    className="block bg-rk-soft-2 hover:bg-white hover:border-rk-navy border border-rk-line-2 rounded-md p-3 no-underline transition-colors"
+                  >
+                    <b className="block text-[14px] text-rk-ink">{p.partnerName}</b>
+                    <small className="block text-rk-muted text-[11px] mt-0.5">{p.brandLabel}</small>
+                    <small className="block text-rk-muted text-[11px] mt-0.5">📍 {p.region ?? "전국"}</small>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </section>
+
+          {/* ─────────────────────── 협력점 모집 (Phase C) ─────────────────────── */}
+          <section className="bg-rk-navy text-white rounded-xl p-6 md:p-9 mb-12 border border-rk-navy-deep">
+            <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-6 items-center mb-6">
+              <div>
+                <small className="text-rk-orange tracking-[.12em] font-medium text-[11px]">FRANCHISE RECRUITMENT</small>
+                <h2 className="text-[22px] md:text-[26px] font-bold tracking-[-.02em] leading-[1.3] mt-1 mb-2">
+                  SK매직 협력점 사장님이세요?<br />
+                  <span className="text-rk-orange">자기 도메인으로 분양받으세요.</span>
+                </h2>
+                <p className="text-[13px] text-white/70 leading-[1.7] max-w-[520px]">
+                  본사 상품 마스터 그대로, 우리 매장만의 사은품과 가격으로 차별화하세요.
+                  소비자 트래픽은 협력점 사이트에서 발생하며, 본사는 결제·정산·CS 표준만 관리합니다.
+                </p>
+              </div>
+              <Link
+                href="/apply"
+                className="bg-rk-orange hover:bg-rk-orange-deep text-white px-5 py-3 rounded-md text-[14px] font-semibold no-underline whitespace-nowrap transition-colors text-center"
+              >
+                📝 분양 신청하기 →
+              </Link>
+            </div>
+
+            {/* 3단계 절차 */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
+              <Step num="1" title="신청 접수" desc="사업자등록증·통신판매번호·운영 계획을 제출하면 본사가 1영업일 안에 검토합니다." />
+              <Step num="2" title="본사 승인" desc="자격 검증 후 분양 패키지(기본/스탠다드/프리미엄) 와 도메인을 매칭합니다." />
+              <Step num="3" title="사이트 개설" desc="자기 도메인의 협력점 사이트와 관리자 콘솔이 즉시 발급됩니다. 평균 24시간 내 분양 완료." />
+            </div>
+
+            {/* 패키지 비교 */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <Package
+                tier="기본"
+                priceNote="가입비 무료"
+                features={["1개 도메인 + 1개 영업자", "본사 상품 마스터 그대로", "사은품·설치비 환원 편집"]}
+              />
+              <Package
+                tier="스탠다드"
+                priceNote="월 분양료 별도"
+                features={["진열 순서 드래그 편집", "이벤트 배너 5개 동시 편성", "영업자 5명까지 + 단독 링크"]}
+                highlight
+              />
+              <Package
+                tier="프리미엄"
+                priceNote="월 분양료 별도"
+                features={["사은품 환원 한도 80%", "영업자 무제한 + AB 테스트", "본사 마케팅 분석 대시보드 접근"]}
+              />
+            </div>
+            <p className="text-[12px] text-white/55 mt-4 leading-[1.7]">
+              ⓘ 정확한 분양료·계약 조건은 자격 검증 후 본사에서 안내드립니다. 분양 신청은 협력점 자격(사업자등록증·통신판매신고)이 있는 사장님만 가능합니다.
+            </p>
+          </section>
         </div>
-      </div>
+      </main>
+
+      <Footer />
     </div>
   );
 }
 
-function Stat({ label, num, unit, delta, note }: { label: string; num: string; unit: string; delta?: string; note?: string }) {
+function Step({ num, title, desc }: { num: string; title: string; desc: string }) {
   return (
-    <div className="bg-white border border-rk-line rounded-lg p-4">
-      <span className="text-[11px] text-rk-muted block mb-1">{label}</span>
-      <div className="text-[22px] font-bold text-rk-ink tracking-[-.02em] rk-num">
-        {num}<small className="text-[13px] font-medium text-rk-muted">{unit}</small>
+    <div className="bg-rk-navy-deep border border-white/10 rounded-lg p-4">
+      <div className="flex items-center gap-2 mb-2">
+        <div className="w-7 h-7 rounded-full bg-rk-orange text-white grid place-items-center font-bold text-[13px]">{num}</div>
+        <b className="text-white text-[14px]">{title}</b>
       </div>
-      {delta && <div className="text-[11px] text-rk-success mt-0.5">{delta}</div>}
-      {note && <span className="text-[11px] text-rk-muted mt-0.5 block">{note}</span>}
+      <p className="text-[12.5px] text-white/65 leading-[1.6] m-0">{desc}</p>
     </div>
   );
 }
 
-function RoleCard({
-  href, disabled, dark, num, device, title, desc, chips, cta,
+function Package({
+  tier, priceNote, features, highlight,
 }: {
-  href?: string; disabled?: boolean; dark?: boolean;
-  num: string; device: string;
-  title: React.ReactNode; desc: string; chips: string[]; cta: string;
+  tier: string;
+  priceNote: string;
+  features: string[];
+  highlight?: boolean;
 }) {
-  const inner = (
-    <>
-      <span className={"absolute top-3.5 right-4 text-[10px] font-mono tracking-[.04em] " + (dark ? "text-white/60" : "text-rk-faint")}>
-        {device}
-      </span>
-      <div className={"rounded h-[110px] overflow-hidden border " + (dark ? "border-white/10 bg-rk-navy-deep" : "bg-rk-soft border-rk-line-2")} />
-      <div>
-        <div className={"text-[11px] tracking-[.12em] font-medium " + (dark ? "text-white/60" : "text-rk-muted")}>{num}</div>
-        <div className={"text-[18px] font-bold leading-[1.25] tracking-[-.02em] " + (dark ? "text-white" : "text-rk-ink")}>{title}</div>
-        <div className={"text-[13px] leading-[1.6] mt-2 min-h-[64px] " + (dark ? "text-white/60" : "text-rk-muted")}>{desc}</div>
+  return (
+    <div
+      className={
+        "rounded-lg p-4 border " +
+        (highlight
+          ? "bg-rk-orange/15 border-rk-orange"
+          : "bg-rk-navy-deep border-white/10")
+      }
+    >
+      <div className="flex items-baseline justify-between mb-2">
+        <b className={"text-[15px] " + (highlight ? "text-rk-orange" : "text-white")}>{tier}</b>
+        <small className={"text-[11px] " + (highlight ? "text-rk-orange/80" : "text-white/55")}>{priceNote}</small>
       </div>
-      <div className="flex flex-wrap gap-1">
-        {chips.map(c => (
-          <span
-            key={c}
-            className={"text-[11px] px-1.5 py-0.5 rounded font-medium " + (dark ? "bg-white/10 text-white/85" : "bg-rk-soft text-rk-text")}
-          >
-            {c}
-          </span>
+      <ul className="space-y-1 text-[12.5px] text-white/70 leading-[1.6]">
+        {features.map((f, i) => (
+          <li key={i} className="flex gap-1.5"><span className={highlight ? "text-rk-orange" : "text-white/40"}>✓</span><span>{f}</span></li>
         ))}
-      </div>
-      <div
-        className={
-          "flex justify-between items-center pt-3 border-t mt-auto text-[13px] font-medium " +
-          (dark ? "text-white border-white/15" : "text-rk-navy border-rk-line-2")
-        }
-      >
-        <span>{cta}</span>
-        <span
-          className={
-            "w-6 h-6 rounded-full grid place-items-center transition-all group-hover:bg-rk-orange group-hover:text-white group-hover:translate-x-[3px] " +
-            (dark ? "bg-white/10 text-white" : "bg-rk-soft")
-          }
-        >
-          →
-        </span>
-      </div>
-    </>
+      </ul>
+    </div>
   );
-
-  const baseClass =
-    "group rounded-[10px] p-5 cursor-pointer flex flex-col gap-3.5 transition-all border relative " +
-    (dark
-      ? "bg-rk-navy text-white border-rk-navy hover:shadow-[0_2px_8px_rgba(20,25,40,.06)] hover:-translate-y-0.5"
-      : "bg-white border-rk-line hover:border-rk-navy hover:shadow-[0_2px_8px_rgba(20,25,40,.06)] hover:-translate-y-0.5") +
-    (disabled ? " opacity-60 pointer-events-none" : "");
-
-  if (disabled || !href) return <div className={baseClass}>{inner}</div>;
-  return <Link href={href} className={baseClass + " no-underline"}>{inner}</Link>;
 }

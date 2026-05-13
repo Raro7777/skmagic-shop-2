@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 import { prisma } from "@/lib/prisma";
 import { listAllRegionSlugs } from "@/lib/regionSeo";
 
-const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://rentking-next.vercel.app";
+const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://skmagic-shop.com";
 
 export const revalidate = 3600; // 1시간
 
