@@ -1,4 +1,4 @@
-import { auth } from "@/auth";
+import { getEffectivePartner } from "@/lib/effectivePartner";
 import LiveLeads from "@/components/franchise/LiveLeads";
 import InquiryQueue from "@/components/franchise/InquiryQueue";
 import MemoTimeline from "@/components/franchise/MemoTimeline";
@@ -13,8 +13,8 @@ export const metadata = { title: "상담 / 문의 · 협력점 콘솔" };
 export const dynamic = "force-dynamic";
 
 export default async function LeadsPage() {
-  const session = await auth();
-  const partnerId = session?.user?.partnerId;
+  const eff = await getEffectivePartner();
+  const partnerId = eff?.partnerId;
   if (!partnerId) {
     return (
       <div className="bg-rk-tint-orange text-rk-orange-deep px-4 py-3 rounded text-[13px]">

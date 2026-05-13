@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import PartnerActions from "@/components/super/PartnerActions";
 import PartnerDomainAction from "@/components/super/PartnerDomainAction";
+import EnterPartnerConsole from "@/components/super/EnterPartnerConsole";
 import { type Tier } from "@/lib/tier";
 
 export const metadata = { title: "협력점 관리 · 슈퍼관리자" };
@@ -107,6 +108,9 @@ export default async function PartnersPage() {
                         initialDomain={p.customDomain}
                         initialStatus={p.customDomainStatus}
                       />
+                      {p.status === "active" && (
+                        <EnterPartnerConsole partnerCode={p.partnerCode} partnerName={p.partnerName} />
+                      )}
                       <Link href={`/p/${p.partnerCode}`} target="_blank" className="text-[12px] text-rk-info no-underline">사이트 →</Link>
                     </div>
                   </td>

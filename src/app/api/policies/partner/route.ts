@@ -1,19 +1,18 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { gatePartnerOrHq } from "@/lib/effectivePartner";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 // GET /api/policies/partner — 자기 협력점의 PartnerPolicy 목록 (모든 active product 포함, hqPolicy + 본인 정책 join)
 export async function GET() {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.user.role !== "partner_admin" || !session.user.partnerId) {
-    return NextResponse.json({ error: "Forbidden — 협력점 관리자만 조회 가능" }, { status: 403 });
+  const eff = await gatePartnerOrHq();
+  if ("error" in eff) {
+    return NextResponse.json({ error: eff.error }, { status: eff.error === "unauthorized" ? 401 : 403 });
   }
 
-  const partnerId = session.user.partnerId;
+  const partnerId = eff.partnerId;
 
   const products = await prisma.product.findMany({
     where: { status: "active" },

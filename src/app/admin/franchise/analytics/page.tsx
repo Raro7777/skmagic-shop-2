@@ -1,4 +1,4 @@
-import { auth } from "@/auth";
+import { getEffectivePartner } from "@/lib/effectivePartner";
 import { getUtmReport } from "@/lib/utmAnalytics";
 import { getGmvChartData } from "@/lib/gmvChart";
 import UtmReportCard from "@/components/admin/UtmReportCard";
@@ -7,8 +7,8 @@ import GmvChart from "@/components/super/GmvChart";
 export const metadata = { title: "마케팅 분석 · 협력점 콘솔" };
 
 export default async function FranchiseAnalyticsPage() {
-  const session = await auth();
-  const partnerCode = session?.user?.partnerId;
+  const eff = await getEffectivePartner();
+  const partnerCode = eff?.partnerId;
   if (!partnerCode) {
     return (
       <div className="bg-rk-tint-orange text-rk-orange-deep p-4 rounded-md text-[14px]">

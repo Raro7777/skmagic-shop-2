@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { canUseFeature } from "@/lib/tier";
+import { gatePartnerOrHq } from "@/lib/effectivePartner";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -35,14 +35,13 @@ function sanitize(input: unknown): DisplayConfig {
 }
 
 export async function GET() {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.user.role !== "partner_admin" || !session.user.partnerId) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const eff = await gatePartnerOrHq();
+  if ("error" in eff) {
+    return NextResponse.json({ error: eff.error }, { status: eff.error === "unauthorized" ? 401 : 403 });
   }
 
   const partner = await prisma.partner.findUnique({
-    where: { partnerCode: session.user.partnerId },
+    where: { partnerCode: eff.partnerId },
     select: { displayConfig: true },
   });
 
@@ -67,15 +66,14 @@ export async function GET() {
 }
 
 export async function PATCH(req: Request) {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.user.role !== "partner_admin" || !session.user.partnerId) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const eff = await gatePartnerOrHq();
+  if ("error" in eff) {
+    return NextResponse.json({ error: eff.error }, { status: eff.error === "unauthorized" ? 401 : 403 });
   }
 
   // Tier 검사 — standard 이상만
   const partner = await prisma.partner.findUnique({
-    where: { partnerCode: session.user.partnerId },
+    where: { partnerCode: eff.partnerId },
     select: { tier: true },
   });
   if (!canUseFeature(partner?.tier ?? "basic", "display_drag")) {
@@ -93,7 +91,7 @@ export async function PATCH(req: Request) {
   const cleaned = sanitize(body);
 
   await prisma.partner.update({
-    where: { partnerCode: session.user.partnerId },
+    where: { partnerCode: eff.partnerId },
     data: { displayConfig: cleaned as never },
   });
 

@@ -1,4 +1,4 @@
-import { auth } from "@/auth";
+import { getEffectivePartner } from "@/lib/effectivePartner";
 import { prisma } from "@/lib/prisma";
 import ProductTable from "@/components/franchise/ProductTable";
 import BannerSchedule from "@/components/franchise/BannerSchedule";
@@ -11,8 +11,8 @@ export const metadata = { title: "상품 진열 · 정책 · 협력점 콘솔" }
 export const dynamic = "force-dynamic";
 
 export default async function ProductsPage() {
-  const session = await auth();
-  const partnerCode = session?.user?.partnerId;
+  const eff = await getEffectivePartner();
+  const partnerCode = eff?.partnerId;
   const partner = partnerCode
     ? await prisma.partner.findUnique({
         where: { partnerCode },

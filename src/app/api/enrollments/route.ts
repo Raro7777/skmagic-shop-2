@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { viewForRole } from "@/lib/enrollmentForm";
 import { STATUS_LABEL, type LeadStatus, type ActorRole } from "@/lib/leadStatus";
+import { HQ_VIEW_COOKIE } from "@/lib/effectivePartner";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -54,6 +56,14 @@ export async function GET(req: Request) {
     where.sellerId = seller.id;
   } else if (partnerFilter) {
     where.partnerId = partnerFilter;
+  } else {
+    // hq + 협력점 콘솔 진입 시 cookie scope
+    const c = await cookies();
+    const cookieVal = c.get(HQ_VIEW_COOKIE)?.value;
+    const referer = req.headers.get("referer") ?? "";
+    if (cookieVal && referer.includes("/admin/franchise")) {
+      where.partnerId = cookieVal;
+    }
   }
 
   if (statusParam) {

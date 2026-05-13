@@ -81,10 +81,11 @@ export default auth(async (req) => {
   if (path.startsWith("/admin/super") && role !== "hq") {
     return NextResponse.redirect(new URL(homeFor(role), req.nextUrl));
   }
-  if (path.startsWith("/admin/franchise") && role !== "partner_admin") {
+  // 협력점 콘솔: partner_admin 또는 hq(임시 진입)만 허용 — seller 는 자기 home 으로
+  if (path.startsWith("/admin/franchise") && role !== "partner_admin" && role !== "hq") {
     return NextResponse.redirect(new URL(homeFor(role), req.nextUrl));
   }
-  if (path.startsWith("/admin/seller") && role !== "seller") {
+  if (path.startsWith("/admin/seller") && role !== "seller" && role !== "hq") {
     return NextResponse.redirect(new URL(homeFor(role), req.nextUrl));
   }
 

@@ -8,7 +8,7 @@
  *   - 응답: { url, width, height, sizeBytes }
  */
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { gatePartnerOrHq } from "@/lib/effectivePartner";
 import { put } from "@vercel/blob";
 import sharp from "sharp";
 
@@ -20,10 +20,9 @@ const MAX_WIDTH = 1600;
 const WEBP_QUALITY = 82;
 
 export async function POST(req: Request) {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.user.role !== "partner_admin" || !session.user.partnerId) {
-    return NextResponse.json({ error: "Forbidden — 협력점 관리자만 업로드 가능" }, { status: 403 });
+  const eff = await gatePartnerOrHq();
+  if ("error" in eff) {
+    return NextResponse.json({ error: eff.error }, { status: eff.error === "unauthorized" ? 401 : 403 });
   }
 
   let formData: FormData;
@@ -66,7 +65,7 @@ export async function POST(req: Request) {
   }
 
   // Blob 업로드 — partnerCode/timestamp.webp
-  const filename = `banners/${session.user.partnerId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.webp`;
+  const filename = `banners/${eff.partnerId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.webp`;
   let blobUrl: string;
   try {
     const blob = await put(filename, outBuffer, {

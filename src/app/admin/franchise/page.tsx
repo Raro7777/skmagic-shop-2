@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { auth } from "@/auth";
+import { getEffectivePartner } from "@/lib/effectivePartner";
 import { prisma } from "@/lib/prisma";
 import KpiGrid from "@/components/franchise/KpiGrid";
 import LiveLeads from "@/components/franchise/LiveLeads";
@@ -9,8 +9,8 @@ import HqBroadcastBanner from "@/components/franchise/HqBroadcastBanner";
 export const metadata = { title: "대시보드 · 협력점 콘솔" };
 
 export default async function FranchiseDashboard() {
-  const session = await auth();
-  const partnerCode = session?.user?.partnerId;
+  const eff = await getEffectivePartner();
+  const partnerCode = eff?.partnerId;
   const partner = partnerCode
     ? await prisma.partner.findUnique({ where: { partnerCode } })
     : null;

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { gatePartnerOrHq } from "@/lib/effectivePartner";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -10,10 +10,9 @@ export async function PATCH(
   req: Request,
   ctx: { params: Promise<{ code: string }> }
 ) {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.user.role !== "partner_admin" || !session.user.partnerId) {
-    return NextResponse.json({ error: "Forbidden — 협력점 관리자만 수정 가능" }, { status: 403 });
+  const eff = await gatePartnerOrHq();
+  if ("error" in eff) {
+    return NextResponse.json({ error: eff.error }, { status: eff.error === "unauthorized" ? 401 : 403 });
   }
 
   const { code } = await ctx.params;
@@ -49,14 +48,14 @@ export async function PATCH(
   }
 
   const policy = await prisma.partnerPolicy.upsert({
-    where: { partnerId_productId: { partnerId: session.user.partnerId, productId: product.id } },
+    where: { partnerId_productId: { partnerId: eff.partnerId, productId: product.id } },
     update: {
       giftAmount,
       giftLabel: b.giftLabel?.slice(0, 64) ?? null,
       installAmount,
     },
     create: {
-      partnerId: session.user.partnerId,
+      partnerId: eff.partnerId,
       productId: product.id,
       giftAmount,
       giftLabel: b.giftLabel?.slice(0, 64) ?? null,

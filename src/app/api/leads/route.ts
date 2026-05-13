@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { captureLead, maskPhone } from "@/lib/leadStore";
 import { rateLimit } from "@/lib/rateLimit";
+import { HQ_VIEW_COOKIE } from "@/lib/effectivePartner";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -106,8 +108,8 @@ export async function POST(req: Request) {
   });
 }
 
-// GET requires auth. Partner admins see their own leads; HQ sees all.
-export async function GET() {
+// GET requires auth. Partner admins see their own leads; HQ sees all (or — when impersonating a partner via hq_view_partner cookie — that partner's leads only).
+export async function GET(req: Request) {
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -120,11 +122,25 @@ export async function GET() {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const where = role === "hq" ? {} : { partnerId: partnerId! };
+  // HQ impersonation: if `hq_view_partner` cookie is set, scope to that partner (협력점 콘솔에서 호출 시).
+  let effectivePartnerId: string | null = null;
+  if (role === "partner_admin") {
+    effectivePartnerId = partnerId!;
+  } else if (role === "hq") {
+    const c = await cookies();
+    const cookieVal = c.get(HQ_VIEW_COOKIE)?.value;
+    // 협력점 콘솔에서 호출됐을 때만 scope 적용 (Referer 기반 판단)
+    const referer = req.headers.get("referer") ?? "";
+    if (cookieVal && referer.includes("/admin/franchise")) {
+      effectivePartnerId = cookieVal;
+    }
+  }
+
+  const where = effectivePartnerId ? { partnerId: effectivePartnerId } : {};
   const leads = await prisma.lead.findMany({
     where,
     orderBy: { createdAt: "desc" },
-    take: role === "hq" ? 20 : 10,
+    take: effectivePartnerId ? 10 : 20,
     include: { seller: { select: { name: true, sellerCode: true } } },
   });
 
@@ -145,6 +161,6 @@ export async function GET() {
   return NextResponse.json({
     leads: projected,
     count: projected.length,
-    viewer: { role, partnerId },
+    viewer: { role, partnerId: effectivePartnerId ?? partnerId },
   });
 }

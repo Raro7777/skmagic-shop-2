@@ -1,12 +1,12 @@
-import { auth } from "@/auth";
+import { getEffectivePartner } from "@/lib/effectivePartner";
 import { prisma } from "@/lib/prisma";
 import LinksManager from "@/components/franchise/LinksManager";
 
 export const metadata = { title: "영업자 · 링크 · 협력점 콘솔" };
 
 export default async function SellersPage() {
-  const session = await auth();
-  const partnerCode = session?.user?.partnerId;
+  const eff = await getEffectivePartner();
+  const partnerCode = eff?.partnerId;
   const partner = partnerCode
     ? await prisma.partner.findUnique({ where: { partnerCode } })
     : null;

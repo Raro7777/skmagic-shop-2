@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { gatePartnerOrHq } from "@/lib/effectivePartner";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -25,10 +25,12 @@ export const dynamic = "force-dynamic";
  *   - status            활성/퇴점 상태
  */
 export async function PATCH(req: Request) {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.user.role !== "partner_admin" || !session.user.partnerId) {
-    return NextResponse.json({ error: "Forbidden — 협력점 관리자만 편집 가능" }, { status: 403 });
+  const eff = await gatePartnerOrHq();
+  if ("error" in eff) {
+    return NextResponse.json(
+      { error: eff.error === "unauthorized" ? "Unauthorized" : "Forbidden — 협력점 관리자 또는 본사만" },
+      { status: eff.error === "unauthorized" ? 401 : 403 },
+    );
   }
 
   let body: unknown;
@@ -119,7 +121,7 @@ export async function PATCH(req: Request) {
   }
 
   const updated = await prisma.partner.update({
-    where: { partnerCode: session.user.partnerId },
+    where: { partnerCode: eff.partnerId },
     data,
     select: {
       partnerCode: true, partnerName: true, brandLabel: true, region: true, address: true,

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { canUseFeature } from "@/lib/tier";
+import { gatePartnerOrHq } from "@/lib/effectivePartner";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -20,16 +20,15 @@ async function checkBannerTier(partnerCode: string): Promise<NextResponse | null
   return null;
 }
 
-// GET — 자기 협력점 배너 목록
+// GET — 자기 협력점 배너 목록 (hq 는 cookie 기준 협력점)
 export async function GET() {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.user.role !== "partner_admin" || !session.user.partnerId) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const eff = await gatePartnerOrHq();
+  if ("error" in eff) {
+    return NextResponse.json({ error: eff.error }, { status: eff.error === "unauthorized" ? 401 : 403 });
   }
 
   const banners = await prisma.banner.findMany({
-    where: { partnerId: session.user.partnerId },
+    where: { partnerId: eff.partnerId },
     orderBy: [{ status: "asc" }, { startsAt: "desc" }],
   });
 
@@ -58,12 +57,11 @@ export async function GET() {
 
 // POST — 배너 등록
 export async function POST(req: Request) {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.user.role !== "partner_admin" || !session.user.partnerId) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const eff = await gatePartnerOrHq();
+  if ("error" in eff) {
+    return NextResponse.json({ error: eff.error }, { status: eff.error === "unauthorized" ? 401 : 403 });
   }
-  const tierBlock = await checkBannerTier(session.user.partnerId);
+  const tierBlock = await checkBannerTier(eff.partnerId);
   if (tierBlock) return tierBlock;
 
   let body: unknown;
@@ -105,7 +103,7 @@ export async function POST(req: Request) {
 
   const banner = await prisma.banner.create({
     data: {
-      partnerId: session.user.partnerId,
+      partnerId: eff.partnerId,
       title: b.title.slice(0, 80),
       subtitle: b.subtitle?.slice(0, 120) ?? null,
       imageUrl: b.imageUrl?.slice(0, 512) ?? null,

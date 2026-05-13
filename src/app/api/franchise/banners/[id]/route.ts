@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { gatePartnerOrHq } from "@/lib/effectivePartner";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -13,14 +13,13 @@ async function checkOwn(id: string, partnerId: string) {
 }
 
 export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }> }) {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.user.role !== "partner_admin" || !session.user.partnerId) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const eff = await gatePartnerOrHq();
+  if ("error" in eff) {
+    return NextResponse.json({ error: eff.error }, { status: eff.error === "unauthorized" ? 401 : 403 });
   }
 
   const { id } = await ctx.params;
-  const ownership = await checkOwn(id, session.user.partnerId);
+  const ownership = await checkOwn(id, eff.partnerId);
   if (!ownership) return NextResponse.json({ error: "Banner not found" }, { status: 404 });
   if (ownership === "forbidden") return NextResponse.json({ error: "Forbidden — 본인 협력점 배너만 수정 가능" }, { status: 403 });
 
@@ -89,14 +88,13 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
 }
 
 export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string }> }) {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.user.role !== "partner_admin" || !session.user.partnerId) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const eff = await gatePartnerOrHq();
+  if ("error" in eff) {
+    return NextResponse.json({ error: eff.error }, { status: eff.error === "unauthorized" ? 401 : 403 });
   }
 
   const { id } = await ctx.params;
-  const ownership = await checkOwn(id, session.user.partnerId);
+  const ownership = await checkOwn(id, eff.partnerId);
   if (!ownership) return NextResponse.json({ error: "Banner not found" }, { status: 404 });
   if (ownership === "forbidden") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 

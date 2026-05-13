@@ -1,5 +1,5 @@
-import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { getEffectivePartner } from "@/lib/effectivePartner";
 import KakaoChannelInput from "@/components/franchise/KakaoChannelInput";
 import PartnerProfileEditor from "@/components/franchise/PartnerProfileEditor";
 import RentalSupportInput from "@/components/franchise/RentalSupportInput";
@@ -8,8 +8,8 @@ export const metadata = { title: "사이트 설정 · 협력점 콘솔" };
 export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
-  const session = await auth();
-  const partnerCode = session?.user?.partnerId;
+  const eff = await getEffectivePartner();
+  const partnerCode = eff?.partnerId;
   const partner = partnerCode
     ? await prisma.partner.findUnique({ where: { partnerCode } })
     : null;

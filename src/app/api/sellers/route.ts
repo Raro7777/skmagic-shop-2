@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { HQ_VIEW_COOKIE, gatePartnerOrHq } from "@/lib/effectivePartner";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// GET — list sellers (partner_admin: own only, hq: all)
+// GET — list sellers (partner_admin: own only, hq: all 또는 협력점 콘솔 호출 시 cookie scope)
 export async function GET(req: Request) {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -17,8 +19,17 @@ export async function GET(req: Request) {
   if (session.user.role === "partner_admin") {
     if (!session.user.partnerId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     where.partnerId = session.user.partnerId;
-  } else if (session.user.role === "hq" && partnerCodeFilter) {
-    where.partnerId = partnerCodeFilter;
+  } else if (session.user.role === "hq") {
+    if (partnerCodeFilter) {
+      where.partnerId = partnerCodeFilter;
+    } else {
+      const c = await cookies();
+      const cookieVal = c.get(HQ_VIEW_COOKIE)?.value;
+      const referer = req.headers.get("referer") ?? "";
+      if (cookieVal && referer.includes("/admin/franchise")) {
+        where.partnerId = cookieVal;
+      }
+    }
   }
 
   const rows = await prisma.seller.findMany({
@@ -44,12 +55,11 @@ export async function GET(req: Request) {
   });
 }
 
-// POST — partner_admin creates a new seller in their partner
+// POST — partner_admin creates a new seller in their partner (hq 협력점 콘솔 진입 시도 가능)
 export async function POST(req: Request) {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.user.role !== "partner_admin" || !session.user.partnerId) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const eff = await gatePartnerOrHq();
+  if ("error" in eff) {
+    return NextResponse.json({ error: eff.error }, { status: eff.error === "unauthorized" ? 401 : 403 });
   }
 
   let body: unknown;
@@ -74,7 +84,7 @@ export async function POST(req: Request) {
   try {
     const created = await prisma.seller.create({
       data: {
-        partnerId: session.user.partnerId,
+        partnerId: eff.partnerId,
         sellerCode: code,
         name: b.name.trim().slice(0, 32),
         phone: b.phone?.trim() || null,
