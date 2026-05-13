@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 
 export default function LoginForm({
@@ -11,7 +10,6 @@ export default function LoginForm({
   callbackUrl?: string;
   initialError?: string;
 }) {
-  const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -30,8 +28,9 @@ export default function LoginForm({
         setError("이메일 또는 비밀번호가 올바르지 않습니다.");
         return;
       }
-      router.push(callbackUrl ?? "/admin");
-      router.refresh();
+      // router.push 는 방금 set 된 세션 쿠키를 다음 RSC fetch 에 못 전달할 수 있어 /login 으로 되돌아오는 이슈가 있음.
+      // 풀-페이지 네비게이션(window.location)으로 강제해서 쿠키가 적용된 새 HTTP 요청을 보내게 함.
+      window.location.href = callbackUrl ?? "/admin";
     });
   };
 
