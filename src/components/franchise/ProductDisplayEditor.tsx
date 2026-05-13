@@ -301,22 +301,20 @@ function SortableItem({
     transition,
     opacity: isDragging ? 0.4 : 1,
     zIndex: isDragging ? 10 : 1,
+    touchAction: "none",
   };
 
+  // 카드 전체가 드래그 핸들. ✕ 버튼은 pointerdown stop 으로 클릭만 동작.
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className="bg-white border border-rk-line rounded mb-1 p-2 flex items-center gap-2"
+      {...attributes}
+      {...listeners}
+      className="bg-white border border-rk-line rounded mb-1 p-2 flex items-center gap-2 cursor-grab active:cursor-grabbing select-none"
+      title="드래그로 순서 변경"
     >
-      <span
-        className="cursor-grab active:cursor-grabbing text-rk-muted text-[14px] select-none"
-        {...attributes}
-        {...listeners}
-        title="드래그로 순서 변경"
-      >
-        ⋮⋮
-      </span>
+      <span className="text-rk-muted text-[14px] select-none" aria-hidden="true">⋮⋮</span>
       <span className="text-[12px] text-rk-orange-deep font-bold rk-num min-w-[18px]">{index + 1}</span>
       <ProductThumb url={product.imageUrl} category={product.category} />
       <div className="flex-1 min-w-0">
@@ -325,6 +323,7 @@ function SortableItem({
       </div>
       <button
         type="button"
+        onPointerDown={e => e.stopPropagation()}
         onClick={() => onRemove(product.productCode)}
         className="text-rk-sale text-[13px] hover:underline cursor-pointer px-1"
       >
