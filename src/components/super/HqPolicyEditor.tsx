@@ -2,6 +2,24 @@
 
 import { useEffect, useMemo, useState, useCallback } from "react";
 
+/**
+ * 본사 HqPolicy 매트릭스 편집기.
+ *
+ *   - 상품 1개 = (mode, contractPeriod) 옵션 N개.
+ *   - 옵션마다 baseCommission · monthIncentive · installSubsidy 편집 가능.
+ *   - 옵션 추가 / 옵션 삭제 지원.
+ */
+
+type Option = {
+  mode: string;
+  contractPeriod: number;
+  visitInterval: string | null;
+  baseCommission: number;
+  monthIncentive: number;
+  refundLimitRatio: number;
+  installSubsidy: number;
+};
+
 type ProductPolicy = {
   productCode: string;
   category: string;
@@ -11,21 +29,11 @@ type ProductPolicy = {
   cardDiscountPrice: number | null;
   contractPeriod: number;
   managementType: string;
-  hqPolicy: {
-    baseCommission: number;
-    monthIncentive: number;
-    refundLimitRatio: number;
-    installSubsidy: number;
-  } | null;
+  hqPolicy: (Option & { mode: string; contractPeriod: number }) | null; // 대표 정책 (호환용)
+  options: Option[]; // 매트릭스 전체
 };
 
-type Draft = {
-  rentalPrice: string;
-  cardDiscountPrice: string;
-  baseCommission: string;
-  monthIncentive: string;
-  installSubsidy: string;
-};
+type Filter = "all" | "missing" | "present";
 
 const fmt = (n: number | null) => (n == null ? "—" : n.toLocaleString("ko-KR"));
 const numOrNull = (s: string): number | null => {
@@ -35,14 +43,21 @@ const numOrNull = (s: string): number | null => {
   return isFinite(n) && n >= 0 ? Math.floor(n) : null;
 };
 
-type Filter = "all" | "missing" | "present";
+const MODE_OPTIONS = ["방문형", "셀프형", "자가관리"] as const;
+const PERIOD_OPTIONS = [36, 48, 60, 72, 84];
+
+const CATEGORY_LABEL: Record<string, string> = {
+  water: "정수기", bidet: "비데", air: "공기청정기", mattress: "매트리스",
+  massage: "안마", dryer: "건조기", kitchen: "주방",
+};
 
 export default function HqPolicyEditor() {
   const [items, setItems] = useState<ProductPolicy[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [editingCode, setEditingCode] = useState<string | null>(null);
-  const [draft, setDraft] = useState<Draft | null>(null);
+  const [expandedCode, setExpandedCode] = useState<string | null>(null);
+  const [editing, setEditing] = useState<{ code: string; mode: string; period: number } | null>(null);
+  const [draft, setDraft] = useState<{ baseCommission: string; monthIncentive: string; installSubsidy: string } | null>(null);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ tone: "ok" | "err"; text: string; code?: string } | null>(null);
   const [query, setQuery] = useState("");
@@ -71,86 +86,100 @@ export default function HqPolicyEditor() {
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
     return items.filter(p => {
-      if (filter === "missing" && p.hqPolicy) return false;
-      if (filter === "present" && !p.hqPolicy) return false;
+      const hasAny = p.options.length > 0;
+      if (filter === "missing" && hasAny) return false;
+      if (filter === "present" && !hasAny) return false;
       if (q && !`${p.productCode} ${p.name} ${p.modelName}`.toLowerCase().includes(q)) return false;
       return true;
     });
   }, [items, query, filter]);
 
-  const missingCount = items.filter(i => !i.hqPolicy).length;
+  const missingCount = items.filter(i => i.options.length === 0).length;
 
-  const startEdit = (p: ProductPolicy) => {
+  const startEdit = (code: string, opt: Option) => {
     setMessage(null);
-    setEditingCode(p.productCode);
+    setEditing({ code, mode: opt.mode, period: opt.contractPeriod });
     setDraft({
-      rentalPrice: String(p.rentalPrice),
-      cardDiscountPrice: p.cardDiscountPrice != null ? String(p.cardDiscountPrice) : "",
-      baseCommission: String(p.hqPolicy?.baseCommission ?? ""),
-      monthIncentive: String(p.hqPolicy?.monthIncentive ?? 0),
-      installSubsidy: String(p.hqPolicy?.installSubsidy ?? 30000),
+      baseCommission: String(opt.baseCommission),
+      monthIncentive: String(opt.monthIncentive),
+      installSubsidy: String(opt.installSubsidy),
     });
   };
+
   const cancelEdit = () => {
-    setEditingCode(null);
+    setEditing(null);
     setDraft(null);
   };
 
   const save = async () => {
-    if (!editingCode || !draft) return;
+    if (!editing || !draft) return;
     setMessage(null);
 
-    const rentalPrice = numOrNull(draft.rentalPrice);
-    const cardDiscountPrice = draft.cardDiscountPrice.trim() === "" ? null : numOrNull(draft.cardDiscountPrice);
     const baseCommission = numOrNull(draft.baseCommission);
     const monthIncentive = numOrNull(draft.monthIncentive) ?? 0;
     const installSubsidy = numOrNull(draft.installSubsidy) ?? 0;
 
-    if (rentalPrice == null || rentalPrice <= 0) {
-      setMessage({ tone: "err", text: "월 렌탈료(운영가)는 0원보다 커야 합니다.", code: editingCode });
-      return;
-    }
-    if (cardDiscountPrice != null && cardDiscountPrice > rentalPrice) {
-      setMessage({ tone: "err", text: "카드할인가는 월 렌탈료보다 클 수 없습니다.", code: editingCode });
-      return;
-    }
     if (baseCommission == null || baseCommission <= 0) {
-      setMessage({ tone: "err", text: "본사 기본 수수료는 0원보다 커야 합니다.", code: editingCode });
+      setMessage({ tone: "err", text: "본사 기본 수수료는 0원보다 커야 합니다.", code: editing.code });
       return;
     }
 
     setSaving(true);
     try {
-      // 1) Product 가격 업데이트
-      const productRes = await fetch(`/api/products/${editingCode}/admin`, {
+      const res = await fetch(`/api/policies/hq/${editing.code}`, {
         method: "PATCH",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ rentalPrice, cardDiscountPrice }),
+        body: JSON.stringify({
+          mode: editing.mode,
+          contractPeriod: editing.period,
+          baseCommission,
+          monthIncentive,
+          installSubsidy,
+        }),
       });
-      if (!productRes.ok) {
-        const data = await productRes.json().catch(() => ({}));
-        setMessage({ tone: "err", text: data.error ?? "상품 가격 저장 실패", code: editingCode });
+      const data = await res.json();
+      if (!res.ok) {
+        setMessage({ tone: "err", text: data.error ?? "저장 실패", code: editing.code });
         return;
       }
-
-      // 2) HqPolicy 업데이트(없으면 생성)
-      const policyRes = await fetch(`/api/policies/hq/${editingCode}`, {
-        method: "PATCH",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ baseCommission, monthIncentive, installSubsidy }),
-      });
-      const policyData = await policyRes.json();
-      if (!policyRes.ok) {
-        setMessage({ tone: "err", text: policyData.error ?? "정책 저장 실패", code: editingCode });
-        return;
-      }
-
-      setMessage({ tone: "ok", text: "저장 완료 — 모든 협력점에 즉시 반영됩니다.", code: editingCode });
-      setEditingCode(null);
+      setMessage({ tone: "ok", text: `${editing.mode} ${editing.period}개월 옵션 저장 완료 — 모든 협력점에 즉시 반영.`, code: editing.code });
+      setEditing(null);
       setDraft(null);
       await fetchData();
     } catch {
-      setMessage({ tone: "err", text: "네트워크 오류", code: editingCode });
+      setMessage({ tone: "err", text: "네트워크 오류", code: editing.code });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const addOption = async (code: string, mode: string, period: number) => {
+    setMessage(null);
+    const existing = items.find(p => p.productCode === code)?.options.find(o => o.mode === mode && o.contractPeriod === period);
+    if (existing) {
+      setMessage({ tone: "err", text: "이미 존재하는 옵션입니다.", code });
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/policies/hq/${code}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          mode, contractPeriod: period,
+          visitInterval: mode === "방문형" ? "4개월" : mode === "셀프형" ? "12개월" : null,
+          baseCommission: 30000,
+          monthIncentive: 0,
+          installSubsidy: 30000,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        setMessage({ tone: "err", text: data.error ?? "옵션 추가 실패", code });
+        return;
+      }
+      setMessage({ tone: "ok", text: `${mode} ${period}개월 옵션 추가 완료 — 값 편집해주세요.`, code });
+      await fetchData();
     } finally {
       setSaving(false);
     }
@@ -175,13 +204,12 @@ export default function HqPolicyEditor() {
     <div className="bg-white border border-rk-line rounded-lg p-4">
       <div className="flex items-center gap-2.5 mb-3 flex-wrap">
         <h3 className="text-[14px] font-semibold">
-          💰 본사 기준 정책 편집
+          💰 본사 기준 정책 (옵션 매트릭스)
           <span className="text-[12px] px-1.5 py-0.5 rounded bg-rk-tint-green text-rk-success font-medium ml-1.5">live</span>
         </h3>
-        <span className="ml-auto text-[13px] text-rk-muted">{items.length}개 상품 · 변경은 모든 협력점에 즉시 반영</span>
+        <span className="ml-auto text-[13px] text-rk-muted">{items.length}개 상품 · 행 클릭으로 매트릭스 펼침</span>
       </div>
 
-      {/* Filter / Search toolbar */}
       <div className="flex flex-wrap items-center gap-2 mb-3 sticky top-0 bg-white pb-2 z-10">
         <input
           type="search"
@@ -190,204 +218,84 @@ export default function HqPolicyEditor() {
           onChange={e => setQuery(e.target.value)}
           className="border border-rk-line rounded px-2.5 py-1 text-[14px] w-[200px] focus:outline-none focus:border-rk-navy"
         />
-        <button
-          type="button"
-          onClick={() => setFilter("all")}
-          className={
-            "px-2.5 py-1 rounded text-[13px] font-medium border " +
-            (filter === "all"
-              ? "bg-rk-navy text-white border-rk-navy"
-              : "bg-white text-rk-muted border-rk-line hover:bg-rk-soft")
-          }
-        >
+        <button type="button" onClick={() => setFilter("all")} className={"px-2.5 py-1 rounded text-[13px] font-medium border " + (filter === "all" ? "bg-rk-navy text-white border-rk-navy" : "bg-white text-rk-muted border-rk-line hover:bg-rk-soft")}>
           전체 {items.length}
         </button>
-        <button
-          type="button"
-          onClick={() => setFilter("missing")}
-          className={
-            "px-2.5 py-1 rounded text-[13px] font-medium border " +
-            (filter === "missing"
-              ? "bg-rk-sale text-white border-rk-sale"
-              : "bg-white text-rk-muted border-rk-line hover:bg-rk-soft")
-          }
-        >
-          ⚠ 정책 없음 {missingCount}
+        <button type="button" onClick={() => setFilter("missing")} className={"px-2.5 py-1 rounded text-[13px] font-medium border " + (filter === "missing" ? "bg-rk-sale text-white border-rk-sale" : "bg-white text-rk-muted border-rk-line hover:bg-rk-soft")}>
+          ⚠ 옵션 없음 {missingCount}
         </button>
-        <button
-          type="button"
-          onClick={() => setFilter("present")}
-          className={
-            "px-2.5 py-1 rounded text-[13px] font-medium border " +
-            (filter === "present"
-              ? "bg-rk-success text-white border-rk-success"
-              : "bg-white text-rk-muted border-rk-line hover:bg-rk-soft")
-          }
-        >
-          ✓ 입력 완료 {items.length - missingCount}
+        <button type="button" onClick={() => setFilter("present")} className={"px-2.5 py-1 rounded text-[13px] font-medium border " + (filter === "present" ? "bg-rk-success text-white border-rk-success" : "bg-white text-rk-muted border-rk-line hover:bg-rk-soft")}>
+          ✓ 옵션 보유 {items.length - missingCount}
         </button>
         <span className="ml-auto text-[13px] text-rk-muted">표시 {visible.length}개</span>
       </div>
 
       <div className="bg-rk-tint-orange text-rk-orange-deep px-2.5 py-2 rounded text-[13px] mb-3 leading-[1.5]">
-        💡 정책 입력 시 본사 시트(부가세 제외)의 <b>운영가</b>·<b>판촉가</b>·<b>수수료 합계</b>를 그대로 입력하세요.
+        💡 각 상품은 <b>방문형/셀프형/자가관리 × 36/48/60/72/84개월</b> 옵션마다 본사 수수료가 다릅니다.
+        상품 행 클릭으로 매트릭스 펼치고, 셀 클릭으로 편집.
       </div>
 
       <div className="flex flex-col gap-1.5">
         {visible.map(p => {
-          const isEditing = editingCode === p.productCode;
-          const policy = p.hqPolicy;
-          const isMissing = !policy;
-          const totalCommission = policy ? policy.baseCommission + policy.monthIncentive : 0;
+          const isExpanded = expandedCode === p.productCode;
+          const isMissing = p.options.length === 0;
 
           return (
             <div
               key={p.productCode}
               className={
                 "border rounded-md transition-colors " +
-                (isEditing
-                  ? "border-rk-navy bg-rk-soft-2"
-                  : isMissing
-                    ? "border-rk-sale/30 bg-rk-tint-red/30"
+                (isExpanded ? "border-rk-navy bg-rk-soft-2"
+                  : isMissing ? "border-rk-sale/30 bg-rk-tint-red/30"
                     : "border-rk-line-2 hover:bg-rk-soft-2")
               }
             >
-              <div className="px-3 py-2.5 flex items-center gap-3 flex-wrap">
-                <div className="min-w-[220px]">
+              <button
+                type="button"
+                onClick={() => setExpandedCode(isExpanded ? null : p.productCode)}
+                className="w-full px-3 py-2.5 flex items-center gap-3 flex-wrap text-left bg-transparent border-0 cursor-pointer"
+              >
+                <div className="min-w-[260px]">
                   <div className="flex items-center gap-1.5 flex-wrap">
                     <b className="text-[14px] text-rk-ink">{p.name}</b>
-                    {isMissing && (
-                      <span className="text-[9px] px-1.5 py-px rounded bg-rk-sale text-white font-semibold">
-                        ⚠ 정책 없음
-                      </span>
-                    )}
+                    {isMissing && <span className="text-[9px] px-1.5 py-px rounded bg-rk-sale text-white font-semibold">⚠ 옵션 없음</span>}
                   </div>
                   <small className="text-[12px] text-rk-faint font-mono">
-                    {p.modelName} · {p.managementType} · 의무 {p.contractPeriod}개월
+                    {p.modelName} · {CATEGORY_LABEL[p.category] ?? p.category} · 기본 {p.contractPeriod}개월
                   </small>
                 </div>
+                <div className="flex items-center gap-2 text-[13px] flex-1 flex-wrap">
+                  <span className="text-rk-muted">옵션 수</span>
+                  <b className="rk-num text-rk-ink">{p.options.length}</b>
+                  <span className="text-rk-muted">·</span>
+                  <span className="text-rk-muted">월</span>
+                  <b className="rk-num text-rk-ink">₩{fmt(p.rentalPrice)}</b>
+                  {p.cardDiscountPrice != null && (
+                    <small className="text-rk-sale">(카드 ₩{fmt(p.cardDiscountPrice)})</small>
+                  )}
+                </div>
+                <span className="text-[18px] text-rk-muted ml-auto">{isExpanded ? "▾" : "▸"}</span>
+              </button>
 
-                {!isEditing ? (
-                  <>
-                    <div className="flex items-center gap-3 text-[13px] flex-1 min-w-[280px]">
-                      <div className="flex items-center gap-1">
-                        <span className="text-rk-muted">월</span>
-                        <b className="rk-num text-rk-ink">₩{fmt(p.rentalPrice)}</b>
-                        {p.cardDiscountPrice != null && (
-                          <small className="text-rk-sale">
-                            (카드 ₩{fmt(p.cardDiscountPrice)})
-                          </small>
-                        )}
-                      </div>
-                      <div className="h-3 w-px bg-rk-line-2" />
-                      {policy ? (
-                        <div className="flex items-center gap-1">
-                          <span className="text-rk-muted">수수료</span>
-                          <b className="rk-num text-rk-success">+₩{fmt(policy.baseCommission)}</b>
-                          {policy.monthIncentive > 0 && (
-                            <>
-                              <span className="text-rk-muted">+</span>
-                              <b className="rk-num text-rk-orange-deep">₩{fmt(policy.monthIncentive)}</b>
-                              <small className="text-rk-faint">인센</small>
-                            </>
-                          )}
-                          <span className="text-rk-muted">=</span>
-                          <b className="rk-num text-rk-ink">₩{fmt(totalCommission)}</b>
-                          <span className="text-rk-muted">/대</span>
-                        </div>
-                      ) : (
-                        <span className="text-[13px] text-rk-sale">수수료 미설정</span>
-                      )}
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => startEdit(p)}
-                      className={
-                        "border-0 px-3 py-1.5 rounded text-[13px] cursor-pointer font-medium ml-auto " +
-                        (isMissing
-                          ? "bg-rk-sale hover:opacity-90 text-white"
-                          : "bg-rk-navy hover:bg-rk-navy-deep text-white")
-                      }
-                    >
-                      {isMissing ? "+ 정책 추가" : "✎ 편집"}
-                    </button>
-                  </>
-                ) : (
-                  draft && (
-                    <div className="flex flex-col gap-2 flex-1 min-w-[400px]">
-                      <div className="grid grid-cols-2 gap-2">
-                        <NumInput
-                          label="월 렌탈료 (운영가)"
-                          value={draft.rentalPrice}
-                          onChange={v => setDraft(d => d ? { ...d, rentalPrice: v } : d)}
-                          required
-                        />
-                        <NumInput
-                          label="카드할인가 (판촉가)"
-                          value={draft.cardDiscountPrice}
-                          placeholder="없으면 비우기"
-                          onChange={v => setDraft(d => d ? { ...d, cardDiscountPrice: v } : d)}
-                        />
-                        <NumInput
-                          label="본사 기본 수수료"
-                          value={draft.baseCommission}
-                          onChange={v => setDraft(d => d ? { ...d, baseCommission: v } : d)}
-                          required
-                          highlight
-                        />
-                        <NumInput
-                          label="이번 달 인센티브"
-                          value={draft.monthIncentive}
-                          onChange={v => setDraft(d => d ? { ...d, monthIncentive: v } : d)}
-                          hint="(기간 한정)"
-                        />
-                        <NumInput
-                          label="설치비 보조"
-                          value={draft.installSubsidy}
-                          onChange={v => setDraft(d => d ? { ...d, installSubsidy: v } : d)}
-                        />
-                      </div>
-                      <div className="flex justify-between items-center mt-1 text-[13px] flex-wrap gap-2">
-                        <span className="text-rk-muted">
-                          → 협력점 수령 합계: <b className="rk-num text-rk-ink">
-                            ₩{fmt((numOrNull(draft.baseCommission) ?? 0) + (numOrNull(draft.monthIncentive) ?? 0))}
-                          </b>
-                        </span>
-                        <div className="flex gap-1.5">
-                          <button
-                            type="button"
-                            onClick={cancelEdit}
-                            disabled={saving}
-                            className="bg-white border border-rk-line text-rk-text px-3 py-1 rounded text-[13px] cursor-pointer"
-                          >
-                            취소
-                          </button>
-                          <button
-                            type="button"
-                            onClick={save}
-                            disabled={saving}
-                            className="bg-rk-navy hover:bg-rk-navy-deep text-white border-0 px-3 py-1 rounded text-[13px] cursor-pointer font-medium disabled:opacity-50"
-                          >
-                            {saving ? "저장 중…" : "저장 · 일괄 적용"}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  )
-                )}
-              </div>
+              {isExpanded && (
+                <div className="border-t border-rk-line-2 px-3 py-3">
+                  <OptionMatrix
+                    product={p}
+                    editing={editing}
+                    draft={draft}
+                    saving={saving}
+                    onStartEdit={startEdit}
+                    onCancel={cancelEdit}
+                    onSave={save}
+                    onChangeDraft={(k, v) => setDraft(d => d ? { ...d, [k]: v } : d)}
+                    onAddOption={addOption}
+                  />
+                </div>
+              )}
 
               {message?.code === p.productCode && (
-                <div
-                  className={
-                    "px-3 py-1.5 text-[13px] border-t " +
-                    (message.tone === "ok"
-                      ? "bg-rk-tint-green text-rk-success border-rk-tint-green"
-                      : "bg-rk-tint-red text-rk-sale border-rk-tint-red")
-                  }
-                >
-                  {message.tone === "ok" ? "✓ " : "⚠ "}
-                  {message.text}
+                <div className={"px-3 py-1.5 text-[13px] border-t " + (message.tone === "ok" ? "bg-rk-tint-green text-rk-success border-rk-tint-green" : "bg-rk-tint-red text-rk-sale border-rk-tint-red")}>
+                  {message.tone === "ok" ? "✓ " : "⚠ "}{message.text}
                 </div>
               )}
             </div>
@@ -404,35 +312,150 @@ export default function HqPolicyEditor() {
   );
 }
 
-function NumInput({
-  label, value, onChange, placeholder, hint, required, highlight,
+/**
+ * 상품 1개의 옵션 매트릭스. mode × contractPeriod 그리드.
+ */
+function OptionMatrix({
+  product, editing, draft, saving,
+  onStartEdit, onCancel, onSave, onChangeDraft, onAddOption,
 }: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  placeholder?: string;
-  hint?: string;
-  required?: boolean;
-  highlight?: boolean;
+  product: ProductPolicy;
+  editing: { code: string; mode: string; period: number } | null;
+  draft: { baseCommission: string; monthIncentive: string; installSubsidy: string } | null;
+  saving: boolean;
+  onStartEdit: (code: string, opt: Option) => void;
+  onCancel: () => void;
+  onSave: () => void;
+  onChangeDraft: (k: "baseCommission" | "monthIncentive" | "installSubsidy", v: string) => void;
+  onAddOption: (code: string, mode: string, period: number) => void;
 }) {
+  // 매트릭스를 (mode, contractPeriod) 키로 인덱싱
+  const matrix: Record<string, Option> = {};
+  for (const o of product.options) {
+    matrix[`${o.mode}|${o.contractPeriod}`] = o;
+  }
+  const usedModes = Array.from(new Set(product.options.map(o => o.mode)));
+  const usedPeriods = Array.from(new Set(product.options.map(o => o.contractPeriod))).sort((a, b) => a - b);
+  const displayModes = usedModes.length > 0 ? usedModes : ["방문형"];
+  const displayPeriods = usedPeriods.length > 0 ? usedPeriods : [60];
+
   return (
-    <div className="flex flex-col gap-0.5">
-      <span className="text-[13px] text-rk-muted">
-        {label}
-        {required && <span className="text-rk-sale ml-0.5">*</span>}
-        {hint && <span className="text-rk-faint ml-1">{hint}</span>}
-      </span>
-      <div className={"flex items-stretch border rounded overflow-hidden " + (highlight ? "border-rk-navy" : "border-rk-line")}>
-        <span className="bg-rk-soft px-2 grid place-items-center text-[13px] text-rk-muted">₩</span>
-        <input
-          type="text"
-          inputMode="numeric"
-          value={value}
-          onChange={e => onChange(e.target.value)}
-          placeholder={placeholder}
-          className="flex-1 px-2 py-1 text-[14px] rk-num text-rk-ink outline-none bg-white"
-        />
+    <>
+      <div className="overflow-x-auto">
+        <table className="w-full border-collapse text-[13px]">
+          <thead>
+            <tr>
+              <th className="px-2 py-1.5 text-left font-medium text-rk-muted bg-rk-soft border border-rk-line-2 min-w-[90px]">옵션 / 약정</th>
+              {displayPeriods.map(period => (
+                <th key={period} className="px-2 py-1.5 text-center font-medium text-rk-muted bg-rk-soft border border-rk-line-2 min-w-[140px]">
+                  {period}개월
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {displayModes.map(mode => (
+              <tr key={mode}>
+                <td className="px-2 py-1.5 font-medium text-rk-ink bg-rk-soft-2 border border-rk-line-2">{mode}</td>
+                {displayPeriods.map(period => {
+                  const opt = matrix[`${mode}|${period}`];
+                  const isEditing = editing?.code === product.productCode && editing.mode === mode && editing.period === period;
+
+                  if (isEditing && draft) {
+                    return (
+                      <td key={period} className="px-2 py-2 bg-rk-navy/10 border border-rk-navy">
+                        <div className="flex flex-col gap-1">
+                          <NumField label="수수료" value={draft.baseCommission} onChange={v => onChangeDraft("baseCommission", v)} />
+                          <NumField label="인센티브" value={draft.monthIncentive} onChange={v => onChangeDraft("monthIncentive", v)} />
+                          <NumField label="설치보조" value={draft.installSubsidy} onChange={v => onChangeDraft("installSubsidy", v)} />
+                          <div className="flex gap-1 mt-1">
+                            <button type="button" onClick={onCancel} disabled={saving} className="flex-1 bg-white border border-rk-line text-rk-text px-1.5 py-0.5 rounded text-[12px] cursor-pointer">취소</button>
+                            <button type="button" onClick={onSave} disabled={saving} className="flex-1 bg-rk-navy hover:bg-rk-navy-deep text-white border-0 px-1.5 py-0.5 rounded text-[12px] cursor-pointer disabled:opacity-50">
+                              {saving ? "저장중" : "저장"}
+                            </button>
+                          </div>
+                        </div>
+                      </td>
+                    );
+                  }
+
+                  if (opt) {
+                    const total = opt.baseCommission + opt.monthIncentive;
+                    return (
+                      <td
+                        key={period}
+                        onClick={() => onStartEdit(product.productCode, opt)}
+                        className="px-2 py-1.5 border border-rk-line-2 hover:bg-rk-tint-orange/40 cursor-pointer"
+                      >
+                        <div className="rk-num text-rk-ink font-semibold">₩{fmt(opt.baseCommission)}</div>
+                        {opt.monthIncentive > 0 && (
+                          <div className="rk-num text-[11px] text-rk-orange-deep">+{fmt(opt.monthIncentive)} 인센</div>
+                        )}
+                        <div className="rk-num text-[11px] text-rk-success">합 ₩{fmt(total)}</div>
+                      </td>
+                    );
+                  }
+
+                  return (
+                    <td key={period} className="px-2 py-1.5 border border-rk-line-2 bg-rk-soft/40 text-center">
+                      <button
+                        type="button"
+                        onClick={() => onAddOption(product.productCode, mode, period)}
+                        disabled={saving}
+                        className="text-[11px] text-rk-info hover:underline cursor-pointer disabled:opacity-50"
+                      >
+                        + 옵션 추가
+                      </button>
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+            {/* 추가 모드 row — 매트릭스에 없는 mode 추가 가능 */}
+            <tr>
+              <td colSpan={displayPeriods.length + 1} className="px-2 py-1.5 bg-rk-soft border border-rk-line-2 text-[12px] text-rk-muted">
+                다른 옵션 모드/약정 추가:
+                <div className="inline-flex gap-1 ml-2 flex-wrap">
+                  {MODE_OPTIONS.map(m => (
+                    PERIOD_OPTIONS.map(period => {
+                      if (matrix[`${m}|${period}`]) return null;
+                      return (
+                        <button
+                          key={`${m}-${period}`}
+                          type="button"
+                          onClick={() => onAddOption(product.productCode, m, period)}
+                          disabled={saving}
+                          className="text-[11px] bg-white border border-rk-line rounded px-1.5 py-0.5 text-rk-muted hover:border-rk-orange hover:text-rk-orange-deep cursor-pointer disabled:opacity-50"
+                        >
+                          + {m} {period}개월
+                        </button>
+                      );
+                    })
+                  ))}
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
+      <p className="text-[12px] text-rk-faint mt-2">
+        ⓘ 셀 클릭으로 해당 옵션의 수수료·인센티브·설치보조 편집. 변경 시 정산 계산에 즉시 반영. 협력점 사은품 환원 한도는 옵션별 수수료의 ⅔.
+      </p>
+    </>
+  );
+}
+
+function NumField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  return (
+    <div className="flex items-stretch border border-rk-line rounded overflow-hidden">
+      <span className="bg-rk-soft px-1.5 grid place-items-center text-[10px] text-rk-muted min-w-[40px]">{label}</span>
+      <input
+        type="text"
+        inputMode="numeric"
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        className="flex-1 px-1.5 py-0.5 text-[12px] rk-num text-rk-ink outline-none bg-white w-0 min-w-0"
+      />
     </div>
   );
 }
