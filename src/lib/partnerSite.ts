@@ -1,4 +1,6 @@
 import { prisma } from "@/lib/prisma";
+import { pickRepresentativeHqPolicy } from "@/lib/hqPolicy";
+import { computeHqMargin } from "@/lib/marginFlow";
 
 export type ConsumerProduct = {
   productCode: string;
@@ -93,13 +95,29 @@ export async function getPartnerSite(partnerCode: string): Promise<PartnerSiteDa
   });
   if (!partner || partner.status !== "active") return null;
 
-  const products = await prisma.product.findMany({
-    where: { status: "active" },
-    include: {
-      partnerPolicies: { where: { partnerId: partnerCode } },
-    },
-    orderBy: [{ isFeatured: "desc" }, { rentalPrice: "asc" }],
-  });
+  const [products, tierMargin] = await Promise.all([
+    prisma.product.findMany({
+      where: { status: "active" },
+      include: {
+        partnerPolicies: { where: { partnerId: partnerCode } },
+        hqPolicies: true,
+      },
+      orderBy: [{ isFeatured: "desc" }, { rentalPrice: "asc" }],
+    }),
+    prisma.hqMarginByTier.findUnique({ where: { tier: partner.tier } }),
+  ]);
+  const tierMarginConfig = tierMargin
+    ? { type: tierMargin.marginType as "fixed" | "percent", amount: tierMargin.marginAmount, percent: tierMargin.marginPercent }
+    : null;
+
+  // 정렬용 영업점수수료 (= 본사수수료 − 본사마진) — 대표 옵션 기준
+  const partnerCommissionByCode = new Map<string, number>();
+  for (const p of products) {
+    const rep = pickRepresentativeHqPolicy(p);
+    const base = rep ? rep.baseCommission + rep.monthIncentive : 0;
+    const hqMargin = rep ? computeHqMargin(base, rep, tierMarginConfig) : 0;
+    partnerCommissionByCode.set(p.productCode, base - hqMargin);
+  }
 
   const all: ConsumerProduct[] = products.map(p => {
     const policy = p.partnerPolicies[0];
@@ -128,28 +146,36 @@ export async function getPartnerSite(partnerCode: string): Promise<PartnerSiteDa
       ? codes.map(c => codeMap.get(c)).filter((p): p is ConsumerProduct => !!p)
       : [];
 
-  // Hero = displayConfig.picks[0] 우선, 없으면 사은품 차별화 자동 산출
-  const sortedByGift = [...all].sort((a, b) => b.giftAmount - a.giftAmount);
+  // 정렬 헬퍼
+  const commissionDesc = (a: ConsumerProduct, b: ConsumerProduct) =>
+    (partnerCommissionByCode.get(b.productCode) ?? 0) - (partnerCommissionByCode.get(a.productCode) ?? 0);
+  const giftDesc = (a: ConsumerProduct, b: ConsumerProduct) => {
+    const diff = b.giftAmount - a.giftAmount;
+    if (diff !== 0) return diff;
+    return commissionDesc(a, b); // 사은품 동률 → 수수료 높은 순
+  };
+
+  // Hero = displayConfig.picks[0] 우선, 없으면 영업점수수료 높은 순 fallback
   const customPicks = pickByCodes(displayConfig?.picks);
+  const sortedByCommission = [...all].sort(commissionDesc);
   const hero =
     customPicks[0] ??
-    sortedByGift.find(p => p.giftAmount > 0) ??
-    all.find(p => p.isFeatured) ??
-    all[0] ??
+    sortedByCommission.find(p => p.isFeatured) ??
+    sortedByCommission[0] ??
     null;
 
-  // 카테고리별 랭킹 (탭용) — displayConfig.ranking[cat] 우선, 없으면 자동 산출
+  // 카테고리별 랭킹 (탭용) — displayConfig.ranking[cat] 우선, 없으면 사은품 높은 순 fallback
   const rankingsByCategory: Record<string, ConsumerProduct[]> = {};
   for (const cat of Object.keys(CATEGORY_META)) {
     const custom = pickByCodes(displayConfig?.ranking?.[cat]);
     if (custom.length > 0) {
       rankingsByCategory[cat] = custom.slice(0, 6);
     } else {
-      const auto = all.filter(p => p.category === cat).slice(0, 6);
+      const auto = all.filter(p => p.category === cat).sort(giftDesc).slice(0, 6);
       if (auto.length > 0) rankingsByCategory[cat] = auto;
     }
   }
-  const ranking = rankingsByCategory.water ?? all.slice(0, 4);
+  const ranking = rankingsByCategory.water ?? sortedByCommission.slice(0, 4);
 
   // QUICK / Tabs용 카테고리 목록 — 활성 상품 1개 이상인 카테고리만
   const countByCategory = new Map<string, number>();
@@ -165,14 +191,14 @@ export async function getPartnerSite(partnerCode: string): Promise<PartnerSiteDa
     }))
     .sort((a, b) => CATEGORY_META[a.slug].rankPriority - CATEGORY_META[b.slug].rankPriority);
 
-  // 점장 추천 picks: displayConfig.picks 우선 (hero 다음 항목들), 없으면 자동 산출
+  // 점장 추천 picks: displayConfig.picks 우선 (hero 다음 항목들), 없으면 영업점수수료 높은 순 자동 산출
   let picks: ConsumerProduct[];
   if (customPicks.length > 1) {
     picks = customPicks.slice(1, 5);
   } else {
-    const picksWithGift = all.filter(p => p.giftAmount > 0 && p.productCode !== hero?.productCode);
-    const picksFiller = all.filter(p => !picksWithGift.includes(p) && p.productCode !== hero?.productCode);
-    picks = [...picksWithGift, ...picksFiller].slice(0, 4);
+    picks = sortedByCommission
+      .filter(p => p.productCode !== hero?.productCode)
+      .slice(0, 4);
   }
 
   // Active banners — status=active이고 현재 시각이 [startsAt, endsAt] 사이
@@ -241,15 +267,36 @@ export async function listPartnerProducts(
   partnerCode: string,
   opts: { category?: string } = {}
 ): Promise<ConsumerProduct[]> {
-  const products = await prisma.product.findMany({
-    where: {
-      status: "active",
-      ...(opts.category && { category: opts.category }),
-    },
-    include: { partnerPolicies: { where: { partnerId: partnerCode } } },
-    orderBy: [{ isFeatured: "desc" }, { rentalPrice: "asc" }],
-  });
-  return products.map(p => {
+  const [partner, products] = await Promise.all([
+    prisma.partner.findUnique({
+      where: { partnerCode },
+      select: { tier: true, displayConfig: true },
+    }),
+    prisma.product.findMany({
+      where: {
+        status: "active",
+        ...(opts.category && { category: opts.category }),
+      },
+      include: {
+        partnerPolicies: { where: { partnerId: partnerCode } },
+        hqPolicies: true,
+      },
+    }),
+  ]);
+  const tierMargin = partner ? await prisma.hqMarginByTier.findUnique({ where: { tier: partner.tier } }) : null;
+  const tierMarginConfig = tierMargin
+    ? { type: tierMargin.marginType as "fixed" | "percent", amount: tierMargin.marginAmount, percent: tierMargin.marginPercent }
+    : null;
+
+  const partnerCommissionByCode = new Map<string, number>();
+  for (const p of products) {
+    const rep = pickRepresentativeHqPolicy(p);
+    const base = rep ? rep.baseCommission + rep.monthIncentive : 0;
+    const hqMargin = rep ? computeHqMargin(base, rep, tierMarginConfig) : 0;
+    partnerCommissionByCode.set(p.productCode, base - hqMargin);
+  }
+
+  const mapped: ConsumerProduct[] = products.map(p => {
     const policy = p.partnerPolicies[0];
     return {
       productCode: p.productCode,
@@ -267,6 +314,27 @@ export async function listPartnerProducts(
       installFreed: (policy?.installAmount ?? 0) > 0,
     };
   });
+
+  // displayConfig.ranking[cat] override 우선
+  const displayConfig = (partner?.displayConfig as { ranking?: Record<string, string[]> } | null) ?? null;
+  const codeMap = new Map(mapped.map(p => [p.productCode, p]));
+
+  if (opts.category) {
+    const customCodes = displayConfig?.ranking?.[opts.category];
+    if (Array.isArray(customCodes) && customCodes.length > 0) {
+      const ordered = customCodes.map(c => codeMap.get(c)).filter((p): p is ConsumerProduct => !!p);
+      const orderedSet = new Set(ordered.map(p => p.productCode));
+      const rest = mapped
+        .filter(p => !orderedSet.has(p.productCode))
+        .sort((a, b) => b.giftAmount - a.giftAmount || (partnerCommissionByCode.get(b.productCode) ?? 0) - (partnerCommissionByCode.get(a.productCode) ?? 0));
+      return [...ordered, ...rest];
+    }
+    // 카테고리 fallback: 사은품 높은 순 + 수수료 tie-break
+    return mapped.sort((a, b) => b.giftAmount - a.giftAmount || (partnerCommissionByCode.get(b.productCode) ?? 0) - (partnerCommissionByCode.get(a.productCode) ?? 0));
+  }
+
+  // 카테고리 미지정(전체 목록) fallback: 영업점수수료 높은 순
+  return mapped.sort((a, b) => (partnerCommissionByCode.get(b.productCode) ?? 0) - (partnerCommissionByCode.get(a.productCode) ?? 0));
 }
 
 export async function getPartnerHeader(partnerCode: string) {
