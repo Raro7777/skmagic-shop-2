@@ -43,10 +43,12 @@ export async function startRefund(input: {
   if (!s) return { error: "Settlement not found" };
   if (s.status !== "paid") return { error: `환수는 송금 완료(paid) 정산만 가능합니다. (현재 status=${s.status})` };
   if (s.refundStatus) return { error: `이미 환수 프로세스 진행 중입니다. (refundStatus=${s.refundStatus})` };
-  // 환수 한도 = 협력점 송금액 + 본사가 별도 지급한 렌탈지원 캐시백
-  const maxRefund = s.netPayout + (s.rentalSupportReturned ?? 0);
+  // 환수 한도 = 영업점수수료(partnerCommission)
+  // 계약은 본사 ↔ 협력점만, 환수 대상은 본사가 협력점에 내려보낸 영업점수수료 전액.
+  // 환원(사은품/설치/렌탈지원) · 영업자수수료 분배와는 무관.
+  const maxRefund = s.partnerCommission;
   if (input.amount > maxRefund) {
-    return { error: `환수 금액(${input.amount})이 한도(${maxRefund} = 송금 ${s.netPayout} + 렌탈지원 ${s.rentalSupportReturned ?? 0})를 초과합니다.` };
+    return { error: `환수 금액(${input.amount})이 한도(${maxRefund} = 영업점수수료)를 초과합니다.` };
   }
 
   await prisma.settlement.update({

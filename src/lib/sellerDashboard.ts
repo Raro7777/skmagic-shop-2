@@ -9,7 +9,7 @@ export type SellerKpi = {
   pendingNew: number;
   inProgress: number;
   doneThisMonth: number;
-  expectedPayout: number;       // 이번 달 정산 예정 합계 (대수 × 본사 수수료)
+  expectedPayout: number;       // 이번 달 영업자수수료 합계 (Settlement.sellerPayout 누적)
 };
 
 export type SellerLeadRow = {
@@ -87,7 +87,7 @@ export async function getSellerDashboard(userId: string): Promise<SellerDashboar
     prisma.lead.count({ where: { sellerId: seller.id } }),
     prisma.settlement.findMany({
       where: { lead: { sellerId: seller.id }, createdAt: { gte: startOfMonth } },
-      select: { baseCommission: true, netPayout: true },
+      select: { sellerPayout: true },
     }),
     prisma.lead.findMany({
       where: { sellerId: seller.id },
@@ -97,7 +97,9 @@ export async function getSellerDashboard(userId: string): Promise<SellerDashboar
   ]);
 
   const countOf = (s: string) => statusCounts.find(r => r.status === s)?._count._all ?? 0;
-  const expectedPayout = doneSettlements.reduce((sum, s) => sum + s.netPayout, 0);
+  // 영업자 수수료 = Settlement.sellerPayout (영업점수수료 - 영업점마진).
+  // 환원·환수는 영업점 책임이므로 영업자 표기에는 반영 안 함.
+  const expectedPayout = doneSettlements.reduce((sum, s) => sum + s.sellerPayout, 0);
 
   const leads: SellerLeadRow[] = recentLeads.map(l => {
     const ageMs = Date.now() - l.createdAt.getTime();
