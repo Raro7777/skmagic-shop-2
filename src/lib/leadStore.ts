@@ -476,19 +476,23 @@ async function buildSettlementPayload(
   );
   const partnerCommission = baseCommission - hqMargin;
 
-  // 렌탈지원 — partnerCommission 기준으로 한도 계산
+  // 영업자 마진 먼저 계산 (rentalSupport 한도 산정에 사용)
+  const hasSeller = !!sellerId;
+  const sellerMargin = hasSeller && partner
+    ? computeSellerMargin(partnerCommission, partner, partnerPolicyForProduct)
+    : 0;
+
+  // 렌탈지원 — 한도 계산 기준:
+  //   영업자 없음: partnerCommission - 환원
+  //   영업자 있음: sellerMargin - 환원  (A안에서 협력점 실수령 = sellerMargin - 환원 이므로
+  //                                       이를 0 이상으로 유지하려면 렌탈지원도 sellerMargin 내로 cap)
   rentalSupportReturned = rentalSupportFor(
     partnerCommission,
     partnerSupportAmount,
     giftReturned,
     installReturned,
+    hasSeller ? sellerMargin : undefined,
   );
-
-  // 영업자 마진 (영업자 있을 때만 의미)
-  const hasSeller = !!sellerId;
-  const sellerMargin = hasSeller && partner
-    ? computeSellerMargin(partnerCommission, partner, partnerPolicyForProduct)
-    : 0;
 
   const flow = computeMarginFlow({
     baseCommission,
