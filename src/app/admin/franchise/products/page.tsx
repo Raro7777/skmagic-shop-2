@@ -1,6 +1,5 @@
 import { getEffectivePartner } from "@/lib/effectivePartner";
 import { prisma } from "@/lib/prisma";
-import ProductTable from "@/components/franchise/ProductTable";
 import BannerSchedule from "@/components/franchise/BannerSchedule";
 import PolicyEditor from "@/components/franchise/PolicyEditor";
 import ProductDisplayEditor from "@/components/franchise/ProductDisplayEditor";
@@ -32,8 +31,6 @@ export default async function ProductsPage() {
       <p className="text-rk-muted text-[14px] mb-[18px]">
         진열 순서 · 본사 정책 기반 사은품/설치비 환원 · 이벤트 배너
       </p>
-
-      <ProductTable />
 
       <div className="mb-3">
         {canUseFeature(tier, "display_drag")
