@@ -1,0 +1,189 @@
+import { NextResponse } from "next/server";
+import { auth } from "@/auth";
+import { prisma } from "@/lib/prisma";
+import bcrypt from "bcryptjs";
+import { randomBytes } from "crypto";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+// ApprovalRequest.body 에서 분양 신청 시 저장된 정보 파싱 (apply route 의 인코딩과 짝)
+function parseApplicationBody(body: string | null) {
+  const out: { region?: string; phone?: string; brands?: string; teamSize?: string; plan?: string; memo?: string; email?: string } = {};
+  if (!body) return out;
+  for (const part of body.split(" · ")) {
+    const m = part.match(/^([^:]+):\s*(.+)$/);
+    if (!m) continue;
+    const [, k, v] = m;
+    if (k === "지역") out.region = v;
+    else if (k === "관심 브랜드") out.brands = v;
+    else if (k === "영업조직") out.teamSize = v;
+    else if (k === "희망 패키지") out.plan = v;
+    else if (k === "문의/메모") out.memo = v;
+    else if (k === "연락처") out.phone = v;
+    else if (k === "이메일") out.email = v;
+  }
+  return out;
+}
+
+// reason="applicant=XXX" → 신청자 이름
+function parseApplicant(reason: string | null): string | null {
+  if (!reason) return null;
+  const m = reason.match(/applicant=(.+)/);
+  return m ? m[1].trim() : null;
+}
+
+// partnerCode 자동 생성 — partner-{6자 hex} 형식. 충돌 시 재시도.
+async function generatePartnerCode(): Promise<string> {
+  for (let i = 0; i < 6; i++) {
+    const candidate = "partner-" + randomBytes(3).toString("hex");
+    const exists = await prisma.partner.findUnique({ where: { partnerCode: candidate }, select: { partnerCode: true } });
+    if (!exists) return candidate;
+  }
+  throw new Error("partnerCode 생성 실패 (재시도 한도 초과)");
+}
+
+// 임시 비밀번호 — 8자 base32 (혼동 방지: O/0/I/1 제외)
+function generateTempPassword(): string {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let out = "";
+  for (let i = 0; i < 8; i++) out += chars[Math.floor(Math.random() * chars.length)];
+  return out;
+}
+
+// PATCH — HQ approves/rejects/resolves an approval request, applies side effects.
+export async function PATCH(
+  req: Request,
+  ctx: { params: Promise<{ id: string }> }
+) {
+  const session = await auth();
+  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (session.user.role !== "hq") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+  const { id } = await ctx.params;
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+  const b = body as Partial<{ action: "approve" | "reject" | "resolve"; note: string }>;
+  if (!b.action || !["approve", "reject", "resolve"].includes(b.action)) {
+    return NextResponse.json({ error: "유효하지 않은 action" }, { status: 400 });
+  }
+
+  const appr = await prisma.approvalRequest.findUnique({ where: { id } });
+  if (!appr) return NextResponse.json({ error: "Approval not found" }, { status: 404 });
+  if (appr.status !== "pending") {
+    return NextResponse.json({ error: "이미 처리된 요청입니다." }, { status: 400 });
+  }
+
+  const newStatus = b.action === "approve" ? "approved" : b.action === "reject" ? "rejected" : "resolved";
+  const reviewNote = b.note?.slice(0, 256) ?? null;
+
+  // Apply side effects within a transaction
+  const result = await prisma.$transaction(async tx => {
+    // Update the approval first
+    const updated = await tx.approvalRequest.update({
+      where: { id },
+      data: {
+        status: newStatus,
+        reviewedById: session.user.id,
+        reviewedAt: new Date(),
+        reviewNote,
+      },
+    });
+
+    let sideEffect: string | null = null;
+
+    // Side effects depend on kind + action
+    if (newStatus === "approved" && appr.kind === "commission_increase" && appr.productCode) {
+      const product = await tx.product.findUnique({
+        where: { productCode: appr.productCode },
+        include: { hqPolicy: true },
+      });
+      if (product?.hqPolicy) {
+        await tx.hqPolicy.update({
+          where: { productId: product.id },
+          data: {
+            ...(appr.proposedBaseCommission != null && { baseCommission: appr.proposedBaseCommission }),
+            ...(appr.proposedMonthIncentive != null && { monthIncentive: appr.proposedMonthIncentive }),
+          },
+        });
+        sideEffect = `HqPolicy 갱신 (${appr.productCode})`;
+      } else {
+        sideEffect = "Product/HqPolicy 미존재 — HqPolicy 갱신 건너뜀";
+      }
+    }
+
+    if (newStatus === "approved" && appr.kind === "partner_signup") {
+      // 신규 협력점 생성 — Partner row + partner_admin User 동시 발급
+      const parsed = parseApplicationBody(appr.body);
+      const applicantName = parseApplicant(appr.reason);
+      const partnerCode = await generatePartnerCode();
+
+      // 로그인 이메일: 신청자 이메일 우선, 없으면 partnerCode 기반 fallback
+      const loginEmail = (appr.requestedByEmail ?? parsed.email)?.trim().toLowerCase()
+        || `${partnerCode}@rentking.kr`;
+
+      // 동일 이메일 사용자 존재 시 partnerCode 기반 fallback 으로 강제
+      const emailTaken = await tx.user.findUnique({ where: { email: loginEmail }, select: { id: true } });
+      const finalEmail = emailTaken ? `${partnerCode}@rentking.kr` : loginEmail;
+
+      const tempPassword = generateTempPassword();
+      const passwordHash = await bcrypt.hash(tempPassword, 10);
+
+      await tx.partner.create({
+        data: {
+          partnerCode,
+          partnerName: appr.title.slice(0, 80),
+          region: parsed.region ?? null,
+          phone: parsed.phone ?? null,
+          ownerName: applicantName ?? null,
+          status: "active",
+          tier: "basic",
+        },
+      });
+
+      await tx.user.create({
+        data: {
+          email: finalEmail,
+          passwordHash,
+          name: applicantName ?? appr.title,
+          role: "partner_admin",
+          partnerId: partnerCode,
+        },
+      });
+
+      await tx.approvalRequest.update({
+        where: { id },
+        data: { partnerId: partnerCode },
+      });
+
+      sideEffect = `협력점 생성 완료 · partnerCode=${partnerCode} · 로그인 ${finalEmail} · 임시 비밀번호 ${tempPassword} · 매장 사이트 /p/${partnerCode}`;
+    }
+
+    if (newStatus === "resolved" && appr.kind === "settlement_dispute" && appr.settlementId) {
+      const s = await tx.settlement.findUnique({ where: { id: appr.settlementId } });
+      if (s) {
+        await tx.settlement.update({
+          where: { id: appr.settlementId },
+          data: { status: "confirmed" },
+        });
+        sideEffect = `Settlement ${appr.settlementId} → confirmed`;
+      }
+    }
+
+    return { updated, sideEffect };
+  });
+
+  return NextResponse.json({
+    ok: true,
+    approval: {
+      id: result.updated.id,
+      status: result.updated.status,
+      reviewedAt: result.updated.reviewedAt?.toISOString() ?? null,
+    },
+    sideEffect: result.sideEffect,
+  });
+}

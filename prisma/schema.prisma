@@ -1,0 +1,671 @@
+// 렌트왕 (RentKing) — Prisma schema
+// Postgres on Neon. Pooled connection used by app, direct connection for migrations.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ----------------------------------------------------------------
+// Partner — 협력점 (분양주)
+// ----------------------------------------------------------------
+model Partner {
+  id              String   @id @default(cuid())
+  partnerCode     String   @unique
+  partnerName     String
+  brandLabel      String   @default("SK매직 인증판매점")  // header sub-label
+  region          String?  // "서울 강남구"
+  address         String?
+  businessNumber  String?  // 사업자등록번호
+  commerceNumber  String?  // 통신판매번호
+  hotlineNumber   String   @default("1600-2434")
+  kakaoChannelUrl String?
+  ownerName       String?
+  phone           String?
+  status          String   @default("active") // active | suspended | closed
+  // 메인 페이지 진열 순서 (협력점 자체 편집)
+  // 형태: { picks: ["WPU…", …], ranking: { water: […], air: […], bidet: […], mattress: […] } }
+  // 비어있으면 partnerSite의 자동 산출 fallback (사은품 차별화 우선)
+  displayConfig   Json?
+  // 분양 패키지 tier (룰북 25) — 기능 게이팅 + 영업자 한도
+  tier            String   @default("basic") // basic | standard | premium | enterprise
+  // 퇴점 처리 시각 (status="closed" 인 경우 채워짐 — 룰북 14)
+  closedAt        DateTime?
+  // 협력점 전용 도메인 (예: gangnam-skmagic.com). Vercel 도메인 자동 등록.
+  customDomain         String?   @unique
+  customDomainStatus   String?   // pending | verified | misconfigured | failed
+  customDomainAddedAt  DateTime?
+  // 협력점 단일 렌탈지원금 (총액) — 개통 시 1회 캐시백.
+  // 상품 옵션별 수수료 한도 초과 시 그 옵션은 0 표기 (UI 측 한도 검증).
+  rentalSupportAmount  Int       @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  leads        Lead[]
+  users        User[]
+  policies     PartnerPolicy[]
+  settlements  Settlement[]
+  approvals    ApprovalRequest[]
+  sellers      Seller[]
+  banners      Banner[]
+  reviews      Review[]
+
+  @@index([status])
+}
+
+// ----------------------------------------------------------------
+// Seller — 협력점 내 개별 영업자 (rulebook 4.4)
+// ----------------------------------------------------------------
+model Seller {
+  id          String   @id @default(cuid())
+  partnerId   String   // FK Partner.partnerCode
+  partner     Partner  @relation(fields: [partnerId], references: [partnerCode])
+  sellerCode  String   // unique within partner — used in URL /p/[code]/s/[sellerCode]
+  name        String
+  phone       String?
+  email       String?
+  status      String   @default("active") // active | inactive
+  // 영업자 자체 로그인용 1:1 link (role="seller" User)
+  userId      String?  @unique
+  user        User?    @relation("SellerUser", fields: [userId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  leads       Lead[]
+
+  @@unique([partnerId, sellerCode])
+  @@index([status])
+}
+
+// ----------------------------------------------------------------
+// ApprovalRequest — 본사 승인 워크플로 (rulebook 4.1)
+//   kinds:
+//     partner_signup        — 신규 협력점 가입 (Partner 미생성 상태)
+//     commission_increase   — 협력점이 본사 정책 수수료 인상 요청
+//     settlement_dispute    — 협력점이 정산 누락/오류 이의제기
+//     brand_listing         — 다른 브랜드 입점 신청
+// ----------------------------------------------------------------
+model ApprovalRequest {
+  id          String   @id @default(cuid())
+  kind        String
+  title       String
+  body        String?
+  status      String   @default("pending") // pending | approved | rejected | resolved
+
+  partnerId   String?
+  partner     Partner? @relation(fields: [partnerId], references: [partnerCode])
+
+  // commission_increase fields
+  productCode             String?
+  proposedBaseCommission  Int?
+  proposedMonthIncentive  Int?
+
+  // settlement_dispute fields
+  settlementId String?
+
+  reason       String?
+
+  // Tracking
+  requestedByEmail String?
+  reviewedById     String?
+  reviewedAt       DateTime?
+  reviewNote       String?
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([status, createdAt])
+  @@index([kind])
+  @@index([partnerId])
+}
+
+// ----------------------------------------------------------------
+// CrawlSource — 본사 공식몰/본사 사이트 크롤링 소스 (rulebook 19.7)
+// ----------------------------------------------------------------
+model CrawlSource {
+  id            String   @id @default(cuid())
+  slug          String   @unique  // "skmagic" / "coway" / ...
+  name          String
+  baseUrl       String
+  status        String   @default("active") // active | paused
+  lastCrawledAt DateTime?
+  intervalMin   Int      @default(1440) // 권장 크롤 주기 (분)
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  runs              CrawlRun[]
+  crawledProducts   CrawledProduct[]
+
+  @@index([status])
+}
+
+// ----------------------------------------------------------------
+// CrawlRun — 크롤링 실행 이력 (rulebook 19.7)
+// ----------------------------------------------------------------
+model CrawlRun {
+  id            String       @id @default(cuid())
+  sourceId      String
+  source        CrawlSource  @relation(fields: [sourceId], references: [id])
+  startedAt     DateTime     @default(now())
+  finishedAt    DateTime?
+  status        String       @default("running") // running | success | failed
+  itemCount     Int          @default(0)
+  newCount      Int          @default(0)
+  updatedCount  Int          @default(0)
+  unchangedCount Int         @default(0)
+  errorMessage  String?
+  triggeredById String?      // User.id who clicked "run"
+
+  crawledProducts CrawledProduct[]
+
+  @@index([sourceId, startedAt])
+  @@index([status])
+}
+
+// ----------------------------------------------------------------
+// CrawledProduct — 크롤링 결과 임시 저장 (rulebook 19.2)
+//   바로 Product에 반영하지 않고 HQ 승인 후 적용
+// ----------------------------------------------------------------
+model CrawledProduct {
+  id                String       @id @default(cuid())
+  sourceId          String
+  source            CrawlSource  @relation(fields: [sourceId], references: [id])
+  runId             String?
+  run               CrawlRun?    @relation(fields: [runId], references: [id])
+
+  sourceUrl         String
+  productCode       String?      // matched to existing Product (if found)
+  category          String?
+  name              String
+  modelName         String?
+  imageUrl          String?
+  rentalPrice       Int?
+  cardDiscountPrice Int?
+  contractPeriod    Int?
+  managementType    String?
+  description       String?
+  rawData           Json?        // full payload from crawler
+
+  // Diff snapshot at the time of crawl (what existing values were)
+  previousData      Json?
+
+  changeType        String       // "new" | "updated" | "unchanged"
+  approvalStatus    String       @default("pending") // pending | approved | rejected
+  reviewedById      String?
+  reviewedAt        DateTime?
+  reviewNote        String?
+
+  crawledAt         DateTime     @default(now())
+
+  @@index([approvalStatus, crawledAt])
+  @@index([sourceId, productCode])
+  @@index([changeType])
+}
+
+// ----------------------------------------------------------------
+// ProductChangeLog — 변경 이력 (rulebook 19.7)
+// ----------------------------------------------------------------
+model ProductChangeLog {
+  id          String   @id @default(cuid())
+  productId   String
+  fieldName   String   // "rentalPrice" / "name" / ...
+  oldValue    String?
+  newValue    String?
+  source      String   // "crawl" / "hq_admin" / "system"
+  triggeredById String?
+  detectedAt  DateTime @default(now())
+
+  @@index([productId, detectedAt])
+}
+
+// ----------------------------------------------------------------
+// Broadcast — 본사 → 협력점 공지 (긴급 정책·이벤트·마스터 업데이트)
+// ----------------------------------------------------------------
+// ----------------------------------------------------------------
+// Banner — 협력점이 자기 사이트에 게시하는 이벤트/프로모션 배너
+// ----------------------------------------------------------------
+model Banner {
+  id          String   @id @default(cuid())
+  partnerId   String
+  partner     Partner  @relation(fields: [partnerId], references: [partnerCode])
+
+  title       String                       // "어버이날 효도 패키지"
+  subtitle    String?                      // 짧은 보조 카피
+  imageUrl    String?                      // 배너 이미지 URL (선택)
+  bgColor1    String   @default("#1A2B4D") // 그라디언트 좌상단 (hex)
+  bgColor2    String   @default("#F26A1F") // 그라디언트 우하단 (hex)
+  textColor   String   @default("#FFFFFF") // 텍스트 색
+  ctaLabel    String?                      // "지금 신청"
+  ctaHref     String?                      // 상품 상세 또는 외부 링크
+
+  startsAt    DateTime
+  endsAt      DateTime
+  priority    Int      @default(0)         // 동시 활성 시 큰 값 우선
+  status      String   @default("draft")   // draft | active (= scheduled+live)
+  // 자동 시간 산출:
+  //   now < startsAt: 예약(sched) — UI 표시용 (status=active일 때)
+  //   startsAt ≤ now ≤ endsAt: 진행(live)
+  //   now > endsAt: 종료(ended) — UI 표시용
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([partnerId, startsAt])
+  @@index([status, endsAt])
+}
+
+// ----------------------------------------------------------------
+// ApiPartner — 외부 사이트(쿠팡/11번가/카페24/제휴몰 등)가 우리 상품을
+//   자기 사이트에 카테고리로 노출하고 신청을 우리에게 넘기는 채널.
+// ----------------------------------------------------------------
+model ApiPartner {
+  id                  String   @id @default(cuid())
+  slug                String   @unique             // "coupang-rental", "11st-home"
+  name                String                       // "쿠팡 렌탈 카테고리"
+  apiKey              String   @unique             // 외부 사이트가 헤더에 실어 보냄
+  status              String   @default("active")  // active | disabled
+  allowedCategories   String[] @default([])        // []=전체, ["water","air"]=한정
+  contactEmail        String?                      // 운영자 연락처
+  webhookUrl          String?                      // (선택) lead 생성 시 통지할 URL
+  notes               String?
+  totalLeads          Int      @default(0)
+  totalProductFetches Int      @default(0)
+  lastUsedAt          DateTime?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([status])
+}
+
+model Broadcast {
+  id          String   @id @default(cuid())
+  tone        String   @default("default") // default | urgent | event
+  badge       String   // "🚨 긴급 정책" / "🎁 이벤트" 등
+  title       String
+  body        String
+  reach       String?  // "📊 영향 협력점 42 / 영향 상품 184건"
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  scheduledAt DateTime?
+  archivedAt  DateTime?
+
+  @@index([createdAt])
+  @@index([archivedAt])
+}
+
+// ----------------------------------------------------------------
+// User — 본사 관리자 + 협력점 관리자 (rulebook 4.1, 4.3)
+// ----------------------------------------------------------------
+model User {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  passwordHash String
+  name        String?
+  role        String   @default("partner_admin") // hq | partner_admin | seller
+  partnerId   String?  // FK by Partner.partnerCode (null for hq users)
+  partner     Partner? @relation(fields: [partnerId], references: [partnerCode])
+  status      String   @default("active") // active | locked | disabled
+  failedLoginAttempts Int @default(0)
+  lockedUntil DateTime?
+  lastLoginAt DateTime?
+  // 첫 로그인 시 비밀번호 강제 변경 플래그. 본사 직접 만든 계정은 false.
+  mustChangePassword  Boolean   @default(true)
+  passwordUpdatedAt   DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // 1:1 — role="seller" User만 채움
+  seller      Seller?  @relation("SellerUser")
+
+  @@index([role])
+  @@index([partnerId])
+}
+
+// ----------------------------------------------------------------
+// Lead — 상담 신청 (rulebook section 20.9)
+// ----------------------------------------------------------------
+model Lead {
+  id              String   @id @default(cuid())
+  customerName    String
+  phoneRaw        String   // raw — never sent to clients without masking
+  productInterest String   // display name (snapshot at submission)
+  productCode     String?  // optional FK-ish — null when freeform
+  region          String?
+
+  // 8.2 Ownership
+  partnerId       String?  // FK by Partner.partnerCode (nullable when in HQ pool)
+  partner         Partner? @relation(fields: [partnerId], references: [partnerCode])
+  sellerId        String?  // FK by Seller.id (the cuid)
+  seller          Seller?  @relation(fields: [sellerId], references: [id])
+  ownerType       String   @default("partner") // partner | hq_pool
+
+  source          String   @default("consumer_form") // consumer_form | kakao | phone | api_partner
+  // 외부 채널(ApiPartner)에서 들어온 경우 그 slug 기록 (분석/정산용)
+  externalChannel String?
+
+  // UTM (rulebook 11.1)
+  utmSource       String?
+  utmMedium       String?
+  utmCampaign     String?
+  utmContent      String?
+  utmTerm         String?
+  referrer        String?
+  landingPath     String?  // URL pathname captured on first visit
+  deviceType      String?  // mobile | tablet | desktop
+
+  // 10. Status — 14단계 lifecycle (src/lib/leadStatus.ts)
+  status              String    @default("consult_wish")
+  verifyAttempts      Int       @default(0)   // verify_failed/revise → revise_resubmit 사이클 카운트
+  verifyLastReason    String?                 // 인증실패/수정요청 사유 메모
+  cancelledAt         DateTime?               // consult_closed / install_cancel 타임스탬프
+  cancelReason        String?
+
+  // 11. 가입 시 소비자가 선택한 옵션 (PriceConfigurator 기반 — 룰북 priceMatrix 연동)
+  selectedMode               String?  // "방문형" | "셀프형" | null
+  selectedContractPeriod     Int?     // 36 | 48 | 60 | 72 | 84
+  rivalCompensationRequested Boolean  @default(false)
+  selectedRentalPrice        Int?     // 옵션 선택 시점의 운영가 (스냅샷)
+  selectedCardDiscountPrice  Int?     // 옵션 선택 시점의 카드할인가 (스냅샷)
+  selectedColor              String?  // 색상/사이즈 변형 (가격에 영향 X, 표시·재고 분류용)
+
+  // 9. Duplicate detection
+  duplicateStatus String?  // null | possible | confirmed | bad_db
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  statusLogs      LeadStatusLog[]
+  settlement      Settlement?
+  enrollmentForm  EnrollmentForm?
+
+  @@index([partnerId, createdAt])
+  @@index([phoneRaw])
+  @@index([status])
+}
+
+// ----------------------------------------------------------------
+// EnrollmentForm — 고객 가입 신청서 (Lead 와 1:1)
+// 작성 시점: consult_active → form_ready 전이 직전
+// 잠금: install_pending 진입 시 lockedAt 자동 설정 (본사 override 만 수정 가능)
+// PII: 현재 평문 저장. 추후 column-level encryption 도입 예정.
+// ----------------------------------------------------------------
+model EnrollmentForm {
+  id                   String   @id @default(cuid())
+  leadId               String   @unique
+  lead                 Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  // 고객 정보
+  customerName         String
+  residentRegNumber    String   // 주민번호 (평문, UI 마스킹)
+  email                String?
+  phone                String   // lead.phoneRaw 와 동기화
+  address              String
+  addressDetail        String?
+
+  // 상품/약정 (lead.selected* 와 일관) — 스냅샷
+  productCode          String
+  productName          String
+  managementMode       String?  // 방문형 | 셀프형
+  contractPeriod       Int
+  visitInterval        String?
+  monthlyPrice         Int      // 실제 청구가
+  isRivalCompensation  Boolean  @default(false)
+  isHalfPriceMonths    Int?     // 반값할인 적용 개월수 (null = 적용 안 함)
+  selectedColor        String?  // 색상/사이즈 변형 (가격에 영향 X)
+
+  // 사은품
+  giftAmount           Int      @default(0)
+  giftLabel            String?
+
+  // 결제일
+  paymentDayType       String   @default("month_end") // month_end | day_10 | day_15 | day_20 | day_25 | weekly_friday | custom
+  paymentDayValue      String?  // custom 일 때 자유 입력, 또는 다른 타입의 보조 표기
+
+  // 설치
+  installSchedule      String?
+  installPreferredDate DateTime?
+
+  // 자동이체 계좌
+  autoDebitBank        String
+  autoDebitAccount     String
+  autoDebitHolder      String
+  // 사은계좌 (자동이체와 다를 경우만 입력) — null 이면 자동이체와 동일
+  giftBank             String?
+  giftAccount          String?
+  giftHolder           String?
+
+  // 카테고리별 추가 옵션 (확장 여지)
+  categorySpecific     Json?
+
+  // 작성자 / 감사
+  createdById          String?  // User.id
+  createdByRole        String   // seller | partner_admin | hq
+  memo                 String?
+  lockedAt             DateTime?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@index([productCode])
+  @@index([lockedAt])
+}
+
+// ----------------------------------------------------------------
+// Product — 상품 마스터 (rulebook 20.6)
+// ----------------------------------------------------------------
+model Product {
+  id                String   @id @default(cuid())
+  productCode       String   @unique  // e.g. WPU-A700C
+  category          String   // water | air | bidet | ...
+  name              String
+  modelName         String
+  imageUrl          String?  // primary image (legacy single field)
+  imageUrls         String[] @default([])  // gallery (multi-image)
+  rentalPrice       Int      // 월 렌탈료 (전국 동일)
+  cardDiscountPrice Int?
+  contractPeriod    Int      @default(60)
+  managementType    String   // 자가관리 | 방문관리 | 방문관리_4 | ...
+  description       String?  // long-form copy (paragraphs split by \n\n)
+  keyFeatures       Json?    // string[] — bullet points
+  specs             Json?    // { [label: string]: string } — spec table
+  warrantyMonths    Int      @default(60)
+  // 약정기간/운영모드별 가격 매트릭스 — 본사 정책 시트 기반.
+  // 형태: PriceOption[] = [{ mode, contractPeriod, ownershipPeriod, visitInterval, rentalPrice, cardDiscountPrice, baseCommission }, ...]
+  // 기본 옵션(보통 60개월)은 위 rentalPrice/cardDiscountPrice/contractPeriod에 동일하게 적용됨.
+  priceMatrix       Json?
+  isFeatured        Boolean  @default(false)
+  status            String   @default("active") // active | discontinued
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  hqPolicy          HqPolicy?
+  partnerPolicies   PartnerPolicy[]
+  reviews           Review[]
+  contentImages     ProductContentImage[]
+
+  @@index([category, status])
+}
+
+// ----------------------------------------------------------------
+// ProductContentImage — 상품 상세 본문 마케팅 이미지 (크롤 시 외부 URL 수집 →
+// 본사 승인 시 Vercel Blob 으로 영구 다운로드).
+// ----------------------------------------------------------------
+model ProductContentImage {
+  id           String   @id @default(cuid())
+  productId    String
+  product      Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  url          String   // 우리 영구 URL (Blob)
+  sourceUrl    String   // SK매직 원본 URL (재크롤 매칭 / 감사)
+  order        Int      @default(0)
+  alt          String?
+  sizeBytes    Int?
+  width        Int?
+  height       Int?
+  status       String   @default("active") // active | stale | failed
+  downloadedAt DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([productId, order])
+  @@index([sourceUrl])
+}
+
+// ----------------------------------------------------------------
+// Review — 모델별·협력점별 사용자 후기 (룰북 — 신뢰 신호)
+// ----------------------------------------------------------------
+model Review {
+  id              String   @id @default(cuid())
+  productId       String?
+  product         Product? @relation(fields: [productId], references: [id])
+  partnerId       String?  // null = 본사 공통 후기
+  partner         Partner? @relation(fields: [partnerId], references: [partnerCode])
+
+  customerName    String   // "김*희" 마스킹된 형태로 저장
+  rating          Int      // 1~5
+  title           String?
+  body            String
+  photos          String[] @default([])
+
+  // 가입한 옵션 (옵션별 만족도 분석용)
+  selectedMode               String?
+  selectedContractPeriod     Int?
+
+  isVerified      Boolean  @default(false)   // 가입 확인된 후기
+  status          String   @default("published") // published | hidden | reported
+
+  createdAt       DateTime @default(now())
+
+  @@index([productId, status, createdAt])
+  @@index([partnerId, status, createdAt])
+  @@index([rating])
+}
+
+// ----------------------------------------------------------------
+// HqPolicy — 본사 기준 정책 (rulebook 20.7 simplified)
+// ----------------------------------------------------------------
+model HqPolicy {
+  id                  String   @id @default(cuid())
+  productId           String   @unique
+  product             Product  @relation(fields: [productId], references: [id])
+  baseCommission      Int      // 본사 기본 판매수수료 (대당)
+  monthIncentive      Int      @default(0)
+  incentiveValidUntil DateTime?
+  refundLimitRatio    Float    @default(0.6667) // 수수료의 ⅔
+  installSubsidy      Int      @default(30000)
+  updatedAt           DateTime @updatedAt
+}
+
+// ----------------------------------------------------------------
+// PartnerPolicy — 협력점이 +/- 한 환원 값
+// ----------------------------------------------------------------
+model PartnerPolicy {
+  id            String   @id @default(cuid())
+  partnerId     String
+  partner       Partner  @relation(fields: [partnerId], references: [partnerCode])
+  productId     String
+  product       Product  @relation(fields: [productId], references: [id])
+  giftAmount    Int      @default(0)   // 사은품 환원
+  giftLabel     String?                // "홈클리너 키트"
+  installAmount Int      @default(0)   // 설치비 환원
+  updatedAt     DateTime @updatedAt
+
+  @@unique([partnerId, productId])
+}
+
+// ----------------------------------------------------------------
+// Settlement — 설치 완료 시 자동 생성 (rulebook 8.2-7, 20.13)
+// ----------------------------------------------------------------
+model Settlement {
+  id              String    @id @default(cuid())
+  leadId          String    @unique
+  lead            Lead      @relation(fields: [leadId], references: [id])
+  partnerId       String
+  partner         Partner   @relation(fields: [partnerId], references: [partnerCode])
+  productCode     String?
+  productName     String    // snapshot at time of settlement
+  baseCommission  Int
+  giftReturned    Int       @default(0)
+  installReturned Int       @default(0)
+  rentalSupportReturned Int @default(0) // 협력점 단독 렌탈지원금 (개통 시 본사 캐시백 후 차감)
+  netPayout       Int
+  periodMonth     String    // "2026-05"
+  status          String    @default("pending") // pending | confirmed | paid | cancelled | disputed
+  createdAt       DateTime  @default(now())
+  paidAt          DateTime?
+  cancelledAt     DateTime?
+
+  // 환수 프로세스 (정산완료 후 발생) — refund_pending → refund_progress → refund_done
+  refundStatus       String?   // null | refund_pending | refund_progress | refund_done
+  refundAmount       Int?
+  refundReason       String?
+  refundStartedAt    DateTime?
+  refundCompletedAt  DateTime?
+
+  @@index([partnerId, periodMonth])
+  @@index([status])
+  @@index([refundStatus])
+}
+
+// ----------------------------------------------------------------
+// LeadStatusLog — 상태 변경 이력 (rulebook 20.11)
+// 분쟁 해결 근거 자료 (8.2-8)
+// ----------------------------------------------------------------
+model LeadStatusLog {
+  id             String   @id @default(cuid())
+  leadId         String
+  lead           Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  previousStatus String
+  newStatus      String
+  changedById    String?  // User.id (null for system-driven changes)
+  memo           String?
+  createdAt      DateTime @default(now())
+
+  @@index([leadId, createdAt])
+}
+
+// ----------------------------------------------------------------
+// NotificationOutbox — 알림 발송 대기열.
+// 채널 미설정 시 console + 큐잉, 추후 worker 가 retry.
+// ----------------------------------------------------------------
+model NotificationOutbox {
+  id         String   @id @default(cuid())
+  channel    String   // email | sms
+  toAddress  String
+  subject    String?
+  body       String
+  provider   String   // resend | ses | solapi | console | ...
+  status     String   @default("pending") // pending | sent | failed | stub
+  attempts   Int      @default(0)
+  lastError  String?
+  sentAt     DateTime?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([status])
+  @@index([channel, status])
+}
+
+// ----------------------------------------------------------------
+// AuditLog — 보안 감사 로그.
+// 로그인 / 비번 변경 / 계정 잠금 등 사용자 인증·권한 이벤트 추적.
+// ----------------------------------------------------------------
+model AuditLog {
+  id           String   @id @default(cuid())
+  action       String   // login_success | login_fail | login_locked | password_change | password_reset | account_create | account_unlock | account_status_change | session_logout
+  actorId      String?  // 행위자 (로그인 실패는 null, 본사가 다른 사용자 처리는 본사 id)
+  actorEmail   String?
+  targetUserId String?  // 대상 사용자 (다른 사람 처리할 때)
+  targetEmail  String?
+  ip           String?
+  userAgent    String?
+  metadata     Json?
+  createdAt    DateTime @default(now())
+
+  @@index([action])
+  @@index([actorId])
+  @@index([targetUserId])
+  @@index([createdAt])
+}

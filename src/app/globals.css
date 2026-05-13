@@ -1,26 +1,90 @@
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* ============================================================
+   렌트왕 (RentKing) — Design tokens (Tailwind v4 @theme)
+   ============================================================ */
+@theme {
+  /* Brand */
+  --color-rk-navy:        #1A2A52;
+  --color-rk-navy-deep:   #0E1A37;
+  --color-rk-navy-soft:   #2D3F6E;
+  --color-rk-orange:      #F26A1F;
+  --color-rk-orange-deep: #D8521A;
+  --color-rk-sale:        #E8222E;
+  --color-rk-success:     #1F8A5B;
+  --color-rk-warn:        #B47E14;
+  --color-rk-info:        #1F5FB4;
+
+  /* Neutrals */
+  --color-rk-ink:    #1A1D24;
+  --color-rk-text:   #2E323B;
+  --color-rk-muted:  #6F7480;
+  --color-rk-faint:  #9AA0AA;
+  --color-rk-line:   #E5E7EB;
+  --color-rk-line-2: #EDEFF2;
+  --color-rk-soft:   #F4F5F7;
+  --color-rk-soft-2: #F8F9FB;
+
+  /* Tints */
+  --color-rk-tint-blue:   #EAF1FB;
+  --color-rk-tint-orange: #FCEFE5;
+  --color-rk-tint-red:    #FCEAEC;
+  --color-rk-tint-green:  #E8F4ED;
+  --color-rk-tint-gray:   #EEF0F3;
+
+  /* Admin */
+  --color-rk-admin-bg: #F4F5F8;
+
+  /* Typography */
+  --font-sans: "Pretendard", "Pretendard Variable", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  /* Radius */
+  --radius-rk-sm: 4px;
+  --radius-rk-md: 6px;
+  --radius-rk-lg: 10px;
+
+  /* Shadows */
+  --shadow-rk-sm: 0 1px 2px rgba(20,25,40,.05);
+  --shadow-rk-md: 0 2px 8px rgba(20,25,40,.06), 0 1px 2px rgba(20,25,40,.04);
+  --shadow-rk-lg: 0 8px 24px rgba(20,25,40,.08);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html, body {
+  margin: 0;
+  padding: 0;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+  color: var(--color-rk-text);
+  font-size: 13px;
+  line-height: 1.55;
+  letter-spacing: -0.01em;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
+
+h1, h2, h3, h4, h5, h6 {
+  color: var(--color-rk-ink);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+button {
+  font-family: inherit;
+}
+
+/* Tabular numbers utility */
+.rk-num {
+  font-feature-settings: "tnum" 1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: #d6d8dd; border-radius: 999px; }
+::-webkit-scrollbar-track { background: transparent; }

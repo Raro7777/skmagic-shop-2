@@ -1,0 +1,222 @@
+"use client";
+
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+
+type InitialProfile = {
+  partnerCode: string;
+  partnerName: string;
+  brandLabel: string;
+  region: string | null;
+  address: string | null;
+  ownerName: string | null;
+  hotlineNumber: string;
+  phone: string | null;
+  businessNumber: string | null;
+  commerceNumber: string | null;
+};
+
+export default function PartnerProfileEditor({ initial }: { initial: InitialProfile }) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const [busy, setBusy] = useState(false);
+  const [flash, setFlash] = useState<{ tone: "ok" | "err"; text: string } | null>(null);
+
+  const [brandLabel, setBrandLabel] = useState(initial.brandLabel);
+  const [region, setRegion] = useState(initial.region ?? "");
+  const [address, setAddress] = useState(initial.address ?? "");
+  const [ownerName, setOwnerName] = useState(initial.ownerName ?? "");
+  const [hotlineNumber, setHotlineNumber] = useState(initial.hotlineNumber);
+  const [phone, setPhone] = useState(initial.phone ?? "");
+
+  const dirty =
+    brandLabel !== initial.brandLabel ||
+    (region || null) !== initial.region ||
+    (address || null) !== initial.address ||
+    (ownerName || null) !== initial.ownerName ||
+    hotlineNumber !== initial.hotlineNumber ||
+    (phone || null) !== initial.phone;
+
+  const save = async () => {
+    setBusy(true);
+    setFlash(null);
+    try {
+      const res = await fetch("/api/franchise/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          brandLabel,
+          region: region.trim() || null,
+          address: address.trim() || null,
+          ownerName: ownerName.trim() || null,
+          hotlineNumber,
+          phone: phone.trim() || null,
+        }),
+      });
+      const j = await res.json();
+      if (!res.ok) { setFlash({ tone: "err", text: j.error ?? "저장 실패" }); return; }
+      setFlash({ tone: "ok", text: "저장되었습니다. 소비자 사이트에 즉시 반영됩니다." });
+      startTransition(() => router.refresh());
+    } catch {
+      setFlash({ tone: "err", text: "네트워크 오류" });
+    } finally { setBusy(false); }
+  };
+
+  const reset = () => {
+    setBrandLabel(initial.brandLabel);
+    setRegion(initial.region ?? "");
+    setAddress(initial.address ?? "");
+    setOwnerName(initial.ownerName ?? "");
+    setHotlineNumber(initial.hotlineNumber);
+    setPhone(initial.phone ?? "");
+    setFlash(null);
+  };
+
+  return (
+    <div className="bg-white border border-rk-line rounded-lg p-5 mb-3">
+      <div className="flex items-baseline justify-between mb-3">
+        <h3 className="text-[14px] font-semibold text-rk-ink">자율 편집 항목</h3>
+        <small className="text-[12px] text-rk-muted">소비자 사이트(/p/...) 즉시 반영</small>
+      </div>
+
+      <div className="grid grid-cols-[120px_1fr] gap-x-3 gap-y-2.5 text-[13px] items-center">
+        {/* 협력점 코드 — 변경 불가 */}
+        <label className="text-rk-muted">협력점 코드</label>
+        <div className="text-rk-ink font-mono text-[13px]">
+          {initial.partnerCode} <span className="text-[12px] text-rk-faint">(변경 불가)</span>
+        </div>
+
+        {/* 상호 — 본사 승인 필요 */}
+        <label className="text-rk-muted">상호</label>
+        <div className="flex items-center gap-2">
+          <span className="text-rk-ink">{initial.partnerName}</span>
+          <span className="text-[11px] px-1.5 py-px rounded bg-rk-tint-orange text-rk-orange-deep">본사 변경</span>
+        </div>
+
+        {/* 브랜드 라벨 */}
+        <label htmlFor="brandLabel" className="text-rk-muted">브랜드 라벨</label>
+        <input
+          id="brandLabel"
+          type="text"
+          value={brandLabel}
+          onChange={e => setBrandLabel(e.target.value)}
+          maxLength={60}
+          disabled={busy}
+          className="border border-rk-line rounded px-2.5 py-1.5 text-[13px] focus:outline-none focus:border-rk-navy disabled:opacity-50"
+        />
+
+        {/* 지역 */}
+        <label htmlFor="region" className="text-rk-muted">지역</label>
+        <input
+          id="region"
+          type="text"
+          value={region}
+          onChange={e => setRegion(e.target.value)}
+          placeholder="예: 서울 강남구"
+          maxLength={60}
+          disabled={busy}
+          className="border border-rk-line rounded px-2.5 py-1.5 text-[13px] focus:outline-none focus:border-rk-navy disabled:opacity-50"
+        />
+
+        {/* 대표자명 */}
+        <label htmlFor="ownerName" className="text-rk-muted">대표자명</label>
+        <input
+          id="ownerName"
+          type="text"
+          value={ownerName}
+          onChange={e => setOwnerName(e.target.value)}
+          maxLength={40}
+          disabled={busy}
+          className="border border-rk-line rounded px-2.5 py-1.5 text-[13px] focus:outline-none focus:border-rk-navy disabled:opacity-50"
+        />
+
+        {/* 고객센터 번호 */}
+        <label htmlFor="hotlineNumber" className="text-rk-muted">고객센터 번호</label>
+        <input
+          id="hotlineNumber"
+          type="text"
+          value={hotlineNumber}
+          onChange={e => setHotlineNumber(e.target.value)}
+          placeholder="예: 1600-2434"
+          maxLength={24}
+          disabled={busy}
+          className="border border-rk-line rounded px-2.5 py-1.5 text-[13px] focus:outline-none focus:border-rk-navy disabled:opacity-50 rk-num"
+        />
+
+        {/* 협력점 연락처 */}
+        <label htmlFor="phone" className="text-rk-muted">협력점 연락처</label>
+        <input
+          id="phone"
+          type="text"
+          value={phone}
+          onChange={e => setPhone(e.target.value)}
+          placeholder="예: 02-1234-5678"
+          maxLength={24}
+          disabled={busy}
+          className="border border-rk-line rounded px-2.5 py-1.5 text-[13px] focus:outline-none focus:border-rk-navy disabled:opacity-50 rk-num"
+        />
+
+        {/* 주소 */}
+        <label htmlFor="address" className="text-rk-muted">주소</label>
+        <input
+          id="address"
+          type="text"
+          value={address}
+          onChange={e => setAddress(e.target.value)}
+          placeholder="예: 서울특별시 강남구 테헤란로 123, 5층"
+          maxLength={200}
+          disabled={busy}
+          className="border border-rk-line rounded px-2.5 py-1.5 text-[13px] focus:outline-none focus:border-rk-navy disabled:opacity-50"
+        />
+
+        {/* 사업자번호 — read only */}
+        <label className="text-rk-muted">사업자번호</label>
+        <div className="flex items-center gap-2">
+          <span className="text-rk-ink rk-num">{initial.businessNumber ?? "—"}</span>
+          <span className="text-[11px] px-1.5 py-px rounded bg-rk-tint-orange text-rk-orange-deep">본사 변경</span>
+        </div>
+
+        <label className="text-rk-muted">통신판매번호</label>
+        <div className="flex items-center gap-2">
+          <span className="text-rk-ink rk-num">{initial.commerceNumber ?? "—"}</span>
+          <span className="text-[11px] px-1.5 py-px rounded bg-rk-tint-orange text-rk-orange-deep">본사 변경</span>
+        </div>
+      </div>
+
+      {flash && (
+        <div
+          className={
+            "mt-3 px-3 py-2 rounded text-[13px] " +
+            (flash.tone === "ok"
+              ? "bg-rk-tint-green text-rk-success"
+              : "bg-rk-tint-red text-rk-sale")
+          }
+        >
+          {flash.text}
+        </div>
+      )}
+
+      <div className="flex items-center gap-2 mt-4">
+        <button
+          type="button"
+          onClick={save}
+          disabled={busy || pending || !dirty}
+          className="bg-rk-navy hover:bg-rk-navy-deep text-white border-0 px-4 py-1.5 rounded text-[13px] font-medium cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {busy ? "저장 중…" : "저장"}
+        </button>
+        <button
+          type="button"
+          onClick={reset}
+          disabled={busy || !dirty}
+          className="bg-white hover:bg-rk-soft-2 text-rk-ink border border-rk-line rounded px-3 py-1.5 text-[13px] cursor-pointer disabled:opacity-50"
+        >
+          되돌리기
+        </button>
+        {dirty && (
+          <small className="text-[12px] text-rk-orange-deep ml-2">⚠ 저장하지 않은 변경사항</small>
+        )}
+      </div>
+    </div>
+  );
+}

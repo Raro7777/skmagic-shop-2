@@ -1,0 +1,115 @@
+import { NextResponse } from "next/server";
+import { auth } from "@/auth";
+import { prisma } from "@/lib/prisma";
+import { canUseFeature } from "@/lib/tier";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+async function checkBannerTier(partnerCode: string): Promise<NextResponse | null> {
+  const partner = await prisma.partner.findUnique({
+    where: { partnerCode },
+    select: { tier: true },
+  });
+  if (!canUseFeature(partner?.tier ?? "basic", "banner_schedule")) {
+    return NextResponse.json(
+      { error: "이벤트 배너 편성은 스탠다드 패키지 이상에서 사용 가능합니다." },
+      { status: 403 },
+    );
+  }
+  return null;
+}
+
+// GET — 자기 협력점 배너 목록
+export async function GET() {
+  const session = await auth();
+  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (session.user.role !== "partner_admin" || !session.user.partnerId) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const banners = await prisma.banner.findMany({
+    where: { partnerId: session.user.partnerId },
+    orderBy: [{ status: "asc" }, { startsAt: "desc" }],
+  });
+
+  return NextResponse.json({
+    banners: banners.map(b => ({
+      id: b.id,
+      title: b.title,
+      subtitle: b.subtitle,
+      imageUrl: b.imageUrl,
+      bgColor1: b.bgColor1,
+      bgColor2: b.bgColor2,
+      textColor: b.textColor,
+      ctaLabel: b.ctaLabel,
+      ctaHref: b.ctaHref,
+      startsAt: b.startsAt.toISOString(),
+      endsAt: b.endsAt.toISOString(),
+      priority: b.priority,
+      status: b.status,
+    })),
+  });
+}
+
+// POST — 배너 등록
+export async function POST(req: Request) {
+  const session = await auth();
+  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (session.user.role !== "partner_admin" || !session.user.partnerId) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+  const tierBlock = await checkBannerTier(session.user.partnerId);
+  if (tierBlock) return tierBlock;
+
+  let body: unknown;
+  try { body = await req.json(); } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+  const b = body as Partial<{
+    title: string;
+    subtitle: string | null;
+    imageUrl: string | null;
+    bgColor1: string;
+    bgColor2: string;
+    textColor: string;
+    ctaLabel: string | null;
+    ctaHref: string | null;
+    startsAt: string;
+    endsAt: string;
+    priority: number;
+    status: "draft" | "active";
+  }>;
+
+  if (!b.title || !b.startsAt || !b.endsAt) {
+    return NextResponse.json({ error: "title, startsAt, endsAt 필수" }, { status: 400 });
+  }
+  const startsAt = new Date(b.startsAt);
+  const endsAt = new Date(b.endsAt);
+  if (isNaN(startsAt.getTime()) || isNaN(endsAt.getTime())) {
+    return NextResponse.json({ error: "유효하지 않은 날짜" }, { status: 400 });
+  }
+  if (startsAt >= endsAt) {
+    return NextResponse.json({ error: "종료일은 시작일 이후여야 합니다" }, { status: 400 });
+  }
+
+  const banner = await prisma.banner.create({
+    data: {
+      partnerId: session.user.partnerId,
+      title: b.title.slice(0, 80),
+      subtitle: b.subtitle?.slice(0, 120) ?? null,
+      imageUrl: b.imageUrl?.slice(0, 512) ?? null,
+      bgColor1: b.bgColor1?.slice(0, 16) ?? "#1A2B4D",
+      bgColor2: b.bgColor2?.slice(0, 16) ?? "#F26A1F",
+      textColor: b.textColor?.slice(0, 16) ?? "#FFFFFF",
+      ctaLabel: b.ctaLabel?.slice(0, 40) ?? null,
+      ctaHref: b.ctaHref?.slice(0, 256) ?? null,
+      startsAt,
+      endsAt,
+      priority: typeof b.priority === "number" ? Math.max(0, Math.floor(b.priority)) : 0,
+      status: b.status === "active" ? "active" : "draft",
+    },
+  });
+
+  return NextResponse.json({ ok: true, id: banner.id });
+}
