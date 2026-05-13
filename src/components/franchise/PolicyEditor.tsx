@@ -16,6 +16,10 @@ type PartnerProduct = {
     monthIncentive: number;
     refundLimitRatio: number;
     installSubsidy: number;
+    // 한도 산정 기준 옵션 (최소 수수료 옵션)
+    limitOptionMode?: string;
+    limitOptionPeriod?: number;
+    optionCount?: number;
   } | null;
   myPolicy: {
     giftAmount: number;
@@ -210,6 +214,8 @@ export default function PolicyEditor() {
 
       <div className="bg-rk-tint-blue text-rk-info px-2.5 py-2 rounded text-[13px] mb-3 leading-[1.5]">
         💡 본사 수수료의 <b>최대 ⅔까지</b> 사은품 + 설치비로 환원할 수 있습니다. 한도 초과 시 본사 승인이 필요합니다.
+        <br />입력한 환원 금액은 <b>약정기간·운영모드와 무관하게 모든 옵션에 동일 적용</b>되며,
+        한도는 해당 상품의 <b>가장 낮은 수수료 옵션</b> 기준으로 산정됩니다 (어느 옵션이든 ⅔ 초과 방지).
       </div>
 
       <div className="flex flex-col gap-1.5">
@@ -253,7 +259,13 @@ export default function PolicyEditor() {
                     )}
                   </div>
                   <small className="text-[12px] text-rk-faint font-mono">
-                    {p.modelName} · 월 ₩{fmt(p.rentalPrice)} · 수수료 ₩{fmt(baseCommission)}
+                    {p.modelName} · 월 ₩{fmt(p.rentalPrice)} · 최소 수수료 ₩{fmt(baseCommission)}
+                    {p.hqPolicy?.limitOptionMode && p.hqPolicy?.limitOptionPeriod != null && (
+                      <span className="ml-1 text-rk-orange-deep">
+                        ({p.hqPolicy.limitOptionMode} {p.hqPolicy.limitOptionPeriod}개월
+                        {(p.hqPolicy.optionCount ?? 0) > 1 && ` · 총 ${p.hqPolicy.optionCount}옵션`})
+                      </span>
+                    )}
                   </small>
                 </div>
 

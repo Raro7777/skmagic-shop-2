@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { gatePartnerOrHq } from "@/lib/effectivePartner";
-import { pickRepresentativeHqPolicy } from "@/lib/hqPolicy";
+import { pickMinCommissionHqPolicy } from "@/lib/hqPolicy";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -27,7 +27,9 @@ export async function GET() {
   return NextResponse.json({
     products: products.map(p => {
       const myPolicy = p.partnerPolicies[0] ?? null;
-      const rep = pickRepresentativeHqPolicy(p);
+      // 한도/표시는 최소 수수료 옵션 기준 — 협력점 환원이 모든 옵션에 동일 적용되므로
+      // 어느 옵션에서도 ⅔ 초과 안 되게.
+      const minPolicy = pickMinCommissionHqPolicy(p);
       return {
         productCode: p.productCode,
         category: p.category,
@@ -37,12 +39,15 @@ export async function GET() {
         cardDiscountPrice: p.cardDiscountPrice,
         contractPeriod: p.contractPeriod,
         managementType: p.managementType,
-        hqPolicy: rep
+        hqPolicy: minPolicy
           ? {
-              baseCommission: rep.baseCommission,
-              monthIncentive: rep.monthIncentive,
-              refundLimitRatio: rep.refundLimitRatio,
-              installSubsidy: rep.installSubsidy,
+              baseCommission: minPolicy.baseCommission,
+              monthIncentive: minPolicy.monthIncentive,
+              refundLimitRatio: minPolicy.refundLimitRatio,
+              installSubsidy: minPolicy.installSubsidy,
+              limitOptionMode: minPolicy.mode,
+              limitOptionPeriod: minPolicy.contractPeriod,
+              optionCount: p.hqPolicies.length,
             }
           : null,
         myPolicy: myPolicy

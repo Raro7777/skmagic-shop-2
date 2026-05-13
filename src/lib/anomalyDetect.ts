@@ -1,5 +1,5 @@
 import { prisma } from "./prisma";
-import { pickRepresentativeHqPolicy } from "./hqPolicy";
+import { pickMinCommissionHqPolicy } from "./hqPolicy";
 
 export type AnomalyItem = {
   kind: "unresponsive_lead" | "warn_lead" | "duplicate_pending" | "policy_overspend" | "stale_partner";
@@ -102,10 +102,11 @@ export async function detectAnomalies(opts: { partnerId?: string | null } = {}):
     },
   });
   for (const p of policies) {
-    const repPolicy = pickRepresentativeHqPolicy(p.product);
-    if (!repPolicy) continue;
-    const totalCommission = repPolicy.baseCommission + repPolicy.monthIncentive;
-    const limit = Math.floor(totalCommission * repPolicy.refundLimitRatio);
+    // 협력점이 모든 옵션에 동일 환원하므로 최소 수수료 옵션 기준 한도 검증.
+    const minPolicy = pickMinCommissionHqPolicy(p.product);
+    if (!minPolicy) continue;
+    const totalCommission = minPolicy.baseCommission + minPolicy.monthIncentive;
+    const limit = Math.floor(totalCommission * minPolicy.refundLimitRatio);
     const used = p.giftAmount + p.installAmount;
     if (limit > 0 && used >= limit * 0.8) {
       const overLimit = used > limit;

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { gatePartnerOrHq } from "@/lib/effectivePartner";
-import { pickRepresentativeHqPolicy } from "@/lib/hqPolicy";
+import { pickMinCommissionHqPolicy } from "@/lib/hqPolicy";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -31,20 +31,21 @@ export async function PATCH(
     include: { hqPolicies: true },
   });
   if (!product) return NextResponse.json({ error: "Product not found" }, { status: 404 });
-  const repPolicy = pickRepresentativeHqPolicy(product);
-  if (!repPolicy) {
+  // 협력점이 모든 옵션에 동일 금액을 환원하므로, 최소 수수료 옵션 기준으로 한도 검증.
+  const minPolicy = pickMinCommissionHqPolicy(product);
+  if (!minPolicy) {
     return NextResponse.json({ error: "본사 정책 미설정 — 환원 불가" }, { status: 400 });
   }
 
   const giftAmount = Math.max(0, Math.floor(b.giftAmount ?? 0));
   const installAmount = Math.max(0, Math.floor(b.installAmount ?? 0));
   const used = giftAmount + installAmount;
-  const baseCommission = repPolicy.baseCommission + repPolicy.monthIncentive;
-  const limit = Math.floor(baseCommission * repPolicy.refundLimitRatio);
+  const minCommission = minPolicy.baseCommission + minPolicy.monthIncentive;
+  const limit = Math.floor(minCommission * minPolicy.refundLimitRatio);
 
   if (used > limit) {
     return NextResponse.json(
-      { error: `한도 초과: ${used.toLocaleString("ko-KR")}원 > ${limit.toLocaleString("ko-KR")}원 (수수료의 ⅔). 본사 승인 필요.` },
+      { error: `한도 초과: ${used.toLocaleString("ko-KR")}원 > ${limit.toLocaleString("ko-KR")}원 (최소 수수료 옵션 ${minPolicy.mode} ${minPolicy.contractPeriod}개월 기준 ⅔). 본사 승인 필요.` },
       { status: 400 }
     );
   }

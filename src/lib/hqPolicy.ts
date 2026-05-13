@@ -56,3 +56,17 @@ export function findHqPolicyForOption<P extends { hqPolicies: HqPolicy[] }>(
 ): HqPolicy | null {
   return p.hqPolicies.find(h => h.mode === mode && h.contractPeriod === contractPeriod) ?? null;
 }
+
+/**
+ * 상품의 가장 낮은 수수료 옵션을 반환.
+ * PartnerPolicy 한도 검증에 사용 — 협력점이 모든 옵션에 동일 금액을 빼므로
+ * 어느 옵션도 ⅔ 초과 안 되게 하려면 최소 수수료 기준으로 보수적으로 검증.
+ */
+export function pickMinCommissionHqPolicy<P extends { hqPolicies: HqPolicy[] }>(p: P): HqPolicy | null {
+  if (p.hqPolicies.length === 0) return null;
+  return p.hqPolicies.reduce((min, cur) => {
+    const minTotal = min.baseCommission + min.monthIncentive;
+    const curTotal = cur.baseCommission + cur.monthIncentive;
+    return curTotal < minTotal ? cur : min;
+  });
+}
