@@ -2,11 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  DndContext, closestCenter, PointerSensor, useSensor, useSensors,
+  DndContext, closestCenter, MouseSensor, TouchSensor, KeyboardSensor, useSensor, useSensors,
   type DragEndEvent,
 } from "@dnd-kit/core";
 import {
-  SortableContext, arrayMove, verticalListSortingStrategy, useSortable,
+  SortableContext, arrayMove, verticalListSortingStrategy, useSortable, sortableKeyboardCoordinates,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
@@ -76,7 +76,13 @@ export default function ProductDisplayEditor() {
   }, []);
   useEffect(() => { load(); }, [load]);
 
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
+  // React 19 + @dnd-kit 6.x 에서 PointerSensor 가 sortable child 에 listeners 를 못 붙이는 케이스가 있어
+  // Mouse / Touch / Keyboard 센서를 명시적으로 등록.
+  const sensors = useSensors(
+    useSensor(MouseSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
 
   // Slot에 따라 현재 codes 가져오기/설정
   const slotDef = SLOTS.find(s => s.key === activeSlot)!;
