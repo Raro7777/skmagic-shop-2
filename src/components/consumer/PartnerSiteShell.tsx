@@ -120,27 +120,28 @@ export default async function PartnerSiteShell({
               <Link href="/admin/franchise" className="text-rk-ink no-underline cursor-pointer" aria-label="관리자">⚙</Link>
             </div>
           </div>
-          {/* 전화 / 카톡 / 방문상담 — 모바일에서 2줄로 깨지지 않게 wrap + 폰트·여백 조정 (항목 4) */}
-          <div className="bg-rk-navy text-white px-3 py-2.5 flex items-center gap-2 text-[13px] flex-wrap">
-            <a href={`tel:${partner.hotlineNumber.replace(/[^\d+]/g, "")}`} className="flex items-center gap-1.5 no-underline text-white cursor-pointer">
+          {/* 전화 / 카톡 / 방문상담 — 한 줄에 들어가도록 (항목 4) */}
+          <div className="bg-rk-navy text-white px-3 py-2 flex items-center gap-1.5 text-[13px]">
+            <a href={`tel:${partner.hotlineNumber.replace(/[^\d+]/g, "")}`}
+               className="flex items-center gap-1 no-underline text-white cursor-pointer whitespace-nowrap shrink-0">
               <span className="text-[14px]">📞</span>
-              <span className="text-[15px] font-bold tracking-[.02em] rk-num">{partner.hotlineNumber}</span>
+              <b className="text-[14px] tracking-[.02em] rk-num">{partner.hotlineNumber}</b>
             </a>
-            <span className="text-[13px] opacity-80 hidden xs:inline">평일 09:00–22:00</span>
-            <div className="ml-auto flex gap-1.5 shrink-0">
+            <span className="text-[12px] opacity-70 whitespace-nowrap hidden sm:inline">평일 09–22시</span>
+            <div className="ml-auto flex gap-1 shrink-0">
               {partner.kakaoChannelUrl ? (
                 <a href={partner.kakaoChannelUrl} target="_blank" rel="noreferrer"
-                  className="bg-white/15 hover:bg-white/25 px-2.5 py-1.5 rounded text-[14px] font-medium no-underline text-white cursor-pointer">
+                  className="bg-white/15 hover:bg-white/25 px-2 py-1 rounded text-[12.5px] font-medium no-underline text-white cursor-pointer whitespace-nowrap">
                   카톡상담
                 </a>
               ) : (
                 <a href={`tel:${partner.hotlineNumber.replace(/[^\d+]/g, "")}`}
-                  className="bg-white/15 hover:bg-white/25 px-2.5 py-1.5 rounded text-[14px] font-medium no-underline text-white cursor-pointer">
+                  className="bg-white/15 hover:bg-white/25 px-2 py-1 rounded text-[12.5px] font-medium no-underline text-white cursor-pointer whitespace-nowrap">
                   카톡상담
                 </a>
               )}
               <Link href="#consult-form"
-                className="bg-white/15 hover:bg-white/25 px-2.5 py-1.5 rounded text-[14px] font-medium no-underline text-white cursor-pointer">
+                className="bg-white/15 hover:bg-white/25 px-2 py-1 rounded text-[12.5px] font-medium no-underline text-white cursor-pointer whitespace-nowrap">
                 방문상담
               </Link>
             </div>

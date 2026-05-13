@@ -22,40 +22,52 @@ export default function PartnerHeader({
       {showFullNav ? (
         <>
           <div className="flex items-center justify-between px-4 py-2 text-[13px] text-rk-muted border-b border-rk-line-2">
-            <div>
+            <div className="truncate pr-2">
               {partner.partnerName}
               {seller && <> · 담당 <b className="text-rk-orange-deep">{seller.name}</b></>}
             </div>
-            <div className="flex gap-2.5">
-              <a className="cursor-pointer">로그인</a>
-              <a className="cursor-pointer">회원가입</a>
+            <div className="flex gap-2.5 shrink-0">
               <Link href={`/p/${partner.partnerCode}/help`} className="text-rk-text no-underline cursor-pointer">고객센터</Link>
             </div>
           </div>
           <div className="px-4 py-3 flex items-center gap-2.5">
-            <Link href={`/p/${partner.partnerCode}`} className="text-[22px] text-rk-ink no-underline">≡</Link>
+            <Link href={`/p/${partner.partnerCode}`} className="text-[24px] text-rk-ink no-underline">≡</Link>
             <Link href={`/p/${partner.partnerCode}`} className="flex items-center gap-2 no-underline text-inherit">
-              <div className="w-[26px] h-[26px] bg-rk-orange text-white rounded-[5px] grid place-items-center font-bold text-[13px]">SK</div>
+              <div className="w-[28px] h-[28px] bg-rk-orange text-white rounded-[5px] grid place-items-center font-bold text-[14px]">SK</div>
               <div>
-                <div className="font-bold text-base text-rk-ink tracking-[-.02em]">{partner.partnerName}</div>
-                <div className="text-[12px] text-rk-muted">{partner.brandLabel}</div>
+                <div className="font-bold text-[16px] text-rk-ink tracking-[-.02em] leading-tight">{partner.partnerName}</div>
+                <div className="text-[13px] text-rk-muted">{partner.brandLabel}</div>
               </div>
             </Link>
-            <div className="ml-auto flex gap-3.5 text-lg text-rk-ink">
-              <Link href={`/p/${partner.partnerCode}/search`} className="text-rk-ink no-underline cursor-pointer">🔍</Link>
-              <span className="relative cursor-pointer">
-                🛒
-                <span className="absolute -top-1.5 -right-1.5 bg-rk-sale text-white rounded-full text-[9px] font-bold px-1 min-w-3.5 text-center">2</span>
-              </span>
+            <div className="ml-auto flex gap-3.5 text-[20px] text-rk-ink">
+              <Link href={`/p/${partner.partnerCode}/search`} className="text-rk-ink no-underline cursor-pointer" aria-label="검색">🔍</Link>
+              <Link href="/admin/franchise" className="text-rk-ink no-underline cursor-pointer" aria-label="관리자">⚙</Link>
             </div>
           </div>
-          <div className="bg-rk-navy text-white px-4 py-2.5 flex items-center gap-2 text-[13px]">
-            <span>📞</span>
-            <span className="text-base font-bold tracking-[.02em] rk-num">{partner.hotlineNumber}</span>
-            <span className="text-[13px] opacity-80">평일 09:00–22:00</span>
-            <div className="ml-auto flex gap-1.5">
-              <span className="bg-white/10 px-2 py-1 rounded text-[13px]">카톡상담</span>
-              <span className="bg-white/10 px-2 py-1 rounded text-[13px]">방문상담</span>
+          {/* navy 영역 — 한 줄에 들어가도록 시간 hide·nowrap·gap 축소 (항목 4) */}
+          <div className="bg-rk-navy text-white px-3 py-2 flex items-center gap-1.5 text-[13px]">
+            <a href={`tel:${partner.hotlineNumber.replace(/[^\d+]/g, "")}`}
+               className="flex items-center gap-1 no-underline text-white cursor-pointer whitespace-nowrap shrink-0">
+              <span className="text-[14px]">📞</span>
+              <b className="text-[14px] tracking-[.02em] rk-num">{partner.hotlineNumber}</b>
+            </a>
+            <span className="text-[12px] opacity-70 whitespace-nowrap hidden sm:inline">평일 09–22시</span>
+            <div className="ml-auto flex gap-1 shrink-0">
+              {partner.kakaoChannelUrl ? (
+                <a href={partner.kakaoChannelUrl} target="_blank" rel="noreferrer"
+                  className="bg-white/15 hover:bg-white/25 px-2 py-1 rounded text-[12.5px] font-medium no-underline text-white cursor-pointer whitespace-nowrap">
+                  카톡상담
+                </a>
+              ) : (
+                <a href={`tel:${partner.hotlineNumber.replace(/[^\d+]/g, "")}`}
+                  className="bg-white/15 hover:bg-white/25 px-2 py-1 rounded text-[12.5px] font-medium no-underline text-white cursor-pointer whitespace-nowrap">
+                  카톡상담
+                </a>
+              )}
+              <Link href={`/p/${partner.partnerCode}#consult-form`}
+                className="bg-white/15 hover:bg-white/25 px-2 py-1 rounded text-[12.5px] font-medium no-underline text-white cursor-pointer whitespace-nowrap">
+                방문상담
+              </Link>
             </div>
           </div>
           <NavTabs partnerCode={partner.partnerCode} />
@@ -83,9 +95,9 @@ export default function PartnerHeader({
               <div className="text-[12px] text-rk-muted truncate">{partner.brandLabel}</div>
             </div>
           </Link>
-          <div className="flex gap-3 text-base text-rk-ink shrink-0">
-            <Link href={`/p/${partner.partnerCode}/search`} className="text-rk-ink no-underline cursor-pointer">🔍</Link>
-            <span className="cursor-pointer">🛒</span>
+          <div className="flex gap-3 text-[18px] text-rk-ink shrink-0">
+            <Link href={`/p/${partner.partnerCode}/search`} className="text-rk-ink no-underline cursor-pointer" aria-label="검색">🔍</Link>
+            <Link href="/admin/franchise" className="text-rk-ink no-underline cursor-pointer" aria-label="관리자">⚙</Link>
           </div>
         </div>
       )}
