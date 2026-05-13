@@ -5,7 +5,12 @@ import { prisma } from "@/lib/prisma";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// PATCH HqPolicy for a single product (HQ-only)
+/**
+ * PATCH HqPolicy for a single (productCode, mode, contractPeriod) option.
+ *
+ *   body.mode + body.contractPeriod 로 옵션 식별 (필수).
+ *   생략 시 product.managementType + product.contractPeriod 매칭 옵션을 대상으로 함 (호환성).
+ */
 export async function PATCH(
   req: Request,
   ctx: { params: Promise<{ code: string }> }
@@ -25,6 +30,9 @@ export async function PATCH(
   }
 
   const b = body as Partial<{
+    mode: string;
+    contractPeriod: number;
+    visitInterval: string | null;
     baseCommission: number;
     monthIncentive: number;
     refundLimitRatio: number;
@@ -33,31 +41,40 @@ export async function PATCH(
 
   const product = await prisma.product.findUnique({
     where: { productCode: code },
-    include: { hqPolicy: true },
+    include: { hqPolicies: true },
   });
   if (!product) return NextResponse.json({ error: "Product not found" }, { status: 404 });
 
-  // Validate
+  // 옵션 식별 — body 우선, 없으면 대표 옵션 fallback
+  const fallbackMode = product.managementType.includes("자가") || product.managementType.includes("셀프") ? "셀프형" : "방문형";
+  const mode = b.mode ?? fallbackMode;
+  const contractPeriod = b.contractPeriod ?? product.contractPeriod;
+
+  const existing = product.hqPolicies.find(h => h.mode === mode && h.contractPeriod === contractPeriod);
+
   const baseCommission =
-    b.baseCommission != null ? Math.max(0, Math.floor(b.baseCommission)) : product.hqPolicy?.baseCommission ?? 0;
+    b.baseCommission != null ? Math.max(0, Math.floor(b.baseCommission)) : existing?.baseCommission ?? 0;
   const monthIncentive =
-    b.monthIncentive != null ? Math.max(0, Math.floor(b.monthIncentive)) : product.hqPolicy?.monthIncentive ?? 0;
+    b.monthIncentive != null ? Math.max(0, Math.floor(b.monthIncentive)) : existing?.monthIncentive ?? 0;
   const installSubsidy =
-    b.installSubsidy != null ? Math.max(0, Math.floor(b.installSubsidy)) : product.hqPolicy?.installSubsidy ?? 30000;
+    b.installSubsidy != null ? Math.max(0, Math.floor(b.installSubsidy)) : existing?.installSubsidy ?? 30000;
   const refundLimitRatio =
     b.refundLimitRatio != null
       ? Math.max(0, Math.min(1, b.refundLimitRatio))
-      : product.hqPolicy?.refundLimitRatio ?? 0.6667;
+      : existing?.refundLimitRatio ?? 0.6667;
 
   if (baseCommission === 0) {
     return NextResponse.json({ error: "본사 기본 수수료는 0원 이상이어야 합니다." }, { status: 400 });
   }
 
   const policy = await prisma.hqPolicy.upsert({
-    where: { productId: product.id },
-    update: { baseCommission, monthIncentive, installSubsidy, refundLimitRatio },
+    where: { productId_mode_contractPeriod: { productId: product.id, mode, contractPeriod } },
+    update: { baseCommission, monthIncentive, installSubsidy, refundLimitRatio, visitInterval: b.visitInterval ?? existing?.visitInterval ?? null },
     create: {
       productId: product.id,
+      mode,
+      contractPeriod,
+      visitInterval: b.visitInterval ?? null,
       baseCommission,
       monthIncentive,
       installSubsidy,
@@ -68,6 +85,9 @@ export async function PATCH(
   return NextResponse.json({
     ok: true,
     policy: {
+      mode: policy.mode,
+      contractPeriod: policy.contractPeriod,
+      visitInterval: policy.visitInterval,
       baseCommission: policy.baseCommission,
       monthIncentive: policy.monthIncentive,
       installSubsidy: policy.installSubsidy,

@@ -1,4 +1,5 @@
 import { prisma } from "./prisma";
+import { pickRepresentativeHqPolicy } from "./hqPolicy";
 
 export type AnomalyItem = {
   kind: "unresponsive_lead" | "warn_lead" | "duplicate_pending" | "policy_overspend" | "stale_partner";
@@ -96,14 +97,15 @@ export async function detectAnomalies(opts: { partnerId?: string | null } = {}):
   const policies = await prisma.partnerPolicy.findMany({
     where: opts.partnerId ? { partnerId: opts.partnerId } : {},
     include: {
-      product: { include: { hqPolicy: true } },
+      product: { include: { hqPolicies: true } },
       partner: { select: { partnerName: true } },
     },
   });
   for (const p of policies) {
-    if (!p.product.hqPolicy) continue;
-    const totalCommission = p.product.hqPolicy.baseCommission + p.product.hqPolicy.monthIncentive;
-    const limit = Math.floor(totalCommission * p.product.hqPolicy.refundLimitRatio);
+    const repPolicy = pickRepresentativeHqPolicy(p.product);
+    if (!repPolicy) continue;
+    const totalCommission = repPolicy.baseCommission + repPolicy.monthIncentive;
+    const limit = Math.floor(totalCommission * repPolicy.refundLimitRatio);
     const used = p.giftAmount + p.installAmount;
     if (limit > 0 && used >= limit * 0.8) {
       const overLimit = used > limit;

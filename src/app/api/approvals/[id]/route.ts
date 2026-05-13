@@ -100,17 +100,18 @@ export async function PATCH(
     if (newStatus === "approved" && appr.kind === "commission_increase" && appr.productCode) {
       const product = await tx.product.findUnique({
         where: { productCode: appr.productCode },
-        include: { hqPolicy: true },
+        include: { hqPolicies: true },
       });
-      if (product?.hqPolicy) {
-        await tx.hqPolicy.update({
+      // commission_increase 승인은 상품의 모든 옵션에 일괄 적용 (대상 옵션 지정이 없으므로).
+      if (product && product.hqPolicies.length > 0) {
+        await tx.hqPolicy.updateMany({
           where: { productId: product.id },
           data: {
             ...(appr.proposedBaseCommission != null && { baseCommission: appr.proposedBaseCommission }),
             ...(appr.proposedMonthIncentive != null && { monthIncentive: appr.proposedMonthIncentive }),
           },
         });
-        sideEffect = `HqPolicy 갱신 (${appr.productCode})`;
+        sideEffect = `HqPolicy 갱신 (${appr.productCode}, ${product.hqPolicies.length}개 옵션)`;
       } else {
         sideEffect = "Product/HqPolicy 미존재 — HqPolicy 갱신 건너뜀";
       }

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { gatePartnerOrHq } from "@/lib/effectivePartner";
+import { pickRepresentativeHqPolicy } from "@/lib/hqPolicy";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -27,18 +28,19 @@ export async function PATCH(
 
   const product = await prisma.product.findUnique({
     where: { productCode: code },
-    include: { hqPolicy: true },
+    include: { hqPolicies: true },
   });
   if (!product) return NextResponse.json({ error: "Product not found" }, { status: 404 });
-  if (!product.hqPolicy) {
+  const repPolicy = pickRepresentativeHqPolicy(product);
+  if (!repPolicy) {
     return NextResponse.json({ error: "본사 정책 미설정 — 환원 불가" }, { status: 400 });
   }
 
   const giftAmount = Math.max(0, Math.floor(b.giftAmount ?? 0));
   const installAmount = Math.max(0, Math.floor(b.installAmount ?? 0));
   const used = giftAmount + installAmount;
-  const baseCommission = product.hqPolicy.baseCommission + product.hqPolicy.monthIncentive;
-  const limit = Math.floor(baseCommission * product.hqPolicy.refundLimitRatio);
+  const baseCommission = repPolicy.baseCommission + repPolicy.monthIncentive;
+  const limit = Math.floor(baseCommission * repPolicy.refundLimitRatio);
 
   if (used > limit) {
     return NextResponse.json(

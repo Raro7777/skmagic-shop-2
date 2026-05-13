@@ -493,7 +493,7 @@ model Product {
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
-  hqPolicy          HqPolicy?
+  hqPolicies        HqPolicy[]
   partnerPolicies   PartnerPolicy[]
   reviews           Review[]
   contentImages     ProductContentImage[]
@@ -555,18 +555,27 @@ model Review {
 }
 
 // ----------------------------------------------------------------
-// HqPolicy — 본사 기준 정책 (rulebook 20.7 simplified)
+// HqPolicy — 본사 기준 정책 (옵션별 다중행)
+//   key: (productId, mode, contractPeriod)
+//   mode: "방문형" | "셀프형" | "자가관리"
+//   priceMatrix 의 각 옵션마다 1 row.
 // ----------------------------------------------------------------
 model HqPolicy {
   id                  String   @id @default(cuid())
-  productId           String   @unique
+  productId           String
   product             Product  @relation(fields: [productId], references: [id])
+  mode                String   // "방문형" | "셀프형" | "자가관리"
+  contractPeriod      Int      // 36 | 48 | 60 | 72 | 84
+  visitInterval       String?  // "4개월" | "12개월" | null
   baseCommission      Int      // 본사 기본 판매수수료 (대당)
   monthIncentive      Int      @default(0)
   incentiveValidUntil DateTime?
   refundLimitRatio    Float    @default(0.6667) // 수수료의 ⅔
   installSubsidy      Int      @default(30000)
   updatedAt           DateTime @updatedAt
+
+  @@unique([productId, mode, contractPeriod])
+  @@index([productId])
 }
 
 // ----------------------------------------------------------------

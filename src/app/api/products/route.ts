@@ -130,9 +130,15 @@ export async function POST(req: Request) {
         },
       });
 
+      // 새 상품은 (mode, contractPeriod) = 기본 옵션 1개로 HqPolicy 시작.
+      // 운영자가 추가 옵션을 매트릭스 편집기에서 입력할 수 있음.
+      const initMode = product.managementType.includes("자가") || product.managementType.includes("셀프") ? "셀프형" : "방문형";
       await tx.hqPolicy.create({
         data: {
           productId: product.id,
+          mode: initMode,
+          contractPeriod: product.contractPeriod,
+          visitInterval: initMode === "방문형" ? "4개월" : "12개월",
           baseCommission,
           monthIncentive,
           installSubsidy,

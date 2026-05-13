@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { pickRepresentativeHqPolicy } from "@/lib/hqPolicy";
 
 export const metadata = { title: "상품 마스터 · 슈퍼관리자" };
 export const dynamic = "force-dynamic";
@@ -14,7 +15,7 @@ const CATEGORY_LABEL: Record<string, string> = {
 export default async function ProductMasterPage() {
   const products = await prisma.product.findMany({
     orderBy: [{ category: "asc" }, { rentalPrice: "desc" }],
-    include: { hqPolicy: true, _count: { select: { partnerPolicies: true } } },
+    include: { hqPolicies: true, _count: { select: { partnerPolicies: true } } },
   });
 
   return (
@@ -42,7 +43,9 @@ export default async function ProductMasterPage() {
             </tr>
           </thead>
           <tbody>
-            {products.map(p => (
+            {products.map(p => {
+              const rep = pickRepresentativeHqPolicy(p);
+              return (
               <tr key={p.productCode} className="hover:bg-rk-soft-2">
                 <td className="px-1.5 py-2.5 border-b border-rk-line-2 font-mono text-[13px] text-rk-faint">{p.productCode}</td>
                 <td className="px-1.5 py-2.5 border-b border-rk-line-2">
@@ -59,7 +62,7 @@ export default async function ProductMasterPage() {
                   {p.cardDiscountPrice != null ? `월 ${fmt(p.cardDiscountPrice)}원` : "—"}
                 </td>
                 <td className="px-1.5 py-2.5 border-b border-rk-line-2 rk-num text-rk-success">
-                  {p.hqPolicy ? `+₩${fmt(p.hqPolicy.baseCommission + p.hqPolicy.monthIncentive)}` : "—"}
+                  {rep ? `+₩${fmt(rep.baseCommission + rep.monthIncentive)}` : "—"}
                 </td>
                 <td className="px-1.5 py-2.5 border-b border-rk-line-2 rk-num">{p._count.partnerPolicies}개점</td>
                 <td className="px-1.5 py-2.5 border-b border-rk-line-2">
@@ -85,7 +88,8 @@ export default async function ProductMasterPage() {
                   </Link>
                 </td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       </div>

@@ -238,11 +238,16 @@ async function main() {
         status: "active",
       },
     });
+    // 다중 옵션 스키마: 시드는 product.managementType 기준 단일 옵션만 생성.
+    const seedMode = p.mgmt.includes("자가") || p.mgmt.includes("셀프") ? "셀프형" : "방문형";
     await prisma.hqPolicy.upsert({
-      where: { productId: product.id },
+      where: { productId_mode_contractPeriod: { productId: product.id, mode: seedMode, contractPeriod: p.contract } },
       update: {},
       create: {
         productId: product.id,
+        mode: seedMode,
+        contractPeriod: p.contract,
+        visitInterval: seedMode === "방문형" ? "4개월" : "12개월",
         baseCommission: p.commission,
         monthIncentive: p.monthIncentive,
         installSubsidy: p.installSub,

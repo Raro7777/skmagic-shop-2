@@ -275,7 +275,7 @@ export async function updateLeadStatus(input: {
   // Settlement 생성 트리거 — chain 안에 install_done → settle_pending 포함 시
   const willCreateSettlement = chainCreatesSettlement(chain);
   const settlementPayload = willCreateSettlement
-    ? await buildSettlementPayload(lead.id, lead.partnerId, lead.productCode, lead.productInterest)
+    ? await buildSettlementPayload(lead.id, lead.partnerId, lead.productCode, lead.productInterest, lead.selectedMode, lead.selectedContractPeriod)
     : null;
 
   // 컬럼 부수 업데이트
@@ -406,7 +406,9 @@ async function buildSettlementPayload(
   leadId: string,
   partnerId: string | null,
   productCode: string | null,
-  productInterest: string
+  productInterest: string,
+  selectedMode: string | null,
+  selectedContractPeriod: number | null,
 ) {
   // Skip if lead is in HQ pool (no partner to pay)
   if (!partnerId) return null;
@@ -428,14 +430,23 @@ async function buildSettlementPayload(
     const product = await prisma.product.findUnique({
       where: { productCode },
       include: {
-        hqPolicy: true,
+        hqPolicies: true,
         partnerPolicies: { where: { partnerId } },
       },
     });
     if (product) {
       resolvedProductName = product.name;
-      if (product.hqPolicy) {
-        baseCommission = product.hqPolicy.baseCommission + product.hqPolicy.monthIncentive;
+      // lead.selectedMode + lead.selectedContractPeriod 로 정확한 HqPolicy 옵션 lookup.
+      // 없으면 동일 mode 60개월 → 첫 옵션 순서로 fallback.
+      const targetMode = selectedMode
+        ?? (product.managementType.includes("자가") || product.managementType.includes("셀프") ? "셀프형" : "방문형");
+      const targetPeriod = selectedContractPeriod ?? product.contractPeriod;
+      const policy =
+        product.hqPolicies.find(h => h.mode === targetMode && h.contractPeriod === targetPeriod)
+        ?? product.hqPolicies.find(h => h.mode === targetMode && h.contractPeriod === 60)
+        ?? product.hqPolicies[0];
+      if (policy) {
+        baseCommission = policy.baseCommission + policy.monthIncentive;
       }
       const pp = product.partnerPolicies[0];
       if (pp) {

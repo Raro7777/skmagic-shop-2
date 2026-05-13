@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { pickRepresentativeHqPolicy } from "@/lib/hqPolicy";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -16,7 +17,7 @@ export async function GET(
   const product = await prisma.product.findUnique({
     where: { productCode: code },
     include: {
-      hqPolicy: true,
+      hqPolicies: true,
       partnerPolicies: session?.user?.partnerId
         ? { where: { partnerId: session.user.partnerId } }
         : false,
@@ -28,6 +29,7 @@ export async function GET(
   const specs = (product.specs as Record<string, string> | null) ?? null;
   const colorStr = specs?.["색상"];
   const colorOptions = colorStr ? colorStr.split(",").map(s => s.trim()).filter(Boolean) : [];
+  const rep = pickRepresentativeHqPolicy(product);
 
   return NextResponse.json({
     product: {
@@ -44,12 +46,12 @@ export async function GET(
       priceMatrix: (product.priceMatrix as unknown) ?? [],
       colorOptions,
     },
-    hqPolicy: product.hqPolicy
+    hqPolicy: rep
       ? {
-          baseCommission: product.hqPolicy.baseCommission,
-          monthIncentive: product.hqPolicy.monthIncentive,
-          refundLimitRatio: product.hqPolicy.refundLimitRatio,
-          installSubsidy: product.hqPolicy.installSubsidy,
+          baseCommission: rep.baseCommission,
+          monthIncentive: rep.monthIncentive,
+          refundLimitRatio: rep.refundLimitRatio,
+          installSubsidy: rep.installSubsidy,
         }
       : null,
     myPartnerPolicy: product.partnerPolicies?.[0]

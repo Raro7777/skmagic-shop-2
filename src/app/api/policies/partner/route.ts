@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { gatePartnerOrHq } from "@/lib/effectivePartner";
+import { pickRepresentativeHqPolicy } from "@/lib/hqPolicy";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -17,7 +18,7 @@ export async function GET() {
   const products = await prisma.product.findMany({
     where: { status: "active" },
     include: {
-      hqPolicy: true,
+      hqPolicies: true,
       partnerPolicies: { where: { partnerId } },
     },
     orderBy: [{ category: "asc" }, { rentalPrice: "desc" }],
@@ -26,6 +27,7 @@ export async function GET() {
   return NextResponse.json({
     products: products.map(p => {
       const myPolicy = p.partnerPolicies[0] ?? null;
+      const rep = pickRepresentativeHqPolicy(p);
       return {
         productCode: p.productCode,
         category: p.category,
@@ -35,12 +37,12 @@ export async function GET() {
         cardDiscountPrice: p.cardDiscountPrice,
         contractPeriod: p.contractPeriod,
         managementType: p.managementType,
-        hqPolicy: p.hqPolicy
+        hqPolicy: rep
           ? {
-              baseCommission: p.hqPolicy.baseCommission,
-              monthIncentive: p.hqPolicy.monthIncentive,
-              refundLimitRatio: p.hqPolicy.refundLimitRatio,
-              installSubsidy: p.hqPolicy.installSubsidy,
+              baseCommission: rep.baseCommission,
+              monthIncentive: rep.monthIncentive,
+              refundLimitRatio: rep.refundLimitRatio,
+              installSubsidy: rep.installSubsidy,
             }
           : null,
         myPolicy: myPolicy

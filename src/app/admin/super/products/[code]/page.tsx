@@ -16,7 +16,7 @@ export default async function ProductEditPage({
   const product = await prisma.product.findUnique({
     where: { productCode: code },
     include: {
-      hqPolicy: true,
+      hqPolicies: true,
       _count: { select: { partnerPolicies: true } },
       // 본사 admin 은 anomalous 도 다 보여줌
       contentImages: { where: { status: { in: ["active", "anomalous_size"] } }, orderBy: { order: "asc" } },

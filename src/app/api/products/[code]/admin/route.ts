@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { pickRepresentativeHqPolicy } from "@/lib/hqPolicy";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -122,9 +123,10 @@ export async function GET(
   const { code } = await ctx.params;
   const product = await prisma.product.findUnique({
     where: { productCode: code },
-    include: { hqPolicy: true, _count: { select: { partnerPolicies: true } } },
+    include: { hqPolicies: true, _count: { select: { partnerPolicies: true } } },
   });
   if (!product) return NextResponse.json({ error: "Product not found" }, { status: 404 });
+  const rep = pickRepresentativeHqPolicy(product);
 
   return NextResponse.json({
     product: {
@@ -144,7 +146,8 @@ export async function GET(
       isFeatured: product.isFeatured,
       status: product.status,
     },
-    hqPolicy: product.hqPolicy,
+    hqPolicy: rep,
+    hqPolicyOptions: product.hqPolicies,
     partnerPolicyCount: product._count.partnerPolicies,
   });
 }

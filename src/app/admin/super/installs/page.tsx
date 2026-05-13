@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import InstallCompleteList from "@/components/super/InstallCompleteList";
+import { managementTypeToMode } from "@/lib/hqPolicy";
 
 export const metadata = { title: "설치 완료 처리 · 슈퍼관리자" };
 export const dynamic = "force-dynamic";
@@ -19,7 +20,10 @@ export default async function InstallsPage() {
   const productCodes = [...new Set(leads.map(l => l.productCode).filter((x): x is string => !!x))];
   const products = await prisma.product.findMany({
     where: { productCode: { in: productCodes } },
-    select: { id: true, productCode: true, name: true, hqPolicy: { select: { baseCommission: true, monthIncentive: true } } },
+    select: {
+      id: true, productCode: true, name: true, managementType: true, contractPeriod: true,
+      hqPolicies: { select: { mode: true, contractPeriod: true, baseCommission: true, monthIncentive: true } },
+    },
   });
   const productMap = new Map(products.map(p => [p.productCode, p]));
   const partnerProductIds = leads
@@ -36,7 +40,14 @@ export default async function InstallsPage() {
 
   const rows = leads.map(l => {
     const product = l.productCode ? productMap.get(l.productCode) : null;
-    const base = (product?.hqPolicy?.baseCommission ?? 0) + (product?.hqPolicy?.monthIncentive ?? 0);
+    // lead 의 selectedMode + selectedContractPeriod 로 정확한 옵션 lookup. 없으면 대표 fallback.
+    const targetMode = l.selectedMode ?? (product ? managementTypeToMode(product.managementType) : null);
+    const targetPeriod = l.selectedContractPeriod ?? product?.contractPeriod ?? null;
+    const policy =
+      product?.hqPolicies.find(h => h.mode === targetMode && h.contractPeriod === targetPeriod) ??
+      product?.hqPolicies.find(h => h.mode === targetMode && h.contractPeriod === 60) ??
+      product?.hqPolicies[0];
+    const base = (policy?.baseCommission ?? 0) + (policy?.monthIncentive ?? 0);
     const pp = l.partnerId && product ? partnerPolicyMap.get(`${l.partnerId}|${product.id}`) : null;
     const gift = pp?.giftAmount ?? 0;
     const install = pp?.installAmount ?? 0;
