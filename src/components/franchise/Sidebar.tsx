@@ -16,7 +16,8 @@ const NAV_OPS: NavItem[] = [
   { href: "/admin/franchise/leads",       ico: "💬", label: "상담 / 문의" },
   { href: "/admin/franchise/enrollments", ico: "📝", label: "가입 신청서" },
   { href: "/admin/franchise/sellers",     ico: "👥", label: "영업자 · 링크" },
-  { href: "/admin/franchise/products",    ico: "🛒", label: "상품 진열 · 정책" },
+  { href: "/admin/franchise/products",    ico: "🛒", label: "상품 진열 · 배너" },
+  { href: "/admin/franchise/policies",    ico: "🎁", label: "사은품 · 정책" },
   { href: "/admin/franchise/settlements", ico: "💳", label: "정산" },
   { href: "/admin/franchise/analytics",   ico: "📈", label: "마케팅 분석" },
 ];
