@@ -61,66 +61,88 @@ export default async function PartnerSiteShell({
     <div className="bg-rk-soft-2 min-h-screen flex justify-center items-start gap-6 max-md:p-0 md:py-8">
       <UtmTracker />
       {/* Left tip sidebar — 컨슈머 노출 금지. 개발/내부 전용 */}
-      <aside className="hidden w-[220px] sticky top-8 text-[12px] text-rk-muted leading-[1.65]">
-        <h6 className="text-[11px] text-rk-faint tracking-[.12em] uppercase mb-2">분양 사이트</h6>
+      <aside className="hidden w-[220px] sticky top-8 text-[14px] text-rk-muted leading-[1.65]">
+        <h6 className="text-[13px] text-rk-faint tracking-[.12em] uppercase mb-2">분양 사이트</h6>
         <b className="text-rk-ink block">{partner.partnerName}</b>
         <small className="block text-rk-muted">{partner.brandLabel}</small>
         <small className="block text-rk-muted mt-0.5">{partner.region}</small>
         {seller && (
-          <div className="bg-rk-tint-orange border border-[#F4DCC9] rounded p-2 mt-2 text-[11px]">
+          <div className="bg-rk-tint-orange border border-[#F4DCC9] rounded p-2 mt-2 text-[13px]">
             <b className="text-rk-orange-deep block">담당 영업: {seller.name}</b>
             <small className="text-rk-orange-deep">이 링크로 접수된 상담은 이 영업자에게 자동 배정됩니다.</small>
           </div>
         )}
 
-        <h6 className="text-[11px] text-rk-faint tracking-[.12em] uppercase mt-4 mb-2">다른 협력점 사이트</h6>
+        <h6 className="text-[13px] text-rk-faint tracking-[.12em] uppercase mt-4 mb-2">다른 협력점 사이트</h6>
         {others.map(p => (
-          <Link key={p.partnerCode} href={`/p/${p.partnerCode}`} className="block py-1.5 border-b border-rk-line-2 text-rk-info no-underline text-[12px]">
+          <Link key={p.partnerCode} href={`/p/${p.partnerCode}`} className="block py-1.5 border-b border-rk-line-2 text-rk-info no-underline text-[14px]">
             {p.partnerName} →
           </Link>
         ))}
 
-        <h6 className="text-[11px] text-rk-faint tracking-[.12em] uppercase mt-4 mb-2">관리자 이동</h6>
-        <Link href="/" className="block py-1.5 border-b border-rk-line-2 text-rk-info no-underline text-[12px]">← 허브로</Link>
-        <Link href="/admin/franchise" className="block py-1.5 border-b border-rk-line-2 text-rk-info no-underline text-[12px]">분양주 관리자 →</Link>
-        <Link href="/admin/super" className="block py-1.5 border-b border-rk-line-2 text-rk-info no-underline text-[12px]">슈퍼관리자 →</Link>
+        <h6 className="text-[13px] text-rk-faint tracking-[.12em] uppercase mt-4 mb-2">관리자 이동</h6>
+        <Link href="/" className="block py-1.5 border-b border-rk-line-2 text-rk-info no-underline text-[14px]">← 허브로</Link>
+        <Link href="/admin/franchise" className="block py-1.5 border-b border-rk-line-2 text-rk-info no-underline text-[14px]">분양주 관리자 →</Link>
+        <Link href="/admin/super" className="block py-1.5 border-b border-rk-line-2 text-rk-info no-underline text-[14px]">슈퍼관리자 →</Link>
       </aside>
 
       {/* Device frame */}
       <div className="w-full md:w-[390px] bg-white md:rounded-[32px] md:shadow-[0_8px_24px_rgba(20,25,40,.08)] overflow-hidden md:border-8 md:border-[#1A1D24]">
-        <div className="hidden md:flex bg-white h-9 items-center justify-between px-[22px] text-[12px] font-semibold">
+        <div className="hidden md:flex bg-white h-9 items-center justify-between px-[22px] text-[14px] font-semibold">
           <span className="rk-num">9:41</span>
           <span>● ●</span>
         </div>
 
         <header className="bg-white border-b border-rk-line">
-          <div className="flex items-center justify-between px-4 py-2 text-[11px] text-rk-muted border-b border-rk-line-2">
-            <div>{partner.partnerName}{seller && <> · 담당 <b className="text-rk-orange-deep">{seller.name}</b></>}</div>
-            <div className="flex gap-2.5">
+          <div className="flex items-center justify-between px-4 py-2 text-[14px] text-rk-muted border-b border-rk-line-2">
+            <div className="truncate pr-2">{partner.partnerName}</div>
+            <div className="flex gap-2.5 shrink-0">
               <Link href={`/p/${partner.partnerCode}/help`} className="text-rk-muted no-underline cursor-pointer">고객센터</Link>
             </div>
           </div>
+          {/* 로고/브랜드 — 클릭 시 메인으로 이동 (항목 2) */}
           <div className="px-4 py-3 flex items-center gap-2.5">
-            <div className="text-[22px] text-rk-ink cursor-pointer">≡</div>
-            <div className="flex items-center gap-2">
-              <div className="w-[26px] h-[26px] bg-rk-orange text-white rounded-[5px] grid place-items-center font-bold text-[13px]">SK</div>
+            <div className="text-[24px] text-rk-ink cursor-pointer">≡</div>
+            <Link
+              href={`/p/${partner.partnerCode}`}
+              className="flex items-center gap-2 no-underline"
+              style={{ color: "inherit" }}
+              aria-label="홈으로"
+            >
+              <div className="w-[28px] h-[28px] bg-rk-orange text-white rounded-[5px] grid place-items-center font-bold text-[14px]">SK</div>
               <div>
-                <div className="font-bold text-base text-rk-ink tracking-[-.02em]">{partner.partnerName}</div>
-                <div className="text-[10px] text-rk-muted">{partner.brandLabel}</div>
+                <div className="font-bold text-[16px] text-rk-ink tracking-[-.02em] leading-tight">{partner.partnerName}</div>
+                <div className="text-[13px] text-rk-muted">{partner.brandLabel}</div>
               </div>
-            </div>
-            <div className="ml-auto flex gap-3.5 text-lg text-rk-ink">
+            </Link>
+            <div className="ml-auto flex gap-3.5 text-[20px] text-rk-ink">
               <Link href={`/p/${partner.partnerCode}/search`} className="text-rk-ink no-underline cursor-pointer" aria-label="검색">🔍</Link>
               <Link href="/admin/franchise" className="text-rk-ink no-underline cursor-pointer" aria-label="관리자">⚙</Link>
             </div>
           </div>
-          <div className="bg-rk-navy text-white px-4 py-2.5 flex items-center gap-2 text-[13px]">
-            <span>📞</span>
-            <span className="text-base font-bold tracking-[.02em] rk-num">{partner.hotlineNumber}</span>
-            <span className="text-[11px] opacity-80">평일 09:00–22:00</span>
-            <div className="ml-auto flex gap-1.5">
-              <span className="bg-white/10 px-2 py-1 rounded text-[11px]">카톡상담</span>
-              <span className="bg-white/10 px-2 py-1 rounded text-[11px]">방문상담</span>
+          {/* 전화 / 카톡 / 방문상담 — 모바일에서 2줄로 깨지지 않게 wrap + 폰트·여백 조정 (항목 4) */}
+          <div className="bg-rk-navy text-white px-3 py-2.5 flex items-center gap-2 text-[13px] flex-wrap">
+            <a href={`tel:${partner.hotlineNumber.replace(/[^\d+]/g, "")}`} className="flex items-center gap-1.5 no-underline text-white cursor-pointer">
+              <span className="text-[14px]">📞</span>
+              <span className="text-[15px] font-bold tracking-[.02em] rk-num">{partner.hotlineNumber}</span>
+            </a>
+            <span className="text-[13px] opacity-80 hidden xs:inline">평일 09:00–22:00</span>
+            <div className="ml-auto flex gap-1.5 shrink-0">
+              {partner.kakaoChannelUrl ? (
+                <a href={partner.kakaoChannelUrl} target="_blank" rel="noreferrer"
+                  className="bg-white/15 hover:bg-white/25 px-2.5 py-1.5 rounded text-[14px] font-medium no-underline text-white cursor-pointer">
+                  카톡상담
+                </a>
+              ) : (
+                <a href={`tel:${partner.hotlineNumber.replace(/[^\d+]/g, "")}`}
+                  className="bg-white/15 hover:bg-white/25 px-2.5 py-1.5 rounded text-[14px] font-medium no-underline text-white cursor-pointer">
+                  카톡상담
+                </a>
+              )}
+              <Link href="#consult-form"
+                className="bg-white/15 hover:bg-white/25 px-2.5 py-1.5 rounded text-[14px] font-medium no-underline text-white cursor-pointer">
+                방문상담
+              </Link>
             </div>
           </div>
           <NavTabs partnerCode={partner.partnerCode} />
@@ -128,12 +150,12 @@ export default async function PartnerSiteShell({
 
         {/* Seller-specific banner */}
         {seller && (
-          <div className="bg-rk-tint-orange px-4 py-2.5 border-b border-[#F4DCC9] flex items-center gap-2 text-[12px]">
-            <span className="bg-rk-orange text-white text-[10px] font-semibold px-1.5 py-0.5 rounded">담당자</span>
+          <div className="bg-rk-tint-orange px-4 py-2.5 border-b border-[#F4DCC9] flex items-center gap-2 text-[14px]">
+            <span className="bg-rk-orange text-white text-[12px] font-semibold px-1.5 py-0.5 rounded">담당자</span>
             <span className="text-rk-orange-deep">
               <b>{seller.name}</b>이(가) 직접 안내해드립니다.
             </span>
-            <a className="ml-auto text-[11px] text-rk-orange-deep font-mono no-underline">{partner.hotlineNumber}</a>
+            <a className="ml-auto text-[13px] text-rk-orange-deep font-mono no-underline">{partner.hotlineNumber}</a>
           </div>
         )}
 
@@ -154,7 +176,7 @@ export default async function PartnerSiteShell({
             <Link
               key={c.slug}
               href={`/p/${partner.partnerCode}/category/${c.slug}`}
-              className="flex flex-col items-center gap-1.5 text-rk-text px-1 py-1.5 text-[11px] font-medium text-center leading-tight no-underline cursor-pointer"
+              className="flex flex-col items-center gap-1.5 text-rk-text px-1 py-1.5 text-[13px] font-medium text-center leading-tight no-underline cursor-pointer"
             >
               <div className={"w-11 h-11 rounded-xl grid place-items-center text-[22px] " + (c.isHot ? "bg-rk-tint-orange" : "bg-rk-soft")}>
                 {c.icon}
@@ -167,7 +189,7 @@ export default async function PartnerSiteShell({
           ))}
           <Link
             href={`/p/${partner.partnerCode}/events`}
-            className="flex flex-col items-center gap-1.5 text-rk-text px-1 py-1.5 text-[11px] font-medium text-center leading-tight no-underline cursor-pointer"
+            className="flex flex-col items-center gap-1.5 text-rk-text px-1 py-1.5 text-[13px] font-medium text-center leading-tight no-underline cursor-pointer"
           >
             <div className="w-11 h-11 rounded-xl grid place-items-center text-[22px] bg-rk-tint-orange">🎁</div>
             <div>
@@ -179,7 +201,7 @@ export default async function PartnerSiteShell({
           </Link>
         </nav>
 
-        <div className="bg-rk-tint-orange px-3.5 py-2 text-[12px] text-rk-orange-deep flex items-center gap-1.5 border-b border-[#F4DCC9]">
+        <div className="bg-rk-tint-orange px-3.5 py-2 text-[14px] text-rk-orange-deep flex items-center gap-1.5 border-b border-[#F4DCC9]">
           <span className="text-sm">🚚</span>
           <span><b className="font-semibold">오늘 신청 시 5/12(월)부터 설치 가능</b> · {partner.region} 한정</span>
         </div>
@@ -194,9 +216,9 @@ export default async function PartnerSiteShell({
         <section className="bg-white px-4 py-3.5 border-b-8 border-rk-soft">
           <Link href={`/p/${partner.partnerCode}/events`} className="rounded-lg p-3.5 flex items-center gap-3 bg-rk-tint-orange border border-[#F4DCC9] cursor-pointer no-underline text-inherit">
             <div>
-              <span className="bg-rk-orange text-white text-[10px] font-semibold px-1.5 py-0.5 rounded">EVENT</span>
+              <span className="bg-rk-orange text-white text-[12px] font-semibold px-1.5 py-0.5 rounded">EVENT</span>
               <h4 className="text-sm text-rk-orange-deep mt-1 mb-0">친구 초대 시 5,000원 적립</h4>
-              <small className="text-[11px] text-rk-orange-deep opacity-80">가입 첫 달 즉시 차감 · {partner.partnerName} 한정</small>
+              <small className="text-[13px] text-rk-orange-deep opacity-80">가입 첫 달 즉시 차감 · {partner.partnerName} 한정</small>
             </div>
             <span className="ml-auto text-rk-orange-deep">→</span>
           </Link>
@@ -206,9 +228,9 @@ export default async function PartnerSiteShell({
           <div className="flex justify-between items-baseline mb-3">
             <div>
               <h2 className="text-[17px] font-bold tracking-[-.02em] m-0 text-rk-ink">매니저 추천 상품</h2>
-              <small className="text-[11px] text-rk-muted block mt-0.5">{seller?.name ?? partner.ownerName ?? partner.partnerName}이(가) 직접 큐레이션 · 5월</small>
+              <small className="text-[13px] text-rk-muted block mt-0.5">{seller?.name ?? partner.ownerName ?? partner.partnerName}이(가) 직접 큐레이션 · 5월</small>
             </div>
-            <Link href={`/p/${partner.partnerCode}/products`} className="text-[12px] text-rk-muted no-underline cursor-pointer">전체 →</Link>
+            <Link href={`/p/${partner.partnerCode}/products`} className="text-[14px] text-rk-muted no-underline cursor-pointer">전체 →</Link>
           </div>
           <div className="grid grid-cols-2 gap-3">
             {picks.map((p, i) => (
@@ -226,24 +248,24 @@ export default async function PartnerSiteShell({
           <div className="flex justify-between items-baseline mb-3">
             <div>
               <h2 className="text-[17px] font-bold tracking-[-.02em] m-0 text-rk-ink">최근 가입 후기</h2>
-              <small className="text-[11px] text-rk-muted block mt-0.5">{partner.partnerName}</small>
+              <small className="text-[13px] text-rk-muted block mt-0.5">{partner.partnerName}</small>
             </div>
-            <Link href={`/p/${partner.partnerCode}/reviews`} className="text-[12px] text-rk-muted no-underline cursor-pointer">전체 →</Link>
+            <Link href={`/p/${partner.partnerCode}/reviews`} className="text-[14px] text-rk-muted no-underline cursor-pointer">전체 →</Link>
           </div>
           <div className="flex flex-col gap-2">
             <div className="bg-white border border-rk-line rounded-lg p-3 flex flex-col gap-1.5">
-              <div className="text-rk-warn text-[12px]">★★★★★ <span className="text-rk-muted text-[11px]">5.0</span></div>
+              <div className="text-rk-warn text-[14px]">★★★★★ <span className="text-rk-muted text-[13px]">5.0</span></div>
               <h5 className="text-[13px] font-semibold m-0 text-rk-ink">설치기사님 친절하시고 가격도 좋아요</h5>
-              <p className="text-[12px] text-rk-text m-0 leading-[1.5]">다른 매장 견적도 받아봤는데 카드할인가가 제일 좋았어요. 사은품도 잘 챙겨주셨습니다.</p>
-              <div className="text-[11px] text-rk-muted flex gap-1.5 mt-0.5">
+              <p className="text-[14px] text-rk-text m-0 leading-[1.5]">다른 매장 견적도 받아봤는데 카드할인가가 제일 좋았어요. 사은품도 잘 챙겨주셨습니다.</p>
+              <div className="text-[13px] text-rk-muted flex gap-1.5 mt-0.5">
                 <span>김**</span><span>·</span><span>2일 전</span><span>·</span><span>{ranking[0]?.modelName ?? "—"}</span>
               </div>
             </div>
           </div>
         </section>
 
-        <footer className="bg-rk-soft px-3.5 py-4 text-[11px] text-rk-muted leading-[1.7]">
-          <div className="flex gap-2.5 flex-wrap mb-2.5 text-[11px]">
+        <footer className="bg-rk-soft px-3.5 py-4 text-[13px] text-rk-muted leading-[1.7]">
+          <div className="flex gap-2.5 flex-wrap mb-2.5 text-[13px]">
             <Link href="/legal/terms" className="text-rk-ink font-semibold no-underline cursor-pointer">이용약관</Link>
             <Link href="/legal/privacy" className="text-rk-ink font-semibold no-underline cursor-pointer">개인정보처리방침</Link>
             <Link href={`/p/${partner.partnerCode}/help`} className="text-rk-text no-underline cursor-pointer">고객센터</Link>
@@ -257,7 +279,7 @@ export default async function PartnerSiteShell({
             {partner.commerceNumber && <><dt className="text-rk-faint m-0">통신판매</dt><dd className="m-0 rk-num">{partner.commerceNumber}</dd></>}
             <dt className="text-rk-faint m-0">고객센터</dt><dd className="m-0 rk-num">{partner.hotlineNumber} (평일 09:00–22:00)</dd>
           </dl>
-          <p className="text-[10px] text-rk-faint mt-3 pt-2.5 border-t border-rk-line">
+          <p className="text-[12px] text-rk-faint mt-3 pt-2.5 border-t border-rk-line">
             본 사이트는 ㈜렌트왕 분양형 렌탈 플랫폼의 가맹사이트이며, 통신판매중개자는 ㈜렌트왕입니다.
             실제 상품 공급 및 설치는 SK매직㈜에서 담당합니다.
           </p>
@@ -276,8 +298,8 @@ export default async function PartnerSiteShell({
         </div>
       </div>
 
-      <aside className="hidden w-[220px] sticky top-8 text-[12px] text-rk-muted leading-[1.65]">
-        <h6 className="text-[11px] text-rk-faint tracking-[.12em] uppercase mb-2">이 협력점의 차별화</h6>
+      <aside className="hidden w-[220px] sticky top-8 text-[14px] text-rk-muted leading-[1.65]">
+        <h6 className="text-[13px] text-rk-faint tracking-[.12em] uppercase mb-2">이 협력점의 차별화</h6>
         {picks.filter(p => p.giftAmount > 0).length === 0 ? (
           <span>현재 활성 사은품 정책 없음</span>
         ) : (
@@ -314,29 +336,29 @@ function RankCard({ rank, product, bg, href }: { rank: number; product: Consumer
             loading="lazy"
           />
         )}
-        <span className={"absolute top-0 left-0 text-white px-1.5 py-0.5 text-[11px] font-semibold font-mono rounded-br-md rk-num z-10 " + (rank <= 2 ? "bg-rk-sale" : "bg-rk-navy")}>
+        <span className={"absolute top-0 left-0 text-white px-1.5 py-0.5 text-[13px] font-semibold font-mono rounded-br-md rk-num z-10 " + (rank <= 2 ? "bg-rk-sale" : "bg-rk-navy")}>
           {rank}
         </span>
       </div>
       <div className="flex flex-col gap-1">
-        <div className="text-[11px] text-rk-muted">SK매직</div>
+        <div className="text-[13px] text-rk-muted">SK매직</div>
         <h4 className="text-[13px] font-medium leading-[1.4] text-rk-ink m-0">{product.name}</h4>
-        <div className="text-[10px] text-rk-faint font-mono mt-0.5">{product.modelName}</div>
+        <div className="text-[12px] text-rk-faint font-mono mt-0.5">{product.modelName}</div>
         <div className="flex flex-wrap gap-0.5 mt-1">
-          <span className="text-[10px] px-1 py-px rounded bg-rk-soft text-rk-muted">의무 {product.contractPeriod}개월</span>
-          <span className="text-[10px] px-1 py-px rounded bg-rk-soft text-rk-muted">{product.managementType}</span>
+          <span className="text-[12px] px-1 py-px rounded bg-rk-soft text-rk-muted">의무 {product.contractPeriod}개월</span>
+          <span className="text-[12px] px-1 py-px rounded bg-rk-soft text-rk-muted">{product.managementType}</span>
           {product.giftLabel && (
-            <span className="text-[10px] px-1 py-px rounded bg-rk-tint-orange text-rk-orange-deep font-medium">사은품 {product.giftLabel}</span>
+            <span className="text-[12px] px-1 py-px rounded bg-rk-tint-orange text-rk-orange-deep font-medium">사은품 {product.giftLabel}</span>
           )}
         </div>
         <div className="flex items-baseline gap-1.5 mt-1.5 flex-wrap">
-          <span className="text-[10px] text-rk-muted">월 렌탈가</span>
+          <span className="text-[12px] text-rk-muted">월 렌탈가</span>
           <span className="text-base font-bold text-rk-ink tracking-[-.02em] rk-num">
-            {fmt(product.rentalPrice)}<small className="text-[11px] font-medium">원</small>
+            {fmt(product.rentalPrice)}<small className="text-[13px] font-medium">원</small>
           </span>
         </div>
         {product.cardDiscountPrice && (
-          <div className="text-[10px] text-rk-muted mt-px">
+          <div className="text-[12px] text-rk-muted mt-px">
             카드할인가 <b className="text-rk-sale rk-num">월 {fmt(product.cardDiscountPrice)}원</b>
           </div>
         )}
@@ -375,15 +397,15 @@ function PickCard({ product, bg, href }: { product: ConsumerProduct; bg: string;
           </div>
         )}
       </div>
-      <div className="text-[11px] text-rk-muted mt-2">SK매직</div>
+      <div className="text-[13px] text-rk-muted mt-2">SK매직</div>
       <h4 className="text-[13px] font-medium text-rk-ink leading-[1.4] m-0 mt-0.5 line-clamp-2 min-h-[36px]">{product.name}</h4>
-      <div className="text-[10px] text-rk-faint font-mono mt-0.5 truncate">{product.modelName}</div>
+      <div className="text-[12px] text-rk-faint font-mono mt-0.5 truncate">{product.modelName}</div>
       <div className="mt-1.5 flex items-baseline gap-1">
-        <small className="text-[10px] text-rk-muted">월</small>
-        <b className="text-[16px] font-bold tracking-[-.02em] text-rk-ink rk-num">{fmt(product.rentalPrice)}<small className="text-[11px] font-medium">원~</small></b>
+        <small className="text-[12px] text-rk-muted">월</small>
+        <b className="text-[16px] font-bold tracking-[-.02em] text-rk-ink rk-num">{fmt(product.rentalPrice)}<small className="text-[13px] font-medium">원~</small></b>
       </div>
       {product.cardDiscountPrice && (
-        <div className="mt-px text-[10px] text-rk-sale font-medium">
+        <div className="mt-px text-[12px] text-rk-sale font-medium">
           카드 <b className="font-bold rk-num">월 {fmt(product.cardDiscountPrice)}원</b>
         </div>
       )}
@@ -391,7 +413,7 @@ function PickCard({ product, bg, href }: { product: ConsumerProduct; bg: string;
         <span className="text-[9px] px-1 py-px rounded bg-rk-soft text-rk-muted">의무 {product.contractPeriod}</span>
         <span className="text-[9px] px-1 py-px rounded bg-rk-soft text-rk-muted truncate max-w-[80px]">{product.managementType}</span>
       </div>
-      {product.giftLabel && <div className="text-[10px] text-rk-orange-deep font-medium mt-1 truncate">🎁 {product.giftLabel}</div>}
+      {product.giftLabel && <div className="text-[12px] text-rk-orange-deep font-medium mt-1 truncate">🎁 {product.giftLabel}</div>}
     </Link>
   );
 }

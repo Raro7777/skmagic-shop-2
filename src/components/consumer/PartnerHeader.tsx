@@ -21,7 +21,7 @@ export default function PartnerHeader({
     <header className="bg-white border-b border-rk-line">
       {showFullNav ? (
         <>
-          <div className="flex items-center justify-between px-4 py-2 text-[11px] text-rk-muted border-b border-rk-line-2">
+          <div className="flex items-center justify-between px-4 py-2 text-[13px] text-rk-muted border-b border-rk-line-2">
             <div>
               {partner.partnerName}
               {seller && <> · 담당 <b className="text-rk-orange-deep">{seller.name}</b></>}
@@ -38,7 +38,7 @@ export default function PartnerHeader({
               <div className="w-[26px] h-[26px] bg-rk-orange text-white rounded-[5px] grid place-items-center font-bold text-[13px]">SK</div>
               <div>
                 <div className="font-bold text-base text-rk-ink tracking-[-.02em]">{partner.partnerName}</div>
-                <div className="text-[10px] text-rk-muted">{partner.brandLabel}</div>
+                <div className="text-[12px] text-rk-muted">{partner.brandLabel}</div>
               </div>
             </Link>
             <div className="ml-auto flex gap-3.5 text-lg text-rk-ink">
@@ -52,10 +52,10 @@ export default function PartnerHeader({
           <div className="bg-rk-navy text-white px-4 py-2.5 flex items-center gap-2 text-[13px]">
             <span>📞</span>
             <span className="text-base font-bold tracking-[.02em] rk-num">{partner.hotlineNumber}</span>
-            <span className="text-[11px] opacity-80">평일 09:00–22:00</span>
+            <span className="text-[13px] opacity-80">평일 09:00–22:00</span>
             <div className="ml-auto flex gap-1.5">
-              <span className="bg-white/10 px-2 py-1 rounded text-[11px]">카톡상담</span>
-              <span className="bg-white/10 px-2 py-1 rounded text-[11px]">방문상담</span>
+              <span className="bg-white/10 px-2 py-1 rounded text-[13px]">카톡상담</span>
+              <span className="bg-white/10 px-2 py-1 rounded text-[13px]">방문상담</span>
             </div>
           </div>
           <NavTabs partnerCode={partner.partnerCode} />
@@ -73,14 +73,14 @@ export default function PartnerHeader({
             href={`/p/${partner.partnerCode}`}
             className="flex items-center gap-2 flex-1 min-w-0 no-underline text-inherit"
           >
-            <div className="w-[24px] h-[24px] bg-rk-orange text-white rounded-[4px] grid place-items-center font-bold text-[11px] shrink-0">
+            <div className="w-[24px] h-[24px] bg-rk-orange text-white rounded-[4px] grid place-items-center font-bold text-[13px] shrink-0">
               SK
             </div>
             <div className="min-w-0">
               <div className="font-bold text-[13px] text-rk-ink leading-tight truncate">
                 {partner.partnerName}
               </div>
-              <div className="text-[10px] text-rk-muted truncate">{partner.brandLabel}</div>
+              <div className="text-[12px] text-rk-muted truncate">{partner.brandLabel}</div>
             </div>
           </Link>
           <div className="flex gap-3 text-base text-rk-ink shrink-0">

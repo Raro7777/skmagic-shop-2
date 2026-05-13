@@ -44,6 +44,8 @@ export async function PATCH(req: Request) {
     phone: string | null;
     kakaoChannelUrl: string | null;
     rentalSupportAmount: number;
+    businessNumber: string | null;
+    commerceNumber: string | null;
   }>;
 
   const data: Parameters<typeof prisma.partner.update>[0]["data"] = {};
@@ -71,6 +73,20 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ error: "연락처 형식 오류" }, { status: 400 });
     }
     data.phone = t || null;
+  }
+  if (b.businessNumber !== undefined) {
+    const t = b.businessNumber?.trim() ?? "";
+    if (t && !/^[\d\-\s]{8,20}$/.test(t)) {
+      return NextResponse.json({ error: "사업자등록번호 형식 오류 (숫자·하이픈)" }, { status: 400 });
+    }
+    data.businessNumber = t || null;
+  }
+  if (b.commerceNumber !== undefined) {
+    const t = b.commerceNumber?.trim() ?? "";
+    if (t && t.length > 40) {
+      return NextResponse.json({ error: "통신판매업 신고번호가 너무 깁니다." }, { status: 400 });
+    }
+    data.commerceNumber = t || null;
   }
   if (b.rentalSupportAmount !== undefined) {
     const raw = Math.floor(Number(b.rentalSupportAmount));

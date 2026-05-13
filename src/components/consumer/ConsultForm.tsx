@@ -146,14 +146,14 @@ export default function ConsultForm({
               <>
                 <div className="flex items-baseline gap-2 mb-1">
                   <h3 className="text-[16px] font-bold text-rk-ink">상담 신청</h3>
-                  <small className="text-[11px] text-rk-muted">{partnerName ?? partnerCode}</small>
+                  <small className="text-[13px] text-rk-muted">{partnerName ?? partnerCode}</small>
                 </div>
                 {sellerName && (
-                  <div className="text-[11px] text-rk-orange-deep mb-2">
+                  <div className="text-[13px] text-rk-orange-deep mb-2">
                     👤 담당 영업: <b>{sellerName}</b>
                   </div>
                 )}
-                <p className="text-[12px] text-rk-muted m-0 mb-4">
+                <p className="text-[14px] text-rk-muted m-0 mb-4">
                   접수 후 30분 이내 카톡 또는 전화로 연락드립니다.
                 </p>
 
@@ -195,12 +195,12 @@ export default function ConsultForm({
                   />
                 </Field>
 
-                <div className="text-[11px] text-rk-muted leading-[1.5] mb-3">
-                  ⓘ 신청 시 <a className="text-rk-info underline">개인정보 수집·이용</a>에 동의한 것으로 간주합니다. (3년 보유 후 자동 익명화)
+                <div className="text-[13px] text-rk-muted leading-[1.5] mb-3">
+                  ⓘ 신청 시 <a href="/legal/privacy" target="_blank" rel="noreferrer" className="text-rk-info underline">개인정보 수집·이용</a>에 동의한 것으로 간주합니다. (3년 보유 후 자동 익명화)
                 </div>
 
                 {error && (
-                  <div className="bg-rk-tint-red text-rk-sale text-[12px] px-3 py-2 rounded mb-3">⚠ {error}</div>
+                  <div className="bg-rk-tint-red text-rk-sale text-[14px] px-3 py-2 rounded mb-3">⚠ {error}</div>
                 )}
 
                 <div className="flex gap-2">
@@ -225,8 +225,8 @@ export default function ConsultForm({
               <>
                 <div className="text-[36px] mb-2">✅</div>
                 <h3 className="text-[16px] font-bold text-rk-ink mb-1">접수 완료</h3>
-                <p className="text-[12px] text-rk-text leading-[1.6] mb-3">{done.message}</p>
-                <div className="bg-rk-soft-2 border border-rk-line-2 rounded p-2.5 text-[11px] mb-4">
+                <p className="text-[14px] text-rk-text leading-[1.6] mb-3">{done.message}</p>
+                <div className="bg-rk-soft-2 border border-rk-line-2 rounded p-2.5 text-[13px] mb-4">
                   <div className="flex justify-between text-rk-muted">
                     <span>접수번호</span>
                     <span className="font-mono text-rk-ink">{done.leadId}</span>
@@ -254,7 +254,7 @@ export default function ConsultForm({
 function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
   return (
     <div className="mb-3">
-      <label className="block text-[11px] text-rk-muted mb-1">
+      <label className="block text-[13px] text-rk-muted mb-1">
         {label}
         {required && <span className="text-rk-sale ml-0.5">*</span>}
       </label>

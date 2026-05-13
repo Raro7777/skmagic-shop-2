@@ -23,7 +23,7 @@ export default function HeroPager({ total = 4 }: { total?: number }) {
           />
         ))}
       </div>
-      <span className="text-[11px] font-mono opacity-80 px-2 py-0.5 bg-black/30 rounded-full text-white rk-num">
+      <span className="text-[13px] font-mono opacity-80 px-2 py-0.5 bg-black/30 rounded-full text-white rk-num">
         {idx + 1} / {total}
       </span>
     </div>

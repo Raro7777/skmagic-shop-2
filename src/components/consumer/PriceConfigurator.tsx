@@ -162,7 +162,7 @@ export default function PriceConfigurator({
       {/* Mode selector — 멀티 모드일 때만 노출 */}
       {hasMatrix && modes.length > 1 && (
         <div className="mb-2.5">
-          <div className="text-[11px] text-rk-muted mb-1">운영 방식</div>
+          <div className="text-[13px] text-rk-muted mb-1">운영 방식</div>
           <div className="flex gap-1.5">
             {modes.map(m => (
               <button
@@ -170,7 +170,7 @@ export default function PriceConfigurator({
                 type="button"
                 onClick={() => onModeChange(m)}
                 className={
-                  "flex-1 px-2.5 py-1.5 rounded text-[12px] font-medium border transition-colors " +
+                  "flex-1 px-2.5 py-1.5 rounded text-[14px] font-medium border transition-colors " +
                   (selectedMode === m
                     ? "bg-rk-navy text-white border-rk-navy"
                     : "bg-white text-rk-muted border-rk-line hover:bg-rk-soft-2")
@@ -186,7 +186,7 @@ export default function PriceConfigurator({
       {/* Period selector */}
       {hasMatrix && modeOptions.length > 1 && (
         <div className="mb-2.5">
-          <div className="text-[11px] text-rk-muted mb-1">의무사용기간</div>
+          <div className="text-[13px] text-rk-muted mb-1">의무사용기간</div>
           <div className="flex gap-1.5 flex-wrap">
             {modeOptions.map(o => (
               <button
@@ -194,7 +194,7 @@ export default function PriceConfigurator({
                 type="button"
                 onClick={() => setSelectedPeriod(o.contractPeriod)}
                 className={
-                  "px-2.5 py-1 rounded text-[11px] font-medium border transition-colors " +
+                  "px-2.5 py-1 rounded text-[13px] font-medium border transition-colors " +
                   (o.contractPeriod === selectedPeriod
                     ? "bg-rk-navy text-white border-rk-navy"
                     : "bg-white text-rk-muted border-rk-line hover:bg-rk-soft-2")
@@ -210,9 +210,9 @@ export default function PriceConfigurator({
       {/* Color selector — 정책표의 컬러/사이즈 변형. 가격에는 영향 없음 */}
       {colorOptions.length > 0 && (
         <div className="mb-2.5">
-          <div className="text-[11px] text-rk-muted mb-1">색상 / 변형</div>
+          <div className="text-[13px] text-rk-muted mb-1">색상 / 변형</div>
           {colorOptions.length === 1 ? (
-            <div className="text-[12px] text-rk-ink font-medium">{colorOptions[0]}</div>
+            <div className="text-[14px] text-rk-ink font-medium">{colorOptions[0]}</div>
           ) : (
             <div className="flex gap-1.5 flex-wrap">
               {colorOptions.map(c => (
@@ -221,7 +221,7 @@ export default function PriceConfigurator({
                   type="button"
                   onClick={() => setSelectedColor(c)}
                   className={
-                    "px-2.5 py-1 rounded text-[11px] font-medium border transition-colors " +
+                    "px-2.5 py-1 rounded text-[13px] font-medium border transition-colors " +
                     (c === selectedColor
                       ? "bg-rk-navy text-white border-rk-navy"
                       : "bg-white text-rk-muted border-rk-line hover:bg-rk-soft-2")
@@ -237,20 +237,20 @@ export default function PriceConfigurator({
 
       {/* Price block */}
       <div className="flex items-baseline justify-between mb-2">
-        <span className="text-[12px] text-rk-muted">월 렌탈가</span>
+        <span className="text-[14px] text-rk-muted">월 렌탈가</span>
         <div>
           <span className="text-[24px] font-bold tracking-[-.02em] text-rk-ink rk-num">{fmt(finalRental)}</span>
-          <small className="text-[12px] font-medium text-rk-muted">원</small>
+          <small className="text-[14px] font-medium text-rk-muted">원</small>
         </div>
       </div>
       {finalCard != null && (
         <div className="flex items-baseline justify-between mb-2">
-          <span className="text-[12px] text-rk-sale font-medium">신용카드 할인가</span>
+          <span className="text-[14px] text-rk-sale font-medium">신용카드 할인가</span>
           <div>
             <span className="text-[20px] font-bold tracking-[-.02em] text-rk-sale rk-num">{fmt(finalCard)}</span>
-            <small className="text-[11px] font-medium text-rk-sale">원/월</small>
+            <small className="text-[13px] font-medium text-rk-sale">원/월</small>
             {savings != null && savings > 0 && (
-              <small className="block text-[10px] text-rk-muted text-right">−{fmt(savings)}원/월 절약</small>
+              <small className="block text-[12px] text-rk-muted text-right">−{fmt(savings)}원/월 절약</small>
             )}
           </div>
         </div>
@@ -259,9 +259,9 @@ export default function PriceConfigurator({
       {/* 협력점 렌탈지원금 — 옵션의 baseCommission 한도 ≥ 협력점 설정값이면 노출, 부족 시 0 */}
       {partnerRentalSupportAmount > 0 && (
         <div className="mt-2 flex items-start justify-between gap-2 px-2.5 py-2 rounded border border-[#F4DCC9] bg-rk-tint-orange">
-          <div className="flex-1 text-[12px] leading-[1.4]">
+          <div className="flex-1 text-[14px] leading-[1.4]">
             <b className="text-rk-orange-deep">🎁 협력점 렌탈지원금</b>
-            <small className="block text-rk-orange-deep text-[10.5px] mt-0.5">
+            <small className="block text-rk-orange-deep text-[12px] mt-0.5">
               개통 후 1회 캐시백 · 가입 취소 시 전체 환수
             </small>
           </div>
@@ -278,8 +278,8 @@ export default function PriceConfigurator({
                   <span className="text-[18px] font-bold tracking-[-.02em] text-rk-orange-deep rk-num">
                     {support === 0 ? "0" : `−${fmt(support)}`}
                   </span>
-                  <small className="text-[11px] font-medium text-rk-orange-deep">원</small>
-                  <small className="block text-[10px] text-rk-muted">총액 환원</small>
+                  <small className="text-[13px] font-medium text-rk-orange-deep">원</small>
+                  <small className="block text-[12px] text-rk-muted">총액 환원</small>
                 </>
               );
             })()}
@@ -301,33 +301,33 @@ export default function PriceConfigurator({
             onChange={e => setRivalApplied(e.target.checked)}
             className="mt-0.5 w-4 h-4 cursor-pointer accent-rk-orange"
           />
-          <div className="flex-1 text-[12px] leading-[1.4]">
+          <div className="flex-1 text-[14px] leading-[1.4]">
             <div className="flex items-center gap-1.5 flex-wrap">
               <b className={rivalApplied ? "text-rk-orange-deep" : "text-rk-ink"}>🔄 타사보상</b>
               {useNewPolicy ? (
-                <span className={"text-[11px] " + (rivalApplied ? "text-rk-orange-deep" : "text-rk-muted")}>
+                <span className={"text-[13px] " + (rivalApplied ? "text-rk-orange-deep" : "text-rk-muted")}>
                   월 {fmt(newPolicyRival!)}원으로 적용
                   {newPolicyHalfMonths ? ` · 첫 ${newPolicyHalfMonths}개월 반값` : ""}
                 </span>
               ) : (
-                <span className={"text-[11px] " + (rivalApplied ? "text-rk-orange-deep" : "text-rk-muted")}>
+                <span className={"text-[13px] " + (rivalApplied ? "text-rk-orange-deep" : "text-rk-muted")}>
                   월 −{fmt(rivalCompensation.monthlyDiscount)}원 × {rivalCompensation.months}개월
                 </span>
               )}
             </div>
-            <small className="block text-rk-muted mt-0.5 text-[11px]">
+            <small className="block text-rk-muted mt-0.5 text-[13px]">
               {useNewPolicy
                 ? "타사 제품 렌탈료 납부 영수증 증빙 필요 (신규·단품 한정). 카드할인은 별개로 추가 적용."
                 : rivalCompensation.note}
             </small>
             {rivalApplied && useNewPolicy && (
-              <div className="mt-1 text-[11px] text-rk-orange-deep">
+              <div className="mt-1 text-[13px] text-rk-orange-deep">
                 ✓ 월 절약 <b>{fmt(rivalNewSavings)}원</b>
                 {newPolicyHalfMonths ? ` (첫 ${newPolicyHalfMonths}개월은 반값 추가 적용)` : ""}
               </div>
             )}
             {rivalApplied && !useNewPolicy && (
-              <div className="mt-1 text-[11px] text-rk-orange-deep">
+              <div className="mt-1 text-[13px] text-rk-orange-deep">
                 ✓ 첫 {rivalCompensation.months}개월 총 절약 <b>{fmt(rivalCompensation.monthlyDiscount * rivalCompensation.months)}원</b>
               </div>
             )}
@@ -338,7 +338,7 @@ export default function PriceConfigurator({
       {/* 가입 시뮬레이터 박스는 컨슈머 노출 회피로 비활성화됨 — SignupSimulator 함수 본체는 보존 */}
 
       {/* Spec hint */}
-      <div className="mt-2 flex items-center justify-between text-[10px] text-rk-muted">
+      <div className="mt-2 flex items-center justify-between text-[12px] text-rk-muted">
         <div>
           {ownership && ownership !== contractPeriod && (
             <span>총 사용 {ownership}개월 (의무 {contractPeriod})</span>
@@ -398,9 +398,9 @@ function SignupSimulator({
     <div className="mt-3 bg-rk-tint-blue border border-[#D8E4F4] rounded-md p-3">
       <div className="flex items-center gap-2 mb-2">
         <span className="text-[14px]">💰</span>
-        <b className="text-[12px] text-rk-info">가입 시뮬레이션 — {contractPeriod}개월 기준</b>
+        <b className="text-[14px] text-rk-info">가입 시뮬레이션 — {contractPeriod}개월 기준</b>
       </div>
-      <dl className="grid grid-cols-[1fr_auto] gap-y-1 text-[11px]">
+      <dl className="grid grid-cols-[1fr_auto] gap-y-1 text-[13px]">
         <dt className="text-rk-muted">운영가 총 지출</dt>
         <dd className="rk-num text-rk-text">{fmt(totalOperational)}원</dd>
         {usingNew && rentalNow !== operationalRental && (
@@ -429,11 +429,11 @@ function SignupSimulator({
         )}
       </dl>
       <div className="mt-2 pt-2 border-t border-[#D8E4F4] flex items-baseline justify-between">
-        <span className="text-[11px] text-rk-info font-medium">실제 지불 합계</span>
+        <span className="text-[13px] text-rk-info font-medium">실제 지불 합계</span>
         <div className="text-right">
-          <b className="text-[18px] tracking-[-.02em] text-rk-info rk-num">{fmt(Math.round(totalFinal))}<small className="text-[11px] font-medium">원</small></b>
+          <b className="text-[18px] tracking-[-.02em] text-rk-info rk-num">{fmt(Math.round(totalFinal))}<small className="text-[13px] font-medium">원</small></b>
           {totalSavings > 0 && (
-            <div className="text-[10px] text-rk-sale font-medium">총 −{fmt(Math.round(totalSavings))}원 절약</div>
+            <div className="text-[12px] text-rk-sale font-medium">총 −{fmt(Math.round(totalSavings))}원 절약</div>
           )}
         </div>
       </div>

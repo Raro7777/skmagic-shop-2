@@ -38,7 +38,7 @@ export default function RankingTabs({
         <h3 className="text-[14px] font-semibold text-rk-ink">🏆 카테고리 랭킹</h3>
         <Link
           href={`/p/${partnerCode}/category/${activeSlug}`}
-          className="ml-auto text-[11px] text-rk-info no-underline"
+          className="ml-auto text-[13px] text-rk-info no-underline"
         >
           전체 보기 →
         </Link>
@@ -52,7 +52,7 @@ export default function RankingTabs({
             type="button"
             onClick={() => setActiveSlug(c.slug)}
             className={
-              "px-3 py-1.5 rounded-full text-[12px] whitespace-nowrap cursor-pointer border transition-colors " +
+              "px-3 py-1.5 rounded-full text-[14px] whitespace-nowrap cursor-pointer border transition-colors " +
               (c.slug === activeSlug
                 ? "bg-rk-navy text-white font-medium border-rk-navy"
                 : "bg-white text-rk-text border-rk-line hover:bg-rk-soft-2")
@@ -60,7 +60,7 @@ export default function RankingTabs({
           >
             <span className="mr-1">{c.icon}</span>
             {c.label}
-            <span className={"ml-1.5 text-[10px] " + (c.slug === activeSlug ? "opacity-70" : "text-rk-faint")}>
+            <span className={"ml-1.5 text-[12px] " + (c.slug === activeSlug ? "opacity-70" : "text-rk-faint")}>
               {c.count}
             </span>
           </button>
@@ -69,7 +69,7 @@ export default function RankingTabs({
 
       {/* Ranking grid */}
       {products.length === 0 ? (
-        <div className="bg-rk-soft-2 border border-rk-line-2 rounded p-4 text-center text-[12px] text-rk-muted">
+        <div className="bg-rk-soft-2 border border-rk-line-2 rounded p-4 text-center text-[14px] text-rk-muted">
           이 카테고리에 노출 상품이 없습니다.
         </div>
       ) : (
@@ -88,7 +88,7 @@ export default function RankingTabs({
                 />
                 <span
                   className={
-                    "absolute -top-1 -left-1 text-white px-1.5 py-px text-[10px] font-bold font-mono rounded rk-num z-10 " +
+                    "absolute -top-1 -left-1 text-white px-1.5 py-px text-[12px] font-bold font-mono rounded rk-num z-10 " +
                     (idx <= 1 ? "bg-rk-sale" : "bg-rk-navy")
                   }
                 >
@@ -96,8 +96,8 @@ export default function RankingTabs({
                 </span>
               </div>
               <div className="min-w-0">
-                <div className="text-[12px] font-medium text-rk-ink leading-[1.35] truncate">{p.name}</div>
-                <div className="text-[10px] text-rk-faint font-mono mt-0.5 truncate">{p.modelName} · {p.managementType}</div>
+                <div className="text-[14px] font-medium text-rk-ink leading-[1.35] truncate">{p.name}</div>
+                <div className="text-[12px] text-rk-faint font-mono mt-0.5 truncate">{p.modelName} · {p.managementType}</div>
                 <div className="flex items-center gap-1 mt-1 flex-wrap">
                   {p.giftLabel && <span className="text-[9px] px-1 py-px rounded bg-rk-tint-orange text-rk-orange-deep font-medium">사은품</span>}
                   {p.installFreed && <span className="text-[9px] px-1 py-px rounded bg-rk-tint-green text-rk-success font-medium">설치비 면제</span>}
@@ -105,10 +105,10 @@ export default function RankingTabs({
                 </div>
               </div>
               <div className="text-right shrink-0">
-                <div className="text-[10px] text-rk-muted">월</div>
+                <div className="text-[12px] text-rk-muted">월</div>
                 <b className="text-[15px] font-bold tracking-[-.02em] text-rk-ink rk-num">{fmt(p.rentalPrice)}원</b>
                 {p.cardDiscountPrice && (
-                  <div className="text-[10px] text-rk-sale font-medium">카드 {fmt(p.cardDiscountPrice)}원</div>
+                  <div className="text-[12px] text-rk-sale font-medium">카드 {fmt(p.cardDiscountPrice)}원</div>
                 )}
               </div>
             </Link>

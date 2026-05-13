@@ -76,7 +76,7 @@ export default async function ReviewsPage({
   return (
     <div className="bg-rk-soft-2 min-h-screen flex justify-center items-start gap-6 max-md:p-0 md:py-8">
       <div className="w-full md:w-[390px] bg-white md:rounded-[32px] md:shadow-[0_8px_24px_rgba(20,25,40,.08)] overflow-hidden md:border-8 md:border-[#1A1D24]">
-        <div className="hidden md:flex bg-white h-9 items-center justify-between px-[22px] text-[12px] font-semibold">
+        <div className="hidden md:flex bg-white h-9 items-center justify-between px-[22px] text-[14px] font-semibold">
           <span className="rk-num">9:41</span>
           <span>● ●</span>
         </div>
@@ -90,15 +90,15 @@ export default async function ReviewsPage({
             <div className="text-rk-warn text-[20px] leading-none">{"★".repeat(Math.round(avgRating))}{"☆".repeat(5 - Math.round(avgRating))}</div>
             <div>
               <div className="rk-num text-[18px] font-bold text-rk-ink">{avgRating.toFixed(1)}</div>
-              <small className="text-[10px] text-rk-muted">평점 / 전체 {total}건</small>
+              <small className="text-[12px] text-rk-muted">평점 / 전체 {total}건</small>
             </div>
             {verifiedCount > 0 && (
-              <span className="ml-auto text-[10px] px-1.5 py-px rounded bg-rk-tint-green text-rk-success font-medium">
+              <span className="ml-auto text-[12px] px-1.5 py-px rounded bg-rk-tint-green text-rk-success font-medium">
                 ✓ 가입 인증 {verifiedCount}건
               </span>
             )}
           </div>
-          <p className="text-[11px] text-rk-muted mt-2 m-0">
+          <p className="text-[13px] text-rk-muted mt-2 m-0">
             {partner.partnerName} 자체 큐레이션 — 실제 가입 고객 후기 우선 표시
           </p>
 
@@ -111,7 +111,7 @@ export default async function ReviewsPage({
                 <Link
                   key={rating}
                   href={ratingFilter === rating ? `/p/${partner.partnerCode}/reviews` : `/p/${partner.partnerCode}/reviews?rating=${rating}`}
-                  className="flex items-center gap-2 text-[10px] no-underline cursor-pointer hover:opacity-80"
+                  className="flex items-center gap-2 text-[12px] no-underline cursor-pointer hover:opacity-80"
                 >
                   <span className={"rk-num min-w-[16px] " + (ratingFilter === rating ? "text-rk-orange-deep font-bold" : "text-rk-muted")}>{rating}★</span>
                   <div className="flex-1 h-1.5 bg-rk-line-2 rounded-full overflow-hidden">
@@ -126,7 +126,7 @@ export default async function ReviewsPage({
 
         {/* 필터 안내 */}
         {(productCodeFilter || ratingFilter) && (
-          <div className="bg-rk-tint-blue text-rk-info px-3 py-2 text-[11px] flex items-center gap-2">
+          <div className="bg-rk-tint-blue text-rk-info px-3 py-2 text-[13px] flex items-center gap-2">
             <span>
               필터:&nbsp;
               {productName && <b>{productName}</b>}
@@ -134,7 +134,7 @@ export default async function ReviewsPage({
               <span className="mx-1.5">·</span>
               <b className="text-rk-info">{reviews.length}건</b>
             </span>
-            <Link href={`/p/${partner.partnerCode}/reviews`} className="ml-auto text-[10px] underline">필터 해제</Link>
+            <Link href={`/p/${partner.partnerCode}/reviews`} className="ml-auto text-[12px] underline">필터 해제</Link>
           </div>
         )}
 
@@ -142,7 +142,7 @@ export default async function ReviewsPage({
         <section className="bg-white px-4 py-3">
           <div className="flex flex-col gap-2">
             {reviews.length === 0 ? (
-              <div className="bg-rk-soft-2 rounded-md p-6 text-center text-[12px] text-rk-muted">
+              <div className="bg-rk-soft-2 rounded-md p-6 text-center text-[14px] text-rk-muted">
                 해당 조건의 후기가 없습니다.
               </div>
             ) : reviews.map(r => {
@@ -150,16 +150,16 @@ export default async function ReviewsPage({
               return (
                 <div key={r.id} className="bg-rk-soft-2 border border-rk-line-2 rounded-md p-3">
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
-                    <span className="text-rk-warn text-[12px]">{"★".repeat(r.rating)}{"☆".repeat(5 - r.rating)}</span>
-                    <span className="text-[10px] text-rk-muted rk-num">{r.rating}.0</span>
+                    <span className="text-rk-warn text-[14px]">{"★".repeat(r.rating)}{"☆".repeat(5 - r.rating)}</span>
+                    <span className="text-[12px] text-rk-muted rk-num">{r.rating}.0</span>
                     {r.isVerified && <span className="text-[9px] px-1 py-px rounded bg-rk-tint-green text-rk-success font-medium">가입 인증</span>}
-                    <span className="ml-auto text-[10px] text-rk-faint">
+                    <span className="ml-auto text-[12px] text-rk-faint">
                       {daysAgo === 0 ? "오늘" : daysAgo < 30 ? `${daysAgo}일 전` : `${Math.floor(daysAgo / 30)}개월 전`}
                     </span>
                   </div>
                   {r.title && <h5 className="text-[13px] font-semibold text-rk-ink m-0 mb-1">"{r.title}"</h5>}
-                  <p className="text-[11.5px] text-rk-text m-0 leading-[1.6]">{r.body}</p>
-                  <div className="text-[11px] text-rk-muted flex gap-1.5 mt-1.5 flex-wrap items-center">
+                  <p className="text-[13px] text-rk-text m-0 leading-[1.6]">{r.body}</p>
+                  <div className="text-[13px] text-rk-muted flex gap-1.5 mt-1.5 flex-wrap items-center">
                     <span>{r.customerName}</span>
                     {r.product && (
                       <>
@@ -182,12 +182,9 @@ export default async function ReviewsPage({
         </section>
 
         <section className="bg-white px-4 py-4 border-t-8 border-rk-soft text-center">
-          <small className="text-[11px] text-rk-muted block">
-            가입 후 30일 이내 작성된 후기에는 <b className="text-rk-orange-deep">5,000원 상품권</b>을 드립니다.
-          </small>
           <Link
             href={`/p/${partner.partnerCode}/products`}
-            className="inline-block mt-2 text-[12px] text-rk-info underline"
+            className="inline-block text-[13px] text-rk-info underline"
           >
             상품 보러가기 →
           </Link>

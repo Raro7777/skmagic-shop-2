@@ -77,12 +77,12 @@ export default function HeroCarousel({
       style={sectionStyle}
     >
       {cur.kind === "product" && (
-        <span className="inline-flex gap-1.5 items-center text-[11px] px-2 py-0.5 bg-white/10 rounded-full font-medium mb-2.5">
+        <span className="inline-flex gap-1.5 items-center text-[13px] px-2 py-0.5 bg-white/10 rounded-full font-medium mb-2.5">
           {sellerName ?? partnerName} 단독 프로모션
         </span>
       )}
       {cur.kind === "banner" && (
-        <span className="inline-flex gap-1.5 items-center text-[11px] px-2 py-0.5 bg-white/20 rounded-full font-medium mb-2.5">
+        <span className="inline-flex gap-1.5 items-center text-[13px] px-2 py-0.5 bg-white/20 rounded-full font-medium mb-2.5">
           🎁 진행중 이벤트
         </span>
       )}
@@ -94,27 +94,27 @@ export default function HeroCarousel({
               {cur.product.name}<br />
               <span className="text-[#FFB374]">의무 {cur.product.contractPeriod / 12}년 · {cur.product.managementType}</span>
             </h2>
-            <p className="text-[12px] opacity-80 m-0 mb-4 line-clamp-1">
+            <p className="text-[14px] opacity-80 m-0 mb-4 line-clamp-1">
               {cur.product.giftLabel
                 ? `${cur.product.giftLabel} 증정 · 카드 36개월 무이자`
                 : "신용카드 36개월 무이자 · 무료설치"}
             </p>
             <div className="flex items-baseline gap-2 flex-wrap">
-              <span className="text-[11px] opacity-70">월 렌탈가</span>
+              <span className="text-[13px] opacity-70">월 렌탈가</span>
               <span className="text-[28px] font-bold tracking-[-.02em] text-[#FFB374] rk-num">
                 {fmt(cur.product.rentalPrice)}<small className="text-[13px] font-medium">원</small>
               </span>
             </div>
             <div className="flex gap-1 mt-2.5 flex-wrap">
               {cur.product.cardDiscountPrice && (
-                <span className="text-[10px] px-1.5 py-0.5 bg-white/10 rounded">
+                <span className="text-[12px] px-1.5 py-0.5 bg-white/10 rounded">
                   카드할인가 월 {fmt(cur.product.cardDiscountPrice)}원
                 </span>
               )}
-              <span className="text-[10px] px-1.5 py-0.5 bg-white/10 rounded">의무사용 {cur.product.contractPeriod}개월</span>
-              <span className="text-[10px] px-1.5 py-0.5 bg-white/10 rounded">전국 무료설치</span>
+              <span className="text-[12px] px-1.5 py-0.5 bg-white/10 rounded">의무사용 {cur.product.contractPeriod}개월</span>
+              <span className="text-[12px] px-1.5 py-0.5 bg-white/10 rounded">전국 무료설치</span>
               {cur.product.giftAmount > 0 && cur.product.giftLabel && (
-                <span className="text-[10px] px-1.5 py-0.5 bg-rk-orange rounded font-medium">사은품 {cur.product.giftLabel}</span>
+                <span className="text-[12px] px-1.5 py-0.5 bg-rk-orange rounded font-medium">사은품 {cur.product.giftLabel}</span>
               )}
             </div>
           </Link>
@@ -139,7 +139,7 @@ export default function HeroCarousel({
             />
           ))}
         </div>
-        <span className="text-[11px] font-mono opacity-80 px-2 py-0.5 bg-black/30 rounded-full text-white rk-num">
+        <span className="text-[13px] font-mono opacity-80 px-2 py-0.5 bg-black/30 rounded-full text-white rk-num">
           {idx + 1} / {total}
         </span>
       </div>
@@ -174,7 +174,7 @@ function BannerSlideContent({ banner }: { banner: ActiveBanner }) {
               <p className="text-[13px] opacity-95 m-0 mb-3 leading-[1.4]">{banner.subtitle}</p>
             )}
             {banner.ctaLabel && (
-              <span className="inline-block px-3 py-1.5 rounded-full text-[12px] font-semibold bg-white text-rk-ink">
+              <span className="inline-block px-3 py-1.5 rounded-full text-[14px] font-semibold bg-white text-rk-ink">
                 {banner.ctaLabel} →
               </span>
             )}
@@ -194,7 +194,7 @@ function BannerSlideContent({ banner }: { banner: ActiveBanner }) {
               <p className="text-[13px] opacity-90 m-0 mb-2 leading-[1.4]">{banner.subtitle}</p>
             )}
             {banner.ctaLabel && (
-              <span className="inline-block px-3 py-1.5 rounded text-[12px] font-semibold bg-white/20">
+              <span className="inline-block px-3 py-1.5 rounded text-[14px] font-semibold bg-white/20">
                 {banner.ctaLabel} →
               </span>
             )}
@@ -203,7 +203,7 @@ function BannerSlideContent({ banner }: { banner: ActiveBanner }) {
             {(banner.spotlightProductImage || banner.imageUrl) ? (
               <img src={banner.spotlightProductImage ?? banner.imageUrl ?? ""} alt="" className="w-full h-full object-contain" />
             ) : (
-              <span className="text-[10px] opacity-70 text-center">상품<br />이미지</span>
+              <span className="text-[12px] opacity-70 text-center">상품<br />이미지</span>
             )}
           </div>
         </div>
@@ -214,7 +214,7 @@ function BannerSlideContent({ banner }: { banner: ActiveBanner }) {
       return (
         <div className="text-center">
           {banner.subtitle && (
-            <b className="block text-[12px] uppercase tracking-[.1em] opacity-75 mb-1">{banner.subtitle}</b>
+            <b className="block text-[14px] uppercase tracking-[.1em] opacity-75 mb-1">{banner.subtitle}</b>
           )}
           <h2 className="text-[22px] font-bold leading-[1.2] tracking-[-.03em] m-0 mb-2">
             {banner.title}
@@ -229,7 +229,7 @@ function BannerSlideContent({ banner }: { banner: ActiveBanner }) {
           )}
           {banner.ctaLabel && (
             <div>
-              <span className="inline-block px-3 py-1.5 rounded-full bg-white text-rk-ink text-[12px] font-semibold">
+              <span className="inline-block px-3 py-1.5 rounded-full bg-white text-rk-ink text-[14px] font-semibold">
                 {banner.ctaLabel} →
               </span>
             </div>
@@ -248,7 +248,7 @@ function BannerSlideContent({ banner }: { banner: ActiveBanner }) {
           <p className="text-[13px] opacity-90 m-0 mb-3 leading-[1.4]">{banner.subtitle}</p>
         )}
         {banner.ctaLabel && (
-          <span className="inline-block px-3 py-1.5 rounded text-[12px] font-semibold bg-white/20">
+          <span className="inline-block px-3 py-1.5 rounded text-[14px] font-semibold bg-white/20">
             {banner.ctaLabel} →
           </span>
         )}

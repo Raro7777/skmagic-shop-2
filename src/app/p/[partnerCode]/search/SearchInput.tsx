@@ -36,7 +36,7 @@ export default function SearchInput({
       />
       <button
         type="submit"
-        className="bg-rk-navy hover:bg-rk-navy-deep text-white border-0 px-3 py-2 rounded text-[12px] font-medium cursor-pointer transition-colors"
+        className="bg-rk-navy hover:bg-rk-navy-deep text-white border-0 px-3 py-2 rounded text-[14px] font-medium cursor-pointer transition-colors"
       >
         검색
       </button>

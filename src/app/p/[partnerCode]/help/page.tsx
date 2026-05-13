@@ -64,7 +64,7 @@ export default async function HelpPage({
   return (
     <div className="bg-rk-soft-2 min-h-screen flex justify-center items-start gap-6 max-md:p-0 md:py-8">
       <div className="w-full md:w-[390px] bg-white md:rounded-[32px] md:shadow-[0_8px_24px_rgba(20,25,40,.08)] overflow-hidden md:border-8 md:border-[#1A1D24]">
-        <div className="hidden md:flex bg-white h-9 items-center justify-between px-[22px] text-[12px] font-semibold">
+        <div className="hidden md:flex bg-white h-9 items-center justify-between px-[22px] text-[14px] font-semibold">
           <span className="rk-num">9:41</span>
           <span>● ●</span>
         </div>
@@ -74,7 +74,7 @@ export default async function HelpPage({
         {/* Hero */}
         <section className="bg-rk-navy text-white px-4 py-6">
           <h1 className="text-[20px] font-bold m-0 tracking-[-.02em]">고객센터</h1>
-          <p className="text-[12px] opacity-80 mt-1.5 m-0">
+          <p className="text-[14px] opacity-80 mt-1.5 m-0">
             {partner.partnerName} · 자주 묻는 질문 모음
           </p>
         </section>
@@ -82,7 +82,7 @@ export default async function HelpPage({
         {/* Contact card */}
         <section className="bg-white px-4 py-4 border-b-8 border-rk-soft">
           <h3 className="text-[14px] font-semibold text-rk-ink mb-2">📞 연락처</h3>
-          <div className="bg-rk-soft-2 rounded-md p-3 grid grid-cols-[80px_1fr] gap-y-2 text-[12px]">
+          <div className="bg-rk-soft-2 rounded-md p-3 grid grid-cols-[80px_1fr] gap-y-2 text-[13px]">
             <span className="text-rk-muted">고객센터</span>
             <a href={`tel:${partner.hotlineNumber.replace(/\D/g, "")}`} className="text-rk-ink font-bold rk-num no-underline">
               {partner.hotlineNumber}
@@ -91,12 +91,6 @@ export default async function HelpPage({
             <span className="text-rk-ink">평일 09:00–22:00</span>
             <span className="text-rk-muted">주소</span>
             <span className="text-rk-text">{partner.address ?? "—"}</span>
-            {partner.ownerName && (
-              <>
-                <span className="text-rk-muted">담당</span>
-                <span className="text-rk-text">{partner.ownerName}</span>
-              </>
-            )}
           </div>
         </section>
 
@@ -107,11 +101,11 @@ export default async function HelpPage({
             <div className="flex flex-col gap-2">
               {section.items.map((item, i) => (
                 <details key={i} className="group bg-rk-soft-2 border border-rk-line-2 rounded-md p-3">
-                  <summary className="cursor-pointer list-none flex items-center justify-between text-[12px] font-medium text-rk-ink">
+                  <summary className="cursor-pointer list-none flex items-center justify-between text-[14px] font-medium text-rk-ink">
                     <span>Q. {item.q}</span>
-                    <span className="text-rk-muted text-[11px] group-open:rotate-180 transition-transform">▼</span>
+                    <span className="text-rk-muted text-[13px] group-open:rotate-180 transition-transform">▼</span>
                   </summary>
-                  <p className="text-[11px] text-rk-text leading-[1.7] mt-2 m-0 pl-3 border-l-2 border-rk-line whitespace-pre-line">
+                  <p className="text-[13px] text-rk-text leading-[1.7] mt-2 m-0 pl-3 border-l-2 border-rk-line whitespace-pre-line">
                     {item.a}
                   </p>
                 </details>
@@ -124,10 +118,10 @@ export default async function HelpPage({
         <section className="bg-white px-4 py-4 border-b-8 border-rk-soft">
           <h3 className="text-[14px] font-semibold text-rk-ink mb-2">📄 약관 · 정책</h3>
           <div className="flex flex-col gap-1">
-            <Link href="/legal/terms" className="block text-[12px] text-rk-info py-1 no-underline">
+            <Link href="/legal/terms" className="block text-[14px] text-rk-info py-1 no-underline">
               · 이용약관 →
             </Link>
-            <Link href="/legal/privacy" className="block text-[12px] text-rk-info py-1 no-underline">
+            <Link href="/legal/privacy" className="block text-[14px] text-rk-info py-1 no-underline">
               · 개인정보처리방침 →
             </Link>
           </div>
@@ -136,7 +130,7 @@ export default async function HelpPage({
         {/* Need help — direct link to consult */}
         <section className="bg-rk-tint-orange px-4 py-5 text-center">
           <h3 className="text-[14px] font-semibold text-rk-orange-deep">아직 궁금한 점이 남았나요?</h3>
-          <p className="text-[12px] text-rk-orange-deep mt-1 mb-3">
+          <p className="text-[14px] text-rk-orange-deep mt-1 mb-3">
             카톡으로 바로 답변 받으세요.
           </p>
           <a className="inline-block bg-[#FEE500] text-[#1A1D24] py-2 px-5 rounded-md font-semibold text-[13px] no-underline cursor-pointer">

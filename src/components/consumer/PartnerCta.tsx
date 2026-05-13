@@ -15,33 +15,38 @@ export default function PartnerCta({
   const kakaoUrl = partner.kakaoChannelUrl;
   const telHref = `tel:${partner.hotlineNumber.replace(/\D/g, "")}`;
 
+  // sticky: 항상 뷰포트 하단에 고정 (항목 11)
   return (
-    <div className="sticky bottom-0 px-3.5 py-2.5 bg-white border-t border-rk-line flex gap-2 items-center z-10">
+    <div className="sticky bottom-0 px-3 py-2.5 bg-white border-t border-rk-line flex gap-1.5 items-center z-30 shadow-[0_-2px_8px_rgba(0,0,0,0.06)]">
+      {/* 전화 상담 */}
       <a
         href={telHref}
-        className="bg-rk-soft text-rk-ink px-3 py-3 rounded-lg font-semibold text-[12px] no-underline cursor-pointer flex items-center justify-center"
+        className="flex-1 bg-rk-navy hover:bg-rk-navy-deep text-white py-3 rounded-lg font-semibold text-[13.5px] no-underline cursor-pointer flex items-center justify-center gap-1.5 transition-colors"
         title={`전화 ${partner.hotlineNumber}`}
       >
-        📞
+        📞 전화상담
       </a>
+      {/* 카톡 상담 */}
       {kakaoUrl ? (
         <a
           href={kakaoUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="bg-[#FEE500] text-[#1A1D24] px-3 py-3 rounded-lg font-semibold text-[12px] no-underline cursor-pointer flex items-center justify-center"
+          className="flex-1 bg-[#FEE500] hover:bg-[#F4DC00] text-[#1A1D24] py-3 rounded-lg font-semibold text-[13.5px] no-underline cursor-pointer flex items-center justify-center gap-1.5 transition-colors"
           title={`${partner.partnerName} 카톡채널`}
         >
-          💬
+          💬 카톡상담
         </a>
       ) : (
-        <span
-          className="bg-rk-soft-2 text-rk-faint px-3 py-3 rounded-lg font-semibold text-[12px] flex items-center justify-center cursor-not-allowed"
-          title="카카오톡 채널 연결 준비 중"
+        <a
+          href={telHref}
+          className="flex-1 bg-[#FEE500] text-[#1A1D24] py-3 rounded-lg font-semibold text-[13.5px] no-underline cursor-pointer flex items-center justify-center gap-1.5"
+          title="카톡 채널 미설정 — 전화로 연결"
         >
-          💬
-        </span>
+          💬 카톡상담
+        </a>
       )}
+      {/* 상담 신청 (폼 열림) */}
       <ConsultForm
         partnerCode={partner.partnerCode}
         partnerName={partner.partnerName}
@@ -49,7 +54,8 @@ export default function PartnerCta({
         sellerName={seller?.name}
         defaultProductCode={defaultProductCode}
         defaultProductLabel={defaultProductLabel}
-        buttonClassName="flex-1 bg-rk-orange hover:bg-rk-orange-deep text-white py-3 rounded-lg font-semibold text-[13px] cursor-pointer border-0 transition-colors"
+        buttonLabel="✍ 상담신청"
+        buttonClassName="flex-1 bg-rk-orange hover:bg-rk-orange-deep text-white py-3 rounded-lg font-semibold text-[13.5px] cursor-pointer border-0 transition-colors flex items-center justify-center gap-1.5"
       />
     </div>
   );

@@ -10,7 +10,7 @@ export default function ProductContentImages({ images }: { images: ProductConten
     <section className="bg-white px-4 py-5 border-b-8 border-rk-soft">
       <div className="flex items-baseline gap-2 mb-3">
         <h3 className="text-[14px] font-bold text-rk-ink tracking-[-.02em]">📋 상품 상세</h3>
-        <small className="text-[10px] text-rk-muted">{images.length}장</small>
+        <small className="text-[12px] text-rk-muted">{images.length}장</small>
       </div>
       <div className="flex flex-col gap-2">
         {images.map((img, i) => (

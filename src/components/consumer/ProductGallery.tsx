@@ -34,7 +34,7 @@ export default function ProductGallery({
           loading="eager"
         />
         <div className="absolute top-3 left-3 flex flex-col gap-1 items-start z-10">{fallbackBadges}</div>
-        <div className="absolute bottom-3 right-3 px-2 py-0.5 bg-black/50 text-white text-[10px] font-mono rounded-full z-10">
+        <div className="absolute bottom-3 right-3 px-2 py-0.5 bg-black/50 text-white text-[12px] font-mono rounded-full z-10">
           {active + 1} / {total}
         </div>
         {total > 1 && (

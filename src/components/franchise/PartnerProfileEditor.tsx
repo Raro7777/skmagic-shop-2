@@ -28,6 +28,8 @@ export default function PartnerProfileEditor({ initial }: { initial: InitialProf
   const [ownerName, setOwnerName] = useState(initial.ownerName ?? "");
   const [hotlineNumber, setHotlineNumber] = useState(initial.hotlineNumber);
   const [phone, setPhone] = useState(initial.phone ?? "");
+  const [businessNumber, setBusinessNumber] = useState(initial.businessNumber ?? "");
+  const [commerceNumber, setCommerceNumber] = useState(initial.commerceNumber ?? "");
 
   const dirty =
     brandLabel !== initial.brandLabel ||
@@ -35,7 +37,9 @@ export default function PartnerProfileEditor({ initial }: { initial: InitialProf
     (address || null) !== initial.address ||
     (ownerName || null) !== initial.ownerName ||
     hotlineNumber !== initial.hotlineNumber ||
-    (phone || null) !== initial.phone;
+    (phone || null) !== initial.phone ||
+    (businessNumber || null) !== initial.businessNumber ||
+    (commerceNumber || null) !== initial.commerceNumber;
 
   const save = async () => {
     setBusy(true);
@@ -51,6 +55,8 @@ export default function PartnerProfileEditor({ initial }: { initial: InitialProf
           ownerName: ownerName.trim() || null,
           hotlineNumber,
           phone: phone.trim() || null,
+          businessNumber: businessNumber.trim() || null,
+          commerceNumber: commerceNumber.trim() || null,
         }),
       });
       const j = await res.json();
@@ -69,6 +75,8 @@ export default function PartnerProfileEditor({ initial }: { initial: InitialProf
     setOwnerName(initial.ownerName ?? "");
     setHotlineNumber(initial.hotlineNumber);
     setPhone(initial.phone ?? "");
+    setBusinessNumber(initial.businessNumber ?? "");
+    setCommerceNumber(initial.commerceNumber ?? "");
     setFlash(null);
   };
 
@@ -169,18 +177,30 @@ export default function PartnerProfileEditor({ initial }: { initial: InitialProf
           className="border border-rk-line rounded px-2.5 py-1.5 text-[13px] focus:outline-none focus:border-rk-navy disabled:opacity-50"
         />
 
-        {/* 사업자번호 — read only */}
-        <label className="text-rk-muted">사업자번호</label>
-        <div className="flex items-center gap-2">
-          <span className="text-rk-ink rk-num">{initial.businessNumber ?? "—"}</span>
-          <span className="text-[11px] px-1.5 py-px rounded bg-rk-tint-orange text-rk-orange-deep">본사 변경</span>
-        </div>
+        {/* 사업자번호 — 협력점 직접 입력 (항목 12) */}
+        <label htmlFor="businessNumber" className="text-rk-muted">사업자번호</label>
+        <input
+          id="businessNumber"
+          type="text"
+          value={businessNumber}
+          onChange={e => setBusinessNumber(e.target.value)}
+          placeholder="예: 123-45-67890"
+          maxLength={20}
+          disabled={busy}
+          className="border border-rk-line rounded px-2.5 py-1.5 text-[13px] focus:outline-none focus:border-rk-navy disabled:opacity-50 rk-num"
+        />
 
-        <label className="text-rk-muted">통신판매번호</label>
-        <div className="flex items-center gap-2">
-          <span className="text-rk-ink rk-num">{initial.commerceNumber ?? "—"}</span>
-          <span className="text-[11px] px-1.5 py-px rounded bg-rk-tint-orange text-rk-orange-deep">본사 변경</span>
-        </div>
+        <label htmlFor="commerceNumber" className="text-rk-muted">통신판매번호</label>
+        <input
+          id="commerceNumber"
+          type="text"
+          value={commerceNumber}
+          onChange={e => setCommerceNumber(e.target.value)}
+          placeholder="예: 제2024-서울강남-1234호"
+          maxLength={40}
+          disabled={busy}
+          className="border border-rk-line rounded px-2.5 py-1.5 text-[13px] focus:outline-none focus:border-rk-navy disabled:opacity-50"
+        />
       </div>
 
       {flash && (

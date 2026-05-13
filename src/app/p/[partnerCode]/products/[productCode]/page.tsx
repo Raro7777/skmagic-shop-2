@@ -73,16 +73,16 @@ export default async function ProductDetailPage({
     <div className="bg-rk-soft-2 min-h-screen flex justify-center items-start gap-6 max-md:p-0 md:py-8">
       <UtmTracker />
       {/* Left dev sidebar */}
-      <aside className="hidden xl:block w-[220px] sticky top-8 text-[12px] text-rk-muted leading-[1.65]">
-        <h6 className="text-[11px] text-rk-faint tracking-[.12em] uppercase mb-2">분양 사이트</h6>
+      <aside className="hidden xl:block w-[220px] sticky top-8 text-[14px] text-rk-muted leading-[1.65]">
+        <h6 className="text-[13px] text-rk-faint tracking-[.12em] uppercase mb-2">분양 사이트</h6>
         <b className="text-rk-ink block">{partner.partnerName}</b>
         <small className="block text-rk-muted">{partner.brandLabel}</small>
 
-        <h6 className="text-[11px] text-rk-faint tracking-[.12em] uppercase mt-4 mb-2">이동</h6>
-        <Link href={`/p/${partner.partnerCode}`} className="block py-1.5 border-b border-rk-line-2 text-rk-info no-underline text-[12px]">← {partner.partnerName} 홈</Link>
-        <Link href="/" className="block py-1.5 border-b border-rk-line-2 text-rk-info no-underline text-[12px]">허브로</Link>
+        <h6 className="text-[13px] text-rk-faint tracking-[.12em] uppercase mt-4 mb-2">이동</h6>
+        <Link href={`/p/${partner.partnerCode}`} className="block py-1.5 border-b border-rk-line-2 text-rk-info no-underline text-[14px]">← {partner.partnerName} 홈</Link>
+        <Link href="/" className="block py-1.5 border-b border-rk-line-2 text-rk-info no-underline text-[14px]">허브로</Link>
 
-        <div className="bg-white border border-rk-line p-2.5 rounded-lg mt-3 text-[11px]">
+        <div className="bg-white border border-rk-line p-2.5 rounded-lg mt-3 text-[13px]">
           <b className="text-rk-ink">상품 상세</b><br />
           가격은 <b>전국 동일</b>이지만 <b className="text-rk-orange-deep">사은품/할인 혜택</b>은 협력점마다 다릅니다.
           이 페이지의 사은품은 {partner.partnerName} 전용입니다.
@@ -91,7 +91,7 @@ export default async function ProductDetailPage({
 
       {/* Device frame */}
       <div className="w-full md:w-[390px] bg-white md:rounded-[32px] md:shadow-[0_8px_24px_rgba(20,25,40,.08)] overflow-hidden md:border-8 md:border-[#1A1D24]">
-        <div className="hidden md:flex bg-white h-9 items-center justify-between px-[22px] text-[12px] font-semibold">
+        <div className="hidden md:flex bg-white h-9 items-center justify-between px-[22px] text-[14px] font-semibold">
           <span className="rk-num">9:41</span>
           <span>● ●</span>
         </div>
@@ -101,10 +101,10 @@ export default async function ProductDetailPage({
           <div className="flex items-center px-3 py-3 gap-2">
             <Link href={`/p/${partner.partnerCode}`} className="text-[20px] text-rk-ink no-underline">←</Link>
             <div className="flex items-center gap-2 flex-1 min-w-0">
-              <div className="w-[24px] h-[24px] bg-rk-orange text-white rounded-[4px] grid place-items-center font-bold text-[11px] shrink-0">SK</div>
+              <div className="w-[24px] h-[24px] bg-rk-orange text-white rounded-[4px] grid place-items-center font-bold text-[13px] shrink-0">SK</div>
               <div className="min-w-0">
                 <div className="font-bold text-[13px] text-rk-ink leading-tight truncate">{partner.partnerName}</div>
-                <div className="text-[10px] text-rk-muted truncate">{partner.brandLabel}</div>
+                <div className="text-[12px] text-rk-muted truncate">{partner.brandLabel}</div>
               </div>
             </div>
             <div className="flex gap-3 text-base text-rk-ink shrink-0">
@@ -115,7 +115,7 @@ export default async function ProductDetailPage({
         </header>
 
         {/* Breadcrumb */}
-        <nav className="px-4 py-2 text-[11px] text-rk-muted bg-white border-b border-rk-line-2 flex gap-1.5 items-center">
+        <nav className="px-4 py-2 text-[13px] text-rk-muted bg-white border-b border-rk-line-2 flex gap-1.5 items-center">
           <Link href={`/p/${partner.partnerCode}`} className="text-rk-muted no-underline">홈</Link>
           <span>›</span>
           <span>{categoryLabel}</span>
@@ -129,18 +129,18 @@ export default async function ProductDetailPage({
           fallbackBg={productBg}
           fallbackBadges={
             <>
-              {detail.isFeatured && <span className="text-[10px] px-1.5 py-0.5 rounded bg-rk-navy text-white font-semibold">MD추천</span>}
-              {detail.giftLabel && <span className="text-[10px] px-1.5 py-0.5 rounded bg-rk-orange text-white font-semibold">사은품</span>}
-              {detail.installFreed && <span className="text-[10px] px-1.5 py-0.5 rounded bg-rk-success text-white font-semibold">설치비 면제</span>}
+              {detail.isFeatured && <span className="text-[12px] px-1.5 py-0.5 rounded bg-rk-navy text-white font-semibold">MD추천</span>}
+              {detail.giftLabel && <span className="text-[12px] px-1.5 py-0.5 rounded bg-rk-orange text-white font-semibold">사은품</span>}
+              {detail.installFreed && <span className="text-[12px] px-1.5 py-0.5 rounded bg-rk-success text-white font-semibold">설치비 면제</span>}
             </>
           }
         />
 
         {/* Title */}
         <section className="bg-white px-4 pt-4 pb-3 border-b border-rk-line">
-          <div className="text-[11px] text-rk-muted mb-1">SK매직</div>
+          <div className="text-[13px] text-rk-muted mb-1">SK매직</div>
           <h1 className="text-[18px] font-bold leading-[1.35] text-rk-ink m-0 tracking-[-.02em]">{detail.name}</h1>
-          <div className="text-[11px] text-rk-faint font-mono mt-1">모델 {detail.modelName} · 의무 {detail.contractPeriod}개월 · {detail.managementType}</div>
+          <div className="text-[13px] text-rk-faint font-mono mt-1">모델 {detail.modelName} · 의무 {detail.contractPeriod}개월 · {detail.managementType}</div>
         </section>
 
         {/* Price block — 운영방식·약정기간·타사보상·색상·렌탈지원금 동적 */}
@@ -158,17 +158,27 @@ export default async function ProductDetailPage({
           partnerInstallAmount={detail.partnerInstallAmount}
         />
 
+        {/* 월 렌탈가 하단 — 상담신청 버튼 (항목 7) */}
+        <section className="bg-white px-4 py-3 border-b-8 border-rk-soft">
+          <a
+            href="#consult-form"
+            className="block w-full text-center py-3 rounded-md bg-rk-orange hover:bg-rk-orange-deep text-white font-bold text-[15px] no-underline transition-colors"
+          >
+            ✍ 상담 신청하기
+          </a>
+        </section>
+
         {/* Differentiation banner — partner-specific */}
         {(detail.giftAmount > 0 && detail.giftLabel) && (
           <section className="bg-rk-tint-orange border-y border-[#F4DCC9] px-4 py-3.5">
             <div className="flex items-center gap-2 mb-1">
-              <span className="bg-rk-orange text-white text-[10px] font-semibold px-1.5 py-0.5 rounded">단독 혜택</span>
-              <small className="text-[11px] text-rk-orange-deep font-medium">{partner.partnerName} 한정</small>
+              <span className="bg-rk-orange text-white text-[12px] font-semibold px-1.5 py-0.5 rounded">단독 혜택</span>
+              <small className="text-[13px] text-rk-orange-deep font-medium">{partner.partnerName} 한정</small>
             </div>
             <div className="text-[14px] text-rk-orange-deep font-semibold">
               🎁 사은품 <b>{detail.giftLabel}</b> 증정
             </div>
-            <small className="block text-[10px] text-rk-muted mt-0.5">
+            <small className="block text-[12px] text-rk-muted mt-0.5">
               가입 후 5/19까지 발송 · 가구당 1개 한정
             </small>
           </section>
@@ -181,7 +191,7 @@ export default async function ProductDetailPage({
         {detail.description && (
           <section className="bg-white px-4 py-4 border-b-8 border-rk-soft">
             <h3 className="text-[14px] font-semibold mb-2.5 text-rk-ink">상품 소개</h3>
-            <div className="text-[12.5px] text-rk-text leading-[1.75]">
+            <div className="text-[14px] text-rk-text leading-[1.75]">
               {detail.description.split(/\n\n+/).filter(Boolean).map((para, i) => (
                 <p key={i} className="m-0 mb-2.5 last:mb-0 whitespace-pre-line">{para}</p>
               ))}
@@ -195,7 +205,7 @@ export default async function ProductDetailPage({
             <h3 className="text-[14px] font-semibold mb-2.5 text-rk-ink">핵심 셀링포인트</h3>
             <ul className="grid grid-cols-1 gap-1.5 m-0 p-0 list-none">
               {detail.keyFeatures.map((f, i) => (
-                <li key={i} className="flex gap-2 items-start text-[12.5px] text-rk-text leading-[1.55]">
+                <li key={i} className="flex gap-2 items-start text-[14px] text-rk-text leading-[1.55]">
                   <span className="text-rk-orange shrink-0 font-bold">✓</span>
                   <span>{f}</span>
                 </li>
@@ -207,7 +217,7 @@ export default async function ProductDetailPage({
         {/* Spec table — combine DB specs with platform-level metadata */}
         <section className="bg-white px-4 py-4 border-b-8 border-rk-soft">
           <h3 className="text-[14px] font-semibold mb-2.5 text-rk-ink">사양 정보</h3>
-          <dl className="grid grid-cols-[110px_1fr] gap-y-2 text-[12px]">
+          <dl className="grid grid-cols-[110px_1fr] gap-y-2 text-[14px]">
             {Object.entries(detail.specs).map(([k, v]) => (
               <SpecRow key={k} label={k} value={String(v)} />
             ))}
@@ -227,7 +237,7 @@ export default async function ProductDetailPage({
         {/* Bundled benefits (auto-generated from policy + management type) */}
         <section className="bg-white px-4 py-4 border-b-8 border-rk-soft">
           <h3 className="text-[14px] font-semibold mb-2 text-rk-ink">포함 혜택</h3>
-          <ul className="text-[12px] leading-[1.7] m-0 pl-5 list-disc text-rk-text">
+          <ul className="text-[14px] leading-[1.7] m-0 pl-5 list-disc text-rk-text">
             <li>전국 무료 설치 (방문일 협의)</li>
             <li>{detail.managementType.includes("자가") ? "필터 자가교체 안내 키트" : "정기 방문관리 (점검·필터교체 포함)"}</li>
             <li>제조사 보증 {detail.warrantyMonths}개월</li>
@@ -269,23 +279,23 @@ export default async function ProductDetailPage({
         <section className="bg-white px-4 py-3 border-b-8 border-rk-soft">
           <div className="flex items-baseline mb-2">
             <h3 className="text-[14px] font-semibold text-rk-ink">가입 후기</h3>
-            <Link href={`/p/${partner.partnerCode}/reviews?code=${detail.productCode}`} className="ml-auto text-[11px] text-rk-info no-underline">전체 보기 →</Link>
+            <Link href={`/p/${partner.partnerCode}/reviews?code=${detail.productCode}`} className="ml-auto text-[13px] text-rk-info no-underline">전체 보기 →</Link>
           </div>
           {detail.reviews.count > 0 ? (
             <>
               <div className="flex items-center gap-2 mb-2">
                 <div className="text-rk-warn text-[14px]">{"★".repeat(Math.round(detail.reviews.avgRating))}{"☆".repeat(5 - Math.round(detail.reviews.avgRating))}</div>
                 <b className="text-[13px] text-rk-ink rk-num">{detail.reviews.avgRating.toFixed(1)}</b>
-                <span className="text-[11px] text-rk-muted">후기 {detail.reviews.count}건</span>
+                <span className="text-[13px] text-rk-muted">후기 {detail.reviews.count}건</span>
                 {detail.reviews.verifiedCount > 0 && (
-                  <span className="text-[10px] px-1.5 py-px rounded bg-rk-tint-green text-rk-success font-medium">✓ 가입 인증 {detail.reviews.verifiedCount}건</span>
+                  <span className="text-[12px] px-1.5 py-px rounded bg-rk-tint-green text-rk-success font-medium">✓ 가입 인증 {detail.reviews.verifiedCount}건</span>
                 )}
               </div>
               <div className="flex flex-col gap-2">
                 {detail.reviews.top.map(r => (
-                  <article key={r.id} className="bg-rk-soft-2 rounded-md p-3 text-[12px] leading-[1.5]">
+                  <article key={r.id} className="bg-rk-soft-2 rounded-md p-3 text-[14px] leading-[1.5]">
                     <div className="flex items-baseline gap-2 mb-1 flex-wrap">
-                      <span className="text-rk-warn text-[12px]">{"★".repeat(r.rating)}</span>
+                      <span className="text-rk-warn text-[14px]">{"★".repeat(r.rating)}</span>
                       <b className="text-rk-ink">{r.customerName}</b>
                       {r.isVerified && <span className="text-[9px] px-1 py-px rounded bg-rk-tint-green text-rk-success font-medium">가입 인증</span>}
                       {r.selectedMode && <span className="text-[9px] px-1 py-px rounded bg-rk-tint-blue text-rk-info">{r.selectedMode}</span>}
@@ -299,7 +309,7 @@ export default async function ProductDetailPage({
               </div>
             </>
           ) : (
-            <div className="bg-rk-soft-2 rounded-md p-4 text-center text-[12px] text-rk-muted">
+            <div className="bg-rk-soft-2 rounded-md p-4 text-center text-[14px] text-rk-muted">
               아직 등록된 후기가 없습니다. 가입 후 첫 후기를 남겨보세요!
             </div>
           )}
@@ -320,7 +330,7 @@ export default async function ProductDetailPage({
         {/* Inline CTA section */}
         <section className="bg-white px-4 py-5">
           <h3 className="text-[14px] font-semibold mb-1 text-rk-ink">지금 바로 상담 신청</h3>
-          <p className="text-[11px] text-rk-muted m-0 mb-3">접수 후 30분 이내 카톡 또는 전화로 연락드립니다.</p>
+          <p className="text-[13px] text-rk-muted m-0 mb-3">접수 후 30분 이내 카톡 또는 전화로 연락드립니다.</p>
           <ConsultForm
             partnerCode={partner.partnerCode}
             partnerName={partner.partnerName}
@@ -334,8 +344,8 @@ export default async function ProductDetailPage({
         </section>
 
         {/* Footer */}
-        <footer className="bg-rk-soft px-3.5 py-4 text-[11px] text-rk-muted leading-[1.7]">
-          <div className="flex gap-2.5 flex-wrap mb-2.5 text-[11px]">
+        <footer className="bg-rk-soft px-3.5 py-4 text-[13px] text-rk-muted leading-[1.7]">
+          <div className="flex gap-2.5 flex-wrap mb-2.5 text-[13px]">
             <Link href="/legal/terms" className="text-rk-ink font-semibold no-underline cursor-pointer">이용약관</Link>
             <Link href="/legal/privacy" className="text-rk-ink font-semibold no-underline cursor-pointer">개인정보처리방침</Link>
             <Link href={`/p/${partner.partnerCode}/help`} className="text-rk-text no-underline cursor-pointer">고객센터</Link>
@@ -345,7 +355,7 @@ export default async function ProductDetailPage({
             <dt className="text-rk-faint m-0">고객센터</dt><dd className="m-0 rk-num">{partner.hotlineNumber}</dd>
             {partner.businessNumber && <><dt className="text-rk-faint m-0">사업자</dt><dd className="m-0 rk-num">{partner.businessNumber}</dd></>}
           </dl>
-          <p className="text-[10px] text-rk-faint mt-3 pt-2.5 border-t border-rk-line">
+          <p className="text-[12px] text-rk-faint mt-3 pt-2.5 border-t border-rk-line">
             본 사이트는 ㈜렌트왕 분양형 렌탈 플랫폼의 가맹사이트이며, 통신판매중개자는 ㈜렌트왕입니다.
             실제 상품 공급 및 설치는 SK매직㈜에서 담당합니다.
           </p>
@@ -355,11 +365,11 @@ export default async function ProductDetailPage({
         <div className="sticky bottom-0 px-3.5 py-2.5 bg-white border-t border-rk-line flex gap-2 items-center z-10">
           <a
             href={`tel:${partner.hotlineNumber.replace(/\D/g, "")}`}
-            className="bg-rk-soft text-rk-ink px-3 py-3 rounded-lg font-semibold text-[12px] no-underline cursor-pointer flex items-center justify-center"
+            className="bg-rk-soft text-rk-ink px-3 py-3 rounded-lg font-semibold text-[14px] no-underline cursor-pointer flex items-center justify-center"
           >
             📞
           </a>
-          <a className="bg-[#FEE500] text-[#1A1D24] px-3 py-3 rounded-lg font-semibold text-[12px] no-underline cursor-pointer flex items-center justify-center">
+          <a className="bg-[#FEE500] text-[#1A1D24] px-3 py-3 rounded-lg font-semibold text-[14px] no-underline cursor-pointer flex items-center justify-center">
             💬
           </a>
           <ConsultForm
@@ -376,8 +386,8 @@ export default async function ProductDetailPage({
       </div>
 
       {/* Right side — partner-specific upsell */}
-      <aside className="hidden xl:block w-[220px] sticky top-8 text-[12px] text-rk-muted leading-[1.65]">
-        <h6 className="text-[11px] text-rk-faint tracking-[.12em] uppercase mb-2">이 협력점의 차별화</h6>
+      <aside className="hidden xl:block w-[220px] sticky top-8 text-[14px] text-rk-muted leading-[1.65]">
+        <h6 className="text-[13px] text-rk-faint tracking-[.12em] uppercase mb-2">이 협력점의 차별화</h6>
         {detail.giftAmount > 0 && detail.giftLabel ? (
           <div className="bg-rk-tint-orange border border-[#F4DCC9] rounded-md p-2.5">
             <b className="text-rk-orange-deep block">🎁 {detail.giftLabel}</b>
@@ -389,12 +399,12 @@ export default async function ProductDetailPage({
           </div>
         )}
 
-        <h6 className="text-[11px] text-rk-faint tracking-[.12em] uppercase mt-4 mb-2">관련 상품</h6>
+        <h6 className="text-[13px] text-rk-faint tracking-[.12em] uppercase mt-4 mb-2">관련 상품</h6>
         {detail.related.slice(0, 3).map(r => (
           <Link
             key={r.productCode}
             href={`/p/${partner.partnerCode}/products/${r.productCode}`}
-            className="block py-1.5 border-b border-rk-line-2 text-rk-info no-underline text-[12px]"
+            className="block py-1.5 border-b border-rk-line-2 text-rk-info no-underline text-[14px]"
           >
             {r.modelName} →
           </Link>
@@ -417,11 +427,11 @@ function SpecRow({ label, value, mono }: { label: string; value: string; mono?: 
 function FaqItem({ q, a }: { q: string; a: string }) {
   return (
     <details className="group bg-rk-soft-2 rounded-md p-3 border border-rk-line-2">
-      <summary className="cursor-pointer list-none flex items-center justify-between text-[12px] font-medium text-rk-ink">
+      <summary className="cursor-pointer list-none flex items-center justify-between text-[14px] font-medium text-rk-ink">
         <span>Q. {q}</span>
-        <span className="text-rk-muted text-[11px] group-open:rotate-180 transition-transform">▼</span>
+        <span className="text-rk-muted text-[13px] group-open:rotate-180 transition-transform">▼</span>
       </summary>
-      <p className="text-[11px] text-rk-text leading-[1.6] mt-2 m-0 pl-3 border-l-2 border-rk-line">{a}</p>
+      <p className="text-[13px] text-rk-text leading-[1.6] mt-2 m-0 pl-3 border-l-2 border-rk-line">{a}</p>
     </details>
   );
 }
@@ -438,14 +448,14 @@ function RelatedCard({ partnerCode, product }: { partnerCode: string; product: C
           <span className="text-[9px] px-1 py-px rounded text-white font-semibold bg-rk-orange">사은품</span>
         )}
       </ProductThumb>
-      <h4 className="text-[12px] font-medium text-rk-ink leading-[1.4] m-0 mt-2">{product.name}</h4>
-      <div className="text-[10px] text-rk-faint font-mono mt-0.5">{product.modelName}</div>
+      <h4 className="text-[14px] font-medium text-rk-ink leading-[1.4] m-0 mt-2">{product.name}</h4>
+      <div className="text-[12px] text-rk-faint font-mono mt-0.5">{product.modelName}</div>
       <div className="mt-1 flex items-baseline gap-1">
-        <small className="text-[10px] text-rk-muted">월</small>
+        <small className="text-[12px] text-rk-muted">월</small>
         <b className="text-[14px] font-bold tracking-[-.02em] text-rk-ink rk-num">{fmt(product.rentalPrice)}원~</b>
       </div>
       {product.giftLabel && (
-        <div className="text-[10px] text-rk-orange-deep font-medium mt-0.5">🎁 {product.giftLabel}</div>
+        <div className="text-[12px] text-rk-orange-deep font-medium mt-0.5">🎁 {product.giftLabel}</div>
       )}
     </Link>
   );
