@@ -208,7 +208,7 @@ export default async function PartnerSiteShell({
           <div className="flex justify-between items-baseline mb-3">
             <div>
               <h2 className="text-[17px] font-bold tracking-[-.02em] m-0 text-rk-ink">매니저 추천 상품</h2>
-              <small className="text-[13px] text-rk-muted block mt-0.5">{seller?.name ?? partner.ownerName ?? partner.partnerName}이(가) 직접 큐레이션 · 5월</small>
+              <small className="text-[13px] text-rk-muted block mt-0.5">{seller?.name ?? partner.partnerName}이(가) 직접 큐레이션 · 5월</small>
             </div>
             <Link href={`/p/${partner.partnerCode}/products`} className="text-[14px] text-rk-muted no-underline cursor-pointer">전체 →</Link>
           </div>
