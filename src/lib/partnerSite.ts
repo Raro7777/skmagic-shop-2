@@ -146,14 +146,9 @@ export async function getPartnerSite(partnerCode: string): Promise<PartnerSiteDa
       ? codes.map(c => codeMap.get(c)).filter((p): p is ConsumerProduct => !!p)
       : [];
 
-  // 정렬 헬퍼
+  // 정렬 헬퍼 — 모든 영역 동일하게 영업점수수료(= 본사수수료 − 본사마진) 높은 순
   const commissionDesc = (a: ConsumerProduct, b: ConsumerProduct) =>
     (partnerCommissionByCode.get(b.productCode) ?? 0) - (partnerCommissionByCode.get(a.productCode) ?? 0);
-  const giftDesc = (a: ConsumerProduct, b: ConsumerProduct) => {
-    const diff = b.giftAmount - a.giftAmount;
-    if (diff !== 0) return diff;
-    return commissionDesc(a, b); // 사은품 동률 → 수수료 높은 순
-  };
 
   // Hero = displayConfig.picks[0] 우선, 없으면 영업점수수료 높은 순 fallback
   const customPicks = pickByCodes(displayConfig?.picks);
@@ -164,14 +159,14 @@ export async function getPartnerSite(partnerCode: string): Promise<PartnerSiteDa
     sortedByCommission[0] ??
     null;
 
-  // 카테고리별 랭킹 (탭용) — displayConfig.ranking[cat] 우선, 없으면 사은품 높은 순 fallback
+  // 카테고리별 랭킹 (탭용) — displayConfig.ranking[cat] 우선, 없으면 영업점수수료 높은 순 fallback
   const rankingsByCategory: Record<string, ConsumerProduct[]> = {};
   for (const cat of Object.keys(CATEGORY_META)) {
     const custom = pickByCodes(displayConfig?.ranking?.[cat]);
     if (custom.length > 0) {
       rankingsByCategory[cat] = custom.slice(0, 6);
     } else {
-      const auto = all.filter(p => p.category === cat).sort(giftDesc).slice(0, 6);
+      const auto = all.filter(p => p.category === cat).sort(commissionDesc).slice(0, 6);
       if (auto.length > 0) rankingsByCategory[cat] = auto;
     }
   }
@@ -319,22 +314,20 @@ export async function listPartnerProducts(
   const displayConfig = (partner?.displayConfig as { ranking?: Record<string, string[]> } | null) ?? null;
   const codeMap = new Map(mapped.map(p => [p.productCode, p]));
 
+  // 모든 영역 동일: 영업점수수료(= 본사수수료 − 본사마진) 높은 순 fallback
+  const commissionDesc = (a: ConsumerProduct, b: ConsumerProduct) =>
+    (partnerCommissionByCode.get(b.productCode) ?? 0) - (partnerCommissionByCode.get(a.productCode) ?? 0);
+
   if (opts.category) {
     const customCodes = displayConfig?.ranking?.[opts.category];
     if (Array.isArray(customCodes) && customCodes.length > 0) {
       const ordered = customCodes.map(c => codeMap.get(c)).filter((p): p is ConsumerProduct => !!p);
       const orderedSet = new Set(ordered.map(p => p.productCode));
-      const rest = mapped
-        .filter(p => !orderedSet.has(p.productCode))
-        .sort((a, b) => b.giftAmount - a.giftAmount || (partnerCommissionByCode.get(b.productCode) ?? 0) - (partnerCommissionByCode.get(a.productCode) ?? 0));
+      const rest = mapped.filter(p => !orderedSet.has(p.productCode)).sort(commissionDesc);
       return [...ordered, ...rest];
     }
-    // 카테고리 fallback: 사은품 높은 순 + 수수료 tie-break
-    return mapped.sort((a, b) => b.giftAmount - a.giftAmount || (partnerCommissionByCode.get(b.productCode) ?? 0) - (partnerCommissionByCode.get(a.productCode) ?? 0));
   }
-
-  // 카테고리 미지정(전체 목록) fallback: 영업점수수료 높은 순
-  return mapped.sort((a, b) => (partnerCommissionByCode.get(b.productCode) ?? 0) - (partnerCommissionByCode.get(a.productCode) ?? 0));
+  return mapped.sort(commissionDesc);
 }
 
 export async function getPartnerHeader(partnerCode: string) {
