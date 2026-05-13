@@ -48,6 +48,10 @@ export async function GET() {
       endsAt: b.endsAt.toISOString(),
       priority: b.priority,
       status: b.status,
+      layout: b.layout,
+      spotlightProductCode: b.spotlightProductCode,
+      stampText: b.stampText,
+      sourceTemplateId: b.sourceTemplateId,
     })),
   });
 }
@@ -79,6 +83,9 @@ export async function POST(req: Request) {
     endsAt: string;
     priority: number;
     status: "draft" | "active";
+    layout: "classic" | "image-bg" | "product-spotlight" | "promo-stamp";
+    spotlightProductCode: string | null;
+    stampText: string | null;
   }>;
 
   if (!b.title || !b.startsAt || !b.endsAt) {
@@ -92,6 +99,9 @@ export async function POST(req: Request) {
   if (startsAt >= endsAt) {
     return NextResponse.json({ error: "종료일은 시작일 이후여야 합니다" }, { status: 400 });
   }
+
+  const allowedLayouts = ["classic", "image-bg", "product-spotlight", "promo-stamp"] as const;
+  const layout = b.layout && (allowedLayouts as readonly string[]).includes(b.layout) ? b.layout : "classic";
 
   const banner = await prisma.banner.create({
     data: {
@@ -108,6 +118,9 @@ export async function POST(req: Request) {
       endsAt,
       priority: typeof b.priority === "number" ? Math.max(0, Math.floor(b.priority)) : 0,
       status: b.status === "active" ? "active" : "draft",
+      layout,
+      spotlightProductCode: b.spotlightProductCode?.trim().slice(0, 32) || null,
+      stampText: b.stampText?.trim().slice(0, 60) || null,
     },
   });
 

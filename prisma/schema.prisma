@@ -251,6 +251,17 @@ model Banner {
   //   startsAt ≤ now ≤ endsAt: 진행(live)
   //   now > endsAt: 종료(ended) — UI 표시용
 
+  // 레이아웃 변형 (Phase 1-B)
+  //   classic            : 그라데이션 + 텍스트 좌측 + CTA (기본)
+  //   image-bg           : 풀폭 이미지 백그라운드 + 텍스트 오버레이
+  //   product-spotlight  : 좌측 텍스트 + 우측 상품 컷
+  //   promo-stamp        : 가격·할인 강조 스탬프
+  layout              String   @default("classic")
+  spotlightProductCode String?
+  stampText           String?
+  // 본사 표준 템플릿에서 가져온 경우 추적 (Phase 2)
+  sourceTemplateId    String?
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

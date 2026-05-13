@@ -33,12 +33,17 @@ export type ActiveBanner = {
   id: string;
   title: string;
   subtitle: string | null;
+  imageUrl: string | null;
   bgColor1: string;
   bgColor2: string;
   textColor: string;
   ctaLabel: string | null;
   ctaHref: string | null;
   endsAt: string; // ISO — 클라이언트에서 카운트다운 표시 가능
+  layout: "classic" | "image-bg" | "product-spotlight" | "promo-stamp";
+  spotlightProductCode: string | null;
+  spotlightProductImage: string | null;
+  stampText: string | null;
 };
 
 export type CategoryEntry = {
@@ -180,16 +185,32 @@ export async function getPartnerSite(partnerCode: string): Promise<PartnerSiteDa
     orderBy: [{ priority: "desc" }, { startsAt: "asc" }],
     take: 5,
   });
+
+  // product-spotlight 레이아웃용 — 강조 상품의 이미지 미리 조회
+  const spotlightCodes = bannerRows.map(b => b.spotlightProductCode).filter((c): c is string => !!c);
+  const spotlightProducts = spotlightCodes.length > 0
+    ? await prisma.product.findMany({
+        where: { productCode: { in: spotlightCodes } },
+        select: { productCode: true, imageUrl: true, imageUrls: true },
+      })
+    : [];
+  const spotlightImageMap = new Map(spotlightProducts.map(p => [p.productCode, pickThumbnail(p)]));
+
   const banners: ActiveBanner[] = bannerRows.map(b => ({
     id: b.id,
     title: b.title,
     subtitle: b.subtitle,
+    imageUrl: b.imageUrl,
     bgColor1: b.bgColor1,
     bgColor2: b.bgColor2,
     textColor: b.textColor,
     ctaLabel: b.ctaLabel,
     ctaHref: b.ctaHref,
     endsAt: b.endsAt.toISOString(),
+    layout: (b.layout as ActiveBanner["layout"]) ?? "classic",
+    spotlightProductCode: b.spotlightProductCode,
+    spotlightProductImage: b.spotlightProductCode ? (spotlightImageMap.get(b.spotlightProductCode) ?? null) : null,
+    stampText: b.stampText,
   }));
 
   return {

@@ -144,21 +144,104 @@ export default function HeroCarousel({
 }
 
 function BannerSlideContent({ banner }: { banner: ActiveBanner }) {
-  const inner = (
-    <>
-      <h2 className="text-[22px] font-bold leading-[1.3] tracking-[-.03em] m-0 mb-1.5">
-        {banner.title}
-      </h2>
-      {banner.subtitle && (
-        <p className="text-[13px] opacity-90 m-0 mb-3 leading-[1.4]">{banner.subtitle}</p>
-      )}
-      {banner.ctaLabel && (
-        <span className="inline-block px-3 py-1.5 rounded text-[12px] font-semibold bg-white/20">
-          {banner.ctaLabel} →
-        </span>
-      )}
-    </>
-  );
+  const inner = (() => {
+    if (banner.layout === "image-bg") {
+      return (
+        <div className="relative -mx-4 -mt-[22px] mb-[-56px] min-h-[200px]">
+          {banner.imageUrl && (
+            <img src={banner.imageUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/20 to-transparent" />
+          <div className="relative px-4 pt-[22px] pb-14 text-white">
+            <h2 className="text-[22px] font-bold leading-[1.3] tracking-[-.03em] m-0 mb-1.5" style={{ textShadow: "0 2px 6px rgba(0,0,0,.4)" }}>
+              {banner.title}
+            </h2>
+            {banner.subtitle && (
+              <p className="text-[13px] opacity-95 m-0 mb-3 leading-[1.4]">{banner.subtitle}</p>
+            )}
+            {banner.ctaLabel && (
+              <span className="inline-block px-3 py-1.5 rounded-full text-[12px] font-semibold bg-white text-rk-ink">
+                {banner.ctaLabel} →
+              </span>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    if (banner.layout === "product-spotlight") {
+      return (
+        <div className="grid grid-cols-[1fr_88px] gap-3 items-center">
+          <div>
+            <h2 className="text-[20px] font-bold leading-[1.3] tracking-[-.03em] m-0 mb-1.5">
+              {banner.title}
+            </h2>
+            {banner.subtitle && (
+              <p className="text-[13px] opacity-90 m-0 mb-2 leading-[1.4]">{banner.subtitle}</p>
+            )}
+            {banner.ctaLabel && (
+              <span className="inline-block px-3 py-1.5 rounded text-[12px] font-semibold bg-white/20">
+                {banner.ctaLabel} →
+              </span>
+            )}
+          </div>
+          <div className="w-[88px] h-[88px] rounded-md bg-white/15 grid place-items-center overflow-hidden">
+            {(banner.spotlightProductImage || banner.imageUrl) ? (
+              <img src={banner.spotlightProductImage ?? banner.imageUrl ?? ""} alt="" className="w-full h-full object-contain" />
+            ) : (
+              <span className="text-[10px] opacity-70 text-center">상품<br />이미지</span>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    if (banner.layout === "promo-stamp") {
+      return (
+        <div className="text-center">
+          {banner.subtitle && (
+            <b className="block text-[12px] uppercase tracking-[.1em] opacity-75 mb-1">{banner.subtitle}</b>
+          )}
+          <h2 className="text-[22px] font-bold leading-[1.2] tracking-[-.03em] m-0 mb-2">
+            {banner.title}
+          </h2>
+          {banner.stampText && (
+            <div
+              className="inline-block px-4 py-2 rounded-md text-[20px] font-bold tracking-[-.02em] mb-2"
+              style={{ background: banner.textColor, color: banner.bgColor2 }}
+            >
+              {banner.stampText}
+            </div>
+          )}
+          {banner.ctaLabel && (
+            <div>
+              <span className="inline-block px-3 py-1.5 rounded-full bg-white text-rk-ink text-[12px] font-semibold">
+                {banner.ctaLabel} →
+              </span>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // classic
+    return (
+      <>
+        <h2 className="text-[22px] font-bold leading-[1.3] tracking-[-.03em] m-0 mb-1.5">
+          {banner.title}
+        </h2>
+        {banner.subtitle && (
+          <p className="text-[13px] opacity-90 m-0 mb-3 leading-[1.4]">{banner.subtitle}</p>
+        )}
+        {banner.ctaLabel && (
+          <span className="inline-block px-3 py-1.5 rounded text-[12px] font-semibold bg-white/20">
+            {banner.ctaLabel} →
+          </span>
+        )}
+      </>
+    );
+  })();
+
   return banner.ctaHref ? (
     <Link href={banner.ctaHref} className="block no-underline" style={{ color: "inherit" }}>
       {inner}
