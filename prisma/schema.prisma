@@ -41,6 +41,11 @@ model Partner {
   // 협력점 단일 렌탈지원금 (총액) — 개통 시 1회 캐시백.
   // 상품 옵션별 수수료 한도 초과 시 그 옵션은 0 표기 (UI 측 한도 검증).
   rentalSupportAmount  Int       @default(0)
+  // 영업자 마진 기본값 — 협력점이 영업자에게 단독 링크 제공 시 영업점수수료에서 협력점이 떼는 몫.
+  // PartnerPolicy.sellerMargin* 상품별 override 가 있으면 그게 우선.
+  sellerMarginType     String    @default("fixed") // "fixed" | "percent"
+  sellerMarginAmount   Int       @default(0)
+  sellerMarginPercent  Float     @default(0)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -572,10 +577,28 @@ model HqPolicy {
   incentiveValidUntil DateTime?
   refundLimitRatio    Float    @default(0.6667) // 수수료의 ⅔
   installSubsidy      Int      @default(30000)
+  // 본사 마진 (상품·옵션별 override) — null 이면 HqMarginByTier 의 협력점 티어 기본값 사용
+  marginType          String?  // "fixed" | "percent"
+  marginAmount        Int?
+  marginPercent       Float?
   updatedAt           DateTime @updatedAt
 
   @@unique([productId, mode, contractPeriod])
   @@index([productId])
+}
+
+// ----------------------------------------------------------------
+// HqMarginByTier — 협력점 티어별 본사 마진 기본값
+//   tier: basic | standard | premium | enterprise
+//   본사가 영업점에 내려보내기 전 떼는 마진. HqPolicy.margin* 가 있으면 그게 우선.
+// ----------------------------------------------------------------
+model HqMarginByTier {
+  id            String   @id @default(cuid())
+  tier          String   @unique // basic | standard | premium | enterprise
+  marginType    String   @default("percent") // "fixed" | "percent"
+  marginAmount  Int      @default(0)
+  marginPercent Float    @default(0)
+  updatedAt     DateTime @updatedAt
 }
 
 // ----------------------------------------------------------------
@@ -590,6 +613,9 @@ model PartnerPolicy {
   giftAmount    Int      @default(0)   // 사은품 환원
   giftLabel     String?                // "홈클리너 키트"
   installAmount Int      @default(0)   // 설치비 환원
+  // 영업자 마진 (상품별 override) — null 이면 Partner.sellerMargin* 기본값 사용
+  sellerMarginAmount  Int?
+  sellerMarginPercent Float?
   updatedAt     DateTime @updatedAt
 
   @@unique([partnerId, productId])
@@ -606,11 +632,15 @@ model Settlement {
   partner         Partner   @relation(fields: [partnerId], references: [partnerCode])
   productCode     String?
   productName     String    // snapshot at time of settlement
-  baseCommission  Int
+  baseCommission  Int       // 본사 수수료 (정산 스냅샷)
+  hqMargin        Int       @default(0) // 본사가 떼간 마진 (스냅샷)
+  partnerCommission Int     // = baseCommission - hqMargin (정책 표기 숫자 · 환수 기준)
   giftReturned    Int       @default(0)
   installReturned Int       @default(0)
   rentalSupportReturned Int @default(0) // 협력점 단독 렌탈지원금 (개통 시 본사 캐시백 후 차감)
-  netPayout       Int
+  sellerMargin    Int       @default(0) // 영업점이 자기 몫 (영업자 있을 때만 의미 · 환수와 무관)
+  sellerPayout    Int       @default(0) // 영업자에게 지급 (lead.sellerId 있을 때만 > 0)
+  netPayout       Int       // 협력점 실수령
   periodMonth     String    // "2026-05"
   status          String    @default("pending") // pending | confirmed | paid | cancelled | disputed
   createdAt       DateTime  @default(now())

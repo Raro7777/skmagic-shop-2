@@ -275,7 +275,7 @@ export async function updateLeadStatus(input: {
   // Settlement 생성 트리거 — chain 안에 install_done → settle_pending 포함 시
   const willCreateSettlement = chainCreatesSettlement(chain);
   const settlementPayload = willCreateSettlement
-    ? await buildSettlementPayload(lead.id, lead.partnerId, lead.productCode, lead.productInterest, lead.selectedMode, lead.selectedContractPeriod)
+    ? await buildSettlementPayload(lead.id, lead.partnerId, lead.productCode, lead.productInterest, lead.selectedMode, lead.selectedContractPeriod, lead.sellerId)
     : null;
 
   // 컬럼 부수 업데이트
@@ -409,6 +409,7 @@ async function buildSettlementPayload(
   productInterest: string,
   selectedMode: string | null,
   selectedContractPeriod: number | null,
+  sellerId: string | null,
 ) {
   // Skip if lead is in HQ pool (no partner to pay)
   if (!partnerId) return null;
@@ -418,11 +419,16 @@ async function buildSettlementPayload(
   let installReturned = 0;
   let rentalSupportReturned = 0;
   let resolvedProductName = productInterest;
+  let hqPolicyForOption: Awaited<ReturnType<typeof prisma.hqPolicy.findFirst>> | null = null;
+  let partnerPolicyForProduct: Awaited<ReturnType<typeof prisma.partnerPolicy.findFirst>> | null = null;
 
-  // 협력점이 약속한 렌탈지원금 금액
+  // 협력점 정보 + 영업자 마진 기본값
   const partner = await prisma.partner.findUnique({
     where: { partnerCode: partnerId },
-    select: { rentalSupportAmount: true },
+    select: {
+      rentalSupportAmount: true, tier: true,
+      sellerMarginType: true, sellerMarginAmount: true, sellerMarginPercent: true,
+    },
   });
   const partnerSupportAmount = partner?.rentalSupportAmount ?? 0;
 
@@ -437,7 +443,6 @@ async function buildSettlementPayload(
     if (product) {
       resolvedProductName = product.name;
       // lead.selectedMode + lead.selectedContractPeriod 로 정확한 HqPolicy 옵션 lookup.
-      // 없으면 동일 mode 60개월 → 첫 옵션 순서로 fallback.
       const targetMode = selectedMode
         ?? (product.managementType.includes("자가") || product.managementType.includes("셀프") ? "셀프형" : "방문형");
       const targetPeriod = selectedContractPeriod ?? product.contractPeriod;
@@ -447,24 +452,54 @@ async function buildSettlementPayload(
         ?? product.hqPolicies[0];
       if (policy) {
         baseCommission = policy.baseCommission + policy.monthIncentive;
+        hqPolicyForOption = policy;
       }
       const pp = product.partnerPolicies[0];
       if (pp) {
         giftReturned = pp.giftAmount;
         installReturned = pp.installAmount;
+        partnerPolicyForProduct = pp;
       }
-
-      // 렌탈지원 — 표시·환원 일관성 위해 rentalSupport helper 사용 (만원 단위 절사 포함)
-      rentalSupportReturned = rentalSupportFor(
-        baseCommission,
-        partnerSupportAmount,
-        giftReturned,
-        installReturned,
-      );
     }
   }
 
-  const netPayout = baseCommission - giftReturned - installReturned - rentalSupportReturned;
+  // 본사 마진 계산 (티어 기본값 → 옵션 override)
+  const tier = partner?.tier ?? "basic";
+  const tierMargin = await prisma.hqMarginByTier.findUnique({ where: { tier } });
+  const { computeHqMargin, computeSellerMargin, computeMarginFlow } = await import("./marginFlow");
+  const hqMargin = computeHqMargin(
+    baseCommission,
+    hqPolicyForOption,
+    tierMargin
+      ? { type: tierMargin.marginType as "fixed" | "percent", amount: tierMargin.marginAmount, percent: tierMargin.marginPercent }
+      : null,
+  );
+  const partnerCommission = baseCommission - hqMargin;
+
+  // 렌탈지원 — partnerCommission 기준으로 한도 계산
+  rentalSupportReturned = rentalSupportFor(
+    partnerCommission,
+    partnerSupportAmount,
+    giftReturned,
+    installReturned,
+  );
+
+  // 영업자 마진 (영업자 있을 때만 의미)
+  const hasSeller = !!sellerId;
+  const sellerMargin = hasSeller && partner
+    ? computeSellerMargin(partnerCommission, partner, partnerPolicyForProduct)
+    : 0;
+
+  const flow = computeMarginFlow({
+    baseCommission,
+    hqMargin,
+    giftReturned,
+    installReturned,
+    rentalSupportReturned,
+    sellerMargin,
+    hasSeller,
+  });
+
   const periodMonth = new Date().toISOString().slice(0, 7); // "2026-05"
 
   return {
@@ -472,11 +507,15 @@ async function buildSettlementPayload(
     partnerId,
     productCode,
     productName: resolvedProductName,
-    baseCommission,
-    giftReturned,
-    installReturned,
-    rentalSupportReturned,
-    netPayout,
+    baseCommission: flow.baseCommission,
+    hqMargin: flow.hqMargin,
+    partnerCommission: flow.partnerCommission,
+    giftReturned: flow.giftReturned,
+    installReturned: flow.installReturned,
+    rentalSupportReturned: flow.rentalSupportReturned,
+    sellerMargin: flow.sellerMargin,
+    sellerPayout: flow.sellerPayout,
+    netPayout: flow.netPayout,
     periodMonth,
     status: "pending",
   };
