@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import MarginFlowDiagram from "@/components/super/MarginFlowDiagram";
 
 type SettlementRow = {
   id: string;
@@ -8,9 +9,13 @@ type SettlementRow = {
   productCode: string | null;
   productName: string;
   baseCommission: number;
+  hqMargin: number;
+  partnerCommission: number;
   giftReturned: number;
   installReturned: number;
   rentalSupportReturned: number;
+  sellerMargin: number;
+  sellerPayout: number;
   netPayout: number;
   status: string;
   createdAt: string;
@@ -32,6 +37,7 @@ export default function SettlementSummary() {
   const [summary, setSummary] = useState<Summary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [flowModal, setFlowModal] = useState<SettlementRow | null>(null);
 
   const fetchData = useCallback(async () => {
     try {
@@ -81,7 +87,7 @@ export default function SettlementSummary() {
         <table className="w-full text-[14px] border-collapse">
           <thead>
             <tr>
-              {["생성", "상품", "본사 수수료", "사은품 환원", "설치비 환원", "렌탈지원 환원", "실수령", "상태"].map((h, i) => (
+              {["생성", "상품", "본사→영업점", "사은품 환원", "설치비 환원", "렌탈지원 환원", "실수령", "상태", "흐름"].map((h, i) => (
                 <th key={i} className="text-left px-1.5 py-2 font-medium text-rk-muted text-[13px] uppercase tracking-[.04em] border-b border-rk-line">
                   {h}
                 </th>
@@ -100,7 +106,11 @@ export default function SettlementSummary() {
                     <b className="text-rk-ink">{r.productName}</b>
                     {r.productCode && <small className="block text-rk-faint font-mono text-[12px]">{r.productCode}</small>}
                   </td>
-                  <td className="px-1.5 py-2.5 border-b border-rk-line-2 rk-num text-rk-success">+{fmt(r.baseCommission)}</td>
+                  <td className="px-1.5 py-2.5 border-b border-rk-line-2 rk-num">
+                    <div className="text-rk-success">+{fmt(r.baseCommission)}</div>
+                    {r.hqMargin > 0 && <small className="block text-[10px] text-rk-orange-deep">−본사마진 {fmt(r.hqMargin)}</small>}
+                    <small className="block text-[11px] text-rk-ink font-semibold">→ 영업점 {fmt(r.partnerCommission)}</small>
+                  </td>
                   <td className="px-1.5 py-2.5 border-b border-rk-line-2 rk-num">
                     {r.giftReturned > 0 ? <span className="text-rk-orange-deep">−{fmt(r.giftReturned)}</span> : <span className="text-rk-muted">—</span>}
                   </td>
@@ -110,9 +120,21 @@ export default function SettlementSummary() {
                   <td className="px-1.5 py-2.5 border-b border-rk-line-2 rk-num">
                     {r.rentalSupportReturned > 0 ? <span className="text-rk-orange-deep">−{fmt(r.rentalSupportReturned)}</span> : <span className="text-rk-muted">—</span>}
                   </td>
-                  <td className="px-1.5 py-2.5 border-b border-rk-line-2 rk-num font-semibold text-rk-ink">{fmt(r.netPayout)}</td>
+                  <td className="px-1.5 py-2.5 border-b border-rk-line-2 rk-num font-semibold text-rk-ink">
+                    {fmt(r.netPayout)}
+                    {r.sellerPayout > 0 && <small className="block text-[10px] text-rk-info">영업자 {fmt(r.sellerPayout)}</small>}
+                  </td>
                   <td className="px-1.5 py-2.5 border-b border-rk-line-2">
                     <span className={"text-[12px] px-1.5 py-px rounded font-medium " + pill.cls}>{pill.text}</span>
+                  </td>
+                  <td className="px-1.5 py-2.5 border-b border-rk-line-2">
+                    <button
+                      type="button"
+                      onClick={() => setFlowModal(r)}
+                      className="text-[12px] text-rk-info hover:underline cursor-pointer bg-transparent border-0 px-0"
+                    >
+                      📊
+                    </button>
                   </td>
                 </tr>
               );
@@ -124,6 +146,35 @@ export default function SettlementSummary() {
       <div className="mt-3 px-3 py-2 bg-rk-tint-blue rounded text-[13px] text-rk-info leading-[1.6]">
         ⓘ 정산은 lead가 <b>설치 완료(done)</b> 상태가 되면 트랜잭션으로 자동 생성됩니다. 본사가 done → 다른 상태로 되돌리면 해당 정산이 자동 <b>취소</b>됩니다.
       </div>
+
+      {/* 마진 흐름 모달 */}
+      {flowModal && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setFlowModal(null)}>
+          <div className="bg-white rounded-lg p-5 w-full max-w-[640px] max-h-[90vh] overflow-y-auto shadow-lg" onClick={e => e.stopPropagation()}>
+            <div className="flex items-baseline justify-between mb-3 flex-wrap gap-2">
+              <h4 className="text-[15px] font-semibold">📊 정산 마진 흐름</h4>
+              <button onClick={() => setFlowModal(null)} className="text-rk-muted hover:text-rk-ink text-[18px] leading-none bg-transparent border-0 cursor-pointer">✕</button>
+            </div>
+            <div className="text-[12.5px] text-rk-muted mb-3 leading-[1.5]">
+              <b className="text-rk-ink">{flowModal.productName}</b>
+              {flowModal.productCode && <span className="ml-1 font-mono text-rk-faint">({flowModal.productCode})</span>}
+            </div>
+            <MarginFlowDiagram
+              data={{
+                baseCommission: flowModal.baseCommission,
+                hqMargin: flowModal.hqMargin,
+                partnerCommission: flowModal.partnerCommission,
+                giftReturned: flowModal.giftReturned,
+                installReturned: flowModal.installReturned,
+                rentalSupportReturned: flowModal.rentalSupportReturned,
+                sellerMargin: flowModal.sellerMargin,
+                sellerPayout: flowModal.sellerPayout,
+                netPayout: flowModal.netPayout,
+              }}
+            />
+          </div>
+        </div>
+      )}
     </section>
   );
 }

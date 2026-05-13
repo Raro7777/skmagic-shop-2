@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import MarginFlowDiagram from "./MarginFlowDiagram";
 
 const fmt = (n: number) => n.toLocaleString("ko-KR");
 
@@ -27,9 +28,14 @@ export type SettleRow = {
   productName: string;
   productCode: string | null;
   baseCommission: number;
+  hqMargin: number;
+  partnerCommission: number;
   giftReturned: number;
+  giftLabel?: string | null;
   installReturned: number;
   rentalSupportReturned: number;
+  sellerMargin: number;
+  sellerPayout: number;
   netPayout: number;
   status: string;
   paidAt: string | null;
@@ -45,6 +51,7 @@ export default function SettlementsActionTable({ rows }: { rows: SettleRow[] }) 
   const [refundModal, setRefundModal] = useState<SettleRow | null>(null);
   const [refundAmount, setRefundAmount] = useState("");
   const [refundReason, setRefundReason] = useState("");
+  const [flowModal, setFlowModal] = useState<SettleRow | null>(null);
 
   const markPaid = async (row: SettleRow) => {
     if (!confirm(`${row.partnerName} · ${row.customerName} 송금 완료로 처리합니다. 계속?`)) return;
@@ -106,7 +113,7 @@ export default function SettlementsActionTable({ rows }: { rows: SettleRow[] }) 
       <table className="w-full border-collapse text-[14px]">
         <thead>
           <tr>
-            {["생성", "협력점 · 고객", "상품", "본사 수수료", "환원", "송금액", "상태", "송금 처리"].map(h => (
+            {["생성", "협력점 · 고객", "상품", "본사→영업점", "환원·영업자", "송금액", "상태", "송금 처리"].map(h => (
               <th key={h} className="text-left px-1.5 py-2 font-medium text-rk-muted text-[13px] uppercase tracking-[.04em] border-b border-rk-line">{h}</th>
             ))}
           </tr>
@@ -127,20 +134,38 @@ export default function SettlementsActionTable({ rows }: { rows: SettleRow[] }) 
                   {s.productName}
                   {s.productCode && <small className="block text-rk-faint font-mono text-[12px]">{s.productCode}</small>}
                 </td>
-                <td className="px-1.5 py-2.5 border-b border-rk-line-2 rk-num text-rk-success">+{fmt(s.baseCommission)}</td>
                 <td className="px-1.5 py-2.5 border-b border-rk-line-2 rk-num">
-                  {s.giftReturned + s.installReturned + s.rentalSupportReturned > 0
-                    ? (
-                      <div>
-                        <span className="text-rk-orange-deep">−{fmt(s.giftReturned + s.installReturned + s.rentalSupportReturned)}</span>
-                        {s.rentalSupportReturned > 0 && (
-                          <small className="block text-[10px] text-rk-orange-deep">렌탈지원 −{fmt(s.rentalSupportReturned)}</small>
-                        )}
-                      </div>
-                    )
-                    : <span className="text-rk-muted">—</span>}
+                  <div className="text-rk-success">+{fmt(s.baseCommission)}</div>
+                  {s.hqMargin > 0 && (
+                    <small className="block text-[10px] text-rk-orange-deep">−본사마진 {fmt(s.hqMargin)}</small>
+                  )}
+                  <small className="block text-[11px] text-rk-ink font-semibold">→ 영업점 {fmt(s.partnerCommission)}</small>
                 </td>
-                <td className="px-1.5 py-2.5 border-b border-rk-line-2 rk-num"><b>₩{fmt(s.netPayout)}</b></td>
+                <td className="px-1.5 py-2.5 border-b border-rk-line-2 rk-num">
+                  {s.giftReturned + s.installReturned + s.rentalSupportReturned > 0 ? (
+                    <div>
+                      <span className="text-rk-orange-deep">−환원 {fmt(s.giftReturned + s.installReturned + s.rentalSupportReturned)}</span>
+                      {s.rentalSupportReturned > 0 && (
+                        <small className="block text-[10px] text-rk-orange-deep">└ 렌탈지원 {fmt(s.rentalSupportReturned)}</small>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="text-rk-muted">환원 —</span>
+                  )}
+                  {s.sellerPayout > 0 && (
+                    <small className="block text-[10px] text-rk-info">−영업자 {fmt(s.sellerPayout)}</small>
+                  )}
+                </td>
+                <td className="px-1.5 py-2.5 border-b border-rk-line-2 rk-num">
+                  <b className={s.netPayout < 0 ? "text-rk-sale" : ""}>₩{fmt(s.netPayout)}</b>
+                  <button
+                    type="button"
+                    onClick={() => setFlowModal(s)}
+                    className="block text-[11px] text-rk-info hover:underline cursor-pointer mt-0.5"
+                  >
+                    📊 흐름 보기
+                  </button>
+                </td>
                 <td className="px-1.5 py-2.5 border-b border-rk-line-2">
                   <span className={"text-[12px] px-1.5 py-px rounded font-medium " + (SETTLE_PILL[s.status] ?? SETTLE_PILL.pending)}>
                     {SETTLE_LABEL[s.status] ?? s.status}
@@ -227,6 +252,38 @@ export default function SettlementsActionTable({ rows }: { rows: SettleRow[] }) 
                 {busyId === refundModal.id ? "처리 중…" : "🔄 환수 시작"}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* 마진 흐름 모달 */}
+      {flowModal && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setFlowModal(null)}>
+          <div className="bg-white rounded-lg p-5 w-full max-w-[640px] max-h-[90vh] overflow-y-auto shadow-lg" onClick={e => e.stopPropagation()}>
+            <div className="flex items-baseline justify-between mb-3 flex-wrap gap-2">
+              <h4 className="text-[15px] font-semibold">📊 정산 마진 흐름</h4>
+              <button onClick={() => setFlowModal(null)} className="text-rk-muted hover:text-rk-ink text-[18px] leading-none">✕</button>
+            </div>
+            <div className="text-[12.5px] text-rk-muted mb-3 leading-[1.5]">
+              <b className="text-rk-ink">{flowModal.partnerName}</b> · {flowModal.customerName} · {flowModal.productName}
+              {flowModal.productCode && <span className="ml-1 font-mono text-rk-faint">({flowModal.productCode})</span>}
+            </div>
+            <MarginFlowDiagram
+              data={{
+                baseCommission: flowModal.baseCommission,
+                hqMargin: flowModal.hqMargin,
+                partnerCommission: flowModal.partnerCommission,
+                giftReturned: flowModal.giftReturned,
+                giftLabel: flowModal.giftLabel ?? null,
+                installReturned: flowModal.installReturned,
+                rentalSupportReturned: flowModal.rentalSupportReturned,
+                sellerMargin: flowModal.sellerMargin,
+                sellerPayout: flowModal.sellerPayout,
+                netPayout: flowModal.netPayout,
+                refundStatus: flowModal.refundStatus,
+                refundAmount: flowModal.refundAmount,
+              }}
+            />
           </div>
         </div>
       )}

@@ -23,26 +23,52 @@ export default async function SettlementsAllPage() {
   const pendingPayoutCount = settlements.filter(s => s.lead?.status === "settle_pending" && s.status !== "cancelled").length;
   const pendingPayoutSum   = settlements.filter(s => s.lead?.status === "settle_pending" && s.status !== "cancelled").reduce((s, r) => s + r.netPayout, 0);
 
-  const rows = settlements.map(s => ({
-    id: s.id,
-    leadId: s.leadId,
-    createdAt: s.createdAt.toISOString().slice(5, 16).replace("T", " "),
-    partnerName: s.partner.partnerName,
-    ownerName: s.partner.ownerName ?? null,
-    customerName: s.lead?.customerName ?? "—",
-    leadStatus: s.lead?.status ?? null,
-    productName: s.productName,
-    productCode: s.productCode,
-    baseCommission: s.baseCommission,
-    giftReturned: s.giftReturned,
-    installReturned: s.installReturned,
-    rentalSupportReturned: s.rentalSupportReturned,
-    netPayout: s.netPayout,
-    status: s.status,
-    paidAt: s.paidAt?.toISOString().slice(0, 10) ?? null,
-    refundStatus: s.refundStatus ?? null,
-    refundAmount: s.refundAmount ?? 0,
-  }));
+  // 사은품 라벨 조회 (Settlement 에 snapshot 안되어 있어 PartnerPolicy 에서 join — 사후 변경 가능성 있음)
+  const productCodes = Array.from(new Set(settlements.map(s => s.productCode).filter((x): x is string => !!x)));
+  const products = productCodes.length > 0
+    ? await prisma.product.findMany({ where: { productCode: { in: productCodes } }, select: { id: true, productCode: true } })
+    : [];
+  const productIdByCode = new Map(products.map(p => [p.productCode, p.id]));
+  const partnerProductPairs = settlements
+    .map(s => s.productCode ? { partnerId: s.partnerId, productId: productIdByCode.get(s.productCode) } : null)
+    .filter((x): x is { partnerId: string; productId: string } => !!x && !!x.productId);
+  const policies = partnerProductPairs.length > 0
+    ? await prisma.partnerPolicy.findMany({
+        where: { OR: partnerProductPairs.map(p => ({ partnerId: p.partnerId, productId: p.productId })) },
+        select: { partnerId: true, productId: true, giftLabel: true },
+      })
+    : [];
+  const giftLabelByKey = new Map(policies.map(p => [`${p.partnerId}|${p.productId}`, p.giftLabel]));
+
+  const rows = settlements.map(s => {
+    const pid = s.productCode ? productIdByCode.get(s.productCode) : null;
+    const giftLabel = pid ? (giftLabelByKey.get(`${s.partnerId}|${pid}`) ?? null) : null;
+    return {
+      id: s.id,
+      leadId: s.leadId,
+      createdAt: s.createdAt.toISOString().slice(5, 16).replace("T", " "),
+      partnerName: s.partner.partnerName,
+      ownerName: s.partner.ownerName ?? null,
+      customerName: s.lead?.customerName ?? "—",
+      leadStatus: s.lead?.status ?? null,
+      productName: s.productName,
+      productCode: s.productCode,
+      baseCommission: s.baseCommission,
+      hqMargin: s.hqMargin,
+      partnerCommission: s.partnerCommission,
+      giftReturned: s.giftReturned,
+      giftLabel,
+      installReturned: s.installReturned,
+      rentalSupportReturned: s.rentalSupportReturned,
+      sellerMargin: s.sellerMargin,
+      sellerPayout: s.sellerPayout,
+      netPayout: s.netPayout,
+      status: s.status,
+      paidAt: s.paidAt?.toISOString().slice(0, 10) ?? null,
+      refundStatus: s.refundStatus ?? null,
+      refundAmount: s.refundAmount ?? 0,
+    };
+  });
 
   return (
     <>
