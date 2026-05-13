@@ -18,6 +18,10 @@ type Option = {
   monthIncentive: number;
   refundLimitRatio: number;
   installSubsidy: number;
+  // 본사 마진 override — null 이면 티어 기본값 사용
+  marginType: "fixed" | "percent" | null;
+  marginAmount: number | null;
+  marginPercent: number | null;
 };
 
 type ProductPolicy = {
@@ -57,7 +61,15 @@ export default function HqPolicyEditor() {
   const [error, setError] = useState<string | null>(null);
   const [expandedCode, setExpandedCode] = useState<string | null>(null);
   const [editing, setEditing] = useState<{ code: string; mode: string; period: number } | null>(null);
-  const [draft, setDraft] = useState<{ baseCommission: string; monthIncentive: string; installSubsidy: string } | null>(null);
+  const [draft, setDraft] = useState<{
+    baseCommission: string;
+    monthIncentive: string;
+    installSubsidy: string;
+    // 옵션 마진 override — marginType=null 이면 "티어 기본값 사용"
+    marginType: "fixed" | "percent" | null;
+    marginAmount: string;
+    marginPercent: string;
+  } | null>(null);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ tone: "ok" | "err"; text: string; code?: string } | null>(null);
   const [query, setQuery] = useState("");
@@ -103,6 +115,9 @@ export default function HqPolicyEditor() {
       baseCommission: String(opt.baseCommission),
       monthIncentive: String(opt.monthIncentive),
       installSubsidy: String(opt.installSubsidy),
+      marginType: opt.marginType,
+      marginAmount: opt.marginAmount != null ? String(opt.marginAmount) : "",
+      marginPercent: opt.marginPercent != null ? String((opt.marginPercent * 100).toFixed(2).replace(/\.?0+$/, "")) : "",
     });
   };
 
@@ -124,6 +139,14 @@ export default function HqPolicyEditor() {
       return;
     }
 
+    // 본사마진 override: marginType=null → null/null/null 로 clear, 아니면 해당 값만 set
+    const marginPayload: { marginType: "fixed" | "percent" | null; marginAmount: number | null; marginPercent: number | null } =
+      draft.marginType == null
+        ? { marginType: null, marginAmount: null, marginPercent: null }
+        : draft.marginType === "fixed"
+          ? { marginType: "fixed", marginAmount: numOrNull(draft.marginAmount) ?? 0, marginPercent: null }
+          : { marginType: "percent", marginAmount: null, marginPercent: (Number(draft.marginPercent) || 0) / 100 };
+
     setSaving(true);
     try {
       const res = await fetch(`/api/policies/hq/${editing.code}`, {
@@ -135,6 +158,7 @@ export default function HqPolicyEditor() {
           baseCommission,
           monthIncentive,
           installSubsidy,
+          ...marginPayload,
         }),
       });
       const data = await res.json();
@@ -287,7 +311,7 @@ export default function HqPolicyEditor() {
                     onStartEdit={startEdit}
                     onCancel={cancelEdit}
                     onSave={save}
-                    onChangeDraft={(k, v) => setDraft(d => d ? { ...d, [k]: v } : d)}
+                    onChangeDraft={(k, v) => setDraft(d => d ? ({ ...d, [k]: v } as typeof d) : d)}
                     onAddOption={addOption}
                   />
                 </div>
@@ -321,12 +345,19 @@ function OptionMatrix({
 }: {
   product: ProductPolicy;
   editing: { code: string; mode: string; period: number } | null;
-  draft: { baseCommission: string; monthIncentive: string; installSubsidy: string } | null;
+  draft: {
+    baseCommission: string;
+    monthIncentive: string;
+    installSubsidy: string;
+    marginType: "fixed" | "percent" | null;
+    marginAmount: string;
+    marginPercent: string;
+  } | null;
   saving: boolean;
   onStartEdit: (code: string, opt: Option) => void;
   onCancel: () => void;
   onSave: () => void;
-  onChangeDraft: (k: "baseCommission" | "monthIncentive" | "installSubsidy", v: string) => void;
+  onChangeDraft: (k: "baseCommission" | "monthIncentive" | "installSubsidy" | "marginType" | "marginAmount" | "marginPercent", v: string | null) => void;
   onAddOption: (code: string, mode: string, period: number) => void;
 }) {
   // 매트릭스를 (mode, contractPeriod) 키로 인덱싱
@@ -368,6 +399,33 @@ function OptionMatrix({
                           <NumField label="수수료" value={draft.baseCommission} onChange={v => onChangeDraft("baseCommission", v)} />
                           <NumField label="인센티브" value={draft.monthIncentive} onChange={v => onChangeDraft("monthIncentive", v)} />
                           <NumField label="설치보조" value={draft.installSubsidy} onChange={v => onChangeDraft("installSubsidy", v)} />
+                          {/* 본사마진 override */}
+                          <div className="bg-rk-soft border border-rk-line-2 rounded p-1.5 mt-1">
+                            <div className="text-[10px] text-rk-muted mb-1">본사마진 override</div>
+                            <div className="flex gap-0.5 mb-1">
+                              <button
+                                type="button"
+                                onClick={() => onChangeDraft("marginType", null)}
+                                className={"flex-1 px-1 py-0.5 rounded text-[10px] border " + (draft.marginType == null ? "bg-rk-orange border-rk-orange text-white" : "bg-white border-rk-line text-rk-muted")}
+                              >티어값</button>
+                              <button
+                                type="button"
+                                onClick={() => onChangeDraft("marginType", "fixed")}
+                                className={"flex-1 px-1 py-0.5 rounded text-[10px] border " + (draft.marginType === "fixed" ? "bg-rk-orange border-rk-orange text-white" : "bg-white border-rk-line text-rk-muted")}
+                              >₩</button>
+                              <button
+                                type="button"
+                                onClick={() => onChangeDraft("marginType", "percent")}
+                                className={"flex-1 px-1 py-0.5 rounded text-[10px] border " + (draft.marginType === "percent" ? "bg-rk-orange border-rk-orange text-white" : "bg-white border-rk-line text-rk-muted")}
+                              >%</button>
+                            </div>
+                            {draft.marginType === "fixed" && (
+                              <NumField label="₩" value={draft.marginAmount} onChange={v => onChangeDraft("marginAmount", v)} />
+                            )}
+                            {draft.marginType === "percent" && (
+                              <NumField label="%" value={draft.marginPercent} onChange={v => onChangeDraft("marginPercent", v)} />
+                            )}
+                          </div>
                           <div className="flex gap-1 mt-1">
                             <button type="button" onClick={onCancel} disabled={saving} className="flex-1 bg-white border border-rk-line text-rk-text px-1.5 py-0.5 rounded text-[12px] cursor-pointer">취소</button>
                             <button type="button" onClick={onSave} disabled={saving} className="flex-1 bg-rk-navy hover:bg-rk-navy-deep text-white border-0 px-1.5 py-0.5 rounded text-[12px] cursor-pointer disabled:opacity-50">
@@ -381,6 +439,12 @@ function OptionMatrix({
 
                   if (opt) {
                     const total = opt.baseCommission + opt.monthIncentive;
+                    // 본사마진 override 표기 (티어 기본값은 여기서 모르므로 override 만 노출)
+                    const marginText = opt.marginType === "fixed" && opt.marginAmount != null
+                      ? `−₩${fmt(opt.marginAmount)} (override)`
+                      : opt.marginType === "percent" && opt.marginPercent != null
+                        ? `−${(opt.marginPercent * 100).toFixed(1)}% (override)`
+                        : null;
                     return (
                       <td
                         key={period}
@@ -392,6 +456,9 @@ function OptionMatrix({
                           <div className="rk-num text-[11px] text-rk-orange-deep">+{fmt(opt.monthIncentive)} 인센</div>
                         )}
                         <div className="rk-num text-[11px] text-rk-success">합 ₩{fmt(total)}</div>
+                        {marginText && (
+                          <div className="text-[10px] text-rk-info mt-0.5">{marginText}</div>
+                        )}
                       </td>
                     );
                   }

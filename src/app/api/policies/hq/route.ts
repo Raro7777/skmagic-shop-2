@@ -55,6 +55,9 @@ export async function GET() {
           monthIncentive: h.monthIncentive,
           refundLimitRatio: h.refundLimitRatio,
           installSubsidy: h.installSubsidy,
+          marginType: h.marginType,
+          marginAmount: h.marginAmount,
+          marginPercent: h.marginPercent,
         })),
       };
     }),

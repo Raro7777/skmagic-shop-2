@@ -37,6 +37,10 @@ export async function PATCH(
     monthIncentive: number;
     refundLimitRatio: number;
     installSubsidy: number;
+    // 옵션별 본사마진 override — null 이면 티어 기본값 사용 ("clear" 의미는 null 전달)
+    marginType: "fixed" | "percent" | null;
+    marginAmount: number | null;
+    marginPercent: number | null;
   }>;
 
   const product = await prisma.product.findUnique({
@@ -67,9 +71,22 @@ export async function PATCH(
     return NextResponse.json({ error: "본사 기본 수수료는 0원 이상이어야 합니다." }, { status: 400 });
   }
 
+  // 본사마진 override — body 에 명시되면 그대로 set/clear, 없으면 기존 값 유지
+  const marginType = "marginType" in b ? b.marginType : existing?.marginType ?? null;
+  const marginAmount = "marginAmount" in b
+    ? (b.marginAmount == null ? null : Math.max(0, Math.floor(b.marginAmount)))
+    : existing?.marginAmount ?? null;
+  const marginPercent = "marginPercent" in b
+    ? (b.marginPercent == null ? null : Math.max(0, Math.min(1, b.marginPercent)))
+    : existing?.marginPercent ?? null;
+
   const policy = await prisma.hqPolicy.upsert({
     where: { productId_mode_contractPeriod: { productId: product.id, mode, contractPeriod } },
-    update: { baseCommission, monthIncentive, installSubsidy, refundLimitRatio, visitInterval: b.visitInterval ?? existing?.visitInterval ?? null },
+    update: {
+      baseCommission, monthIncentive, installSubsidy, refundLimitRatio,
+      visitInterval: b.visitInterval ?? existing?.visitInterval ?? null,
+      marginType, marginAmount, marginPercent,
+    },
     create: {
       productId: product.id,
       mode,
@@ -79,6 +96,7 @@ export async function PATCH(
       monthIncentive,
       installSubsidy,
       refundLimitRatio,
+      marginType, marginAmount, marginPercent,
     },
   });
 
@@ -92,6 +110,9 @@ export async function PATCH(
       monthIncentive: policy.monthIncentive,
       installSubsidy: policy.installSubsidy,
       refundLimitRatio: policy.refundLimitRatio,
+      marginType: policy.marginType,
+      marginAmount: policy.marginAmount,
+      marginPercent: policy.marginPercent,
     },
   });
 }
