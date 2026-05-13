@@ -680,3 +680,50 @@ model AuditLog {
   @@index([targetUserId])
   @@index([createdAt])
 }
+
+// ----------------------------------------------------------------
+// BannerTemplate — 본사 표준 배너 템플릿 (Phase 2).
+// HQ가 시즌·이벤트별로 등록 → 협력점이 콘솔에서 "가져오기" 로 자기 배너 생성.
+// ----------------------------------------------------------------
+model BannerTemplate {
+  id                   String   @id @default(cuid())
+  name                 String   // 본사용 라벨 (예: "어버이날 효도 패키지")
+  description          String?
+  category             String?  // 시즌/카테고리 분류 (예: "어버이날","여름","신모델")
+  layout               String   @default("classic")
+  title                String   // 협력점 배너에 들어갈 기본 제목
+  subtitle             String?
+  imageUrl             String?
+  bgColor1             String   @default("#1A2B4D")
+  bgColor2             String   @default("#F26A1F")
+  textColor            String   @default("#FFFFFF")
+  ctaLabel             String?
+  ctaHref              String?
+  stampText            String?
+  spotlightProductCode String?
+  status               String   @default("active") // active | archived
+  createdById          String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@index([status])
+  @@index([category])
+}
+
+// ----------------------------------------------------------------
+// BannerEvent — 배너 노출/클릭 분석 (Phase 3).
+// 협력점 콘솔에서 슬라이드별 효과 측정.
+// ----------------------------------------------------------------
+model BannerEvent {
+  id         String   @id @default(cuid())
+  bannerId   String
+  partnerId  String   // FK 없이 분석용 캐시
+  eventType  String   // impression | click
+  ip         String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  @@index([bannerId])
+  @@index([partnerId, eventType])
+  @@index([createdAt])
+}

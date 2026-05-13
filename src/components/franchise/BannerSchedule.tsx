@@ -109,6 +109,24 @@ const emptyDraft = (): Draft => {
   };
 };
 
+type Template = {
+  id: string;
+  name: string;
+  description: string | null;
+  category: string | null;
+  layout: Layout;
+  title: string;
+  subtitle: string | null;
+  imageUrl: string | null;
+  bgColor1: string;
+  bgColor2: string;
+  textColor: string;
+  ctaLabel: string | null;
+  ctaHref: string | null;
+  stampText: string | null;
+  spotlightProductCode: string | null;
+};
+
 export default function BannerSchedule() {
   const [banners, setBanners] = useState<Banner[]>([]);
   const [loading, setLoading] = useState(true);
@@ -117,6 +135,10 @@ export default function BannerSchedule() {
   const [draft, setDraft] = useState<Draft | null>(null);
   const [saving, setSaving] = useState(false);
   const [flash, setFlash] = useState<string | null>(null);
+  const [templateModalOpen, setTemplateModalOpen] = useState(false);
+  const [templates, setTemplates] = useState<Template[]>([]);
+  const [templatesLoading, setTemplatesLoading] = useState(false);
+  const [stats, setStats] = useState<Record<string, { impressions: number; clicks: number }>>({});
 
   const load = useCallback(async () => {
     try {
@@ -137,10 +159,54 @@ export default function BannerSchedule() {
   }, []);
   useEffect(() => { load(); }, [load]);
 
+  // 통계 로드 (배너 변경 시)
+  useEffect(() => {
+    void fetch("/api/franchise/banner-stats", { cache: "no-store" })
+      .then(r => r.ok ? r.json() : null)
+      .then(j => { if (j?.stats) setStats(j.stats); })
+      .catch(() => { /* noop */ });
+  }, [banners]);
+
   const startNew = () => {
     setEditing("new");
     setDraft(emptyDraft());
     setFlash(null);
+  };
+
+  const openTemplates = async () => {
+    setTemplateModalOpen(true);
+    setTemplatesLoading(true);
+    try {
+      const r = await fetch("/api/admin/banner-templates?status=active", { cache: "no-store" });
+      const j = await r.json();
+      if (r.ok && Array.isArray(j.templates)) setTemplates(j.templates);
+    } catch { /* noop */ }
+    finally { setTemplatesLoading(false); }
+  };
+
+  const applyTemplate = (t: Template) => {
+    const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    const weekLater = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    setEditing("new");
+    setDraft({
+      title: t.title,
+      subtitle: t.subtitle ?? "",
+      imageUrl: t.imageUrl ?? "",
+      bgColor1: t.bgColor1,
+      bgColor2: t.bgColor2,
+      textColor: t.textColor,
+      ctaLabel: t.ctaLabel ?? "지금 신청",
+      ctaHref: t.ctaHref ?? "",
+      startsAt: toDtLocal(tomorrow.toISOString()),
+      endsAt: toDtLocal(weekLater.toISOString()),
+      priority: 0,
+      status: "active",
+      layout: t.layout,
+      spotlightProductCode: t.spotlightProductCode ?? "",
+      stampText: t.stampText ?? "",
+    });
+    setTemplateModalOpen(false);
+    setFlash(`템플릿 "${t.name}" 을 가져왔어요. 색상·텍스트·기간을 조정 후 저장하세요.`);
   };
   const startEdit = (b: Banner) => {
     setEditing(b.id);
@@ -232,13 +298,58 @@ export default function BannerSchedule() {
         <span className="text-[13px] text-rk-muted">우리 사이트 hero 위에 노출 · 활성 배너 {banners.filter(b => effectiveState(b) === "live").length}개 진행중</span>
         <button
           type="button"
+          onClick={openTemplates}
+          disabled={editing !== null}
+          className="ml-auto bg-white border border-rk-navy text-rk-navy hover:bg-rk-soft disabled:opacity-50 px-3 py-1.5 rounded text-[13px] font-medium cursor-pointer"
+        >
+          🎨 본사 템플릿 가져오기
+        </button>
+        <button
+          type="button"
           onClick={startNew}
           disabled={editing !== null}
-          className="ml-auto bg-rk-orange hover:bg-rk-orange-deep disabled:opacity-50 disabled:cursor-not-allowed text-white border-0 px-3 py-1.5 rounded text-[13px] font-medium cursor-pointer"
+          className="bg-rk-orange hover:bg-rk-orange-deep disabled:opacity-50 disabled:cursor-not-allowed text-white border-0 px-3 py-1.5 rounded text-[13px] font-medium cursor-pointer"
         >
-          + 새 배너
+          + 새 배너 (직접)
         </button>
       </div>
+
+      {/* 본사 템플릿 가져오기 모달 */}
+      {templateModalOpen && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-start justify-center overflow-y-auto py-8" onClick={() => setTemplateModalOpen(false)}>
+          <div onClick={e => e.stopPropagation()} className="bg-white rounded-lg max-w-[720px] w-full mx-4 shadow-xl p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-[15px] font-semibold">🎨 본사 표준 템플릿</h3>
+              <button type="button" onClick={() => setTemplateModalOpen(false)} className="text-rk-muted text-[20px] bg-transparent border-0 cursor-pointer leading-none">×</button>
+            </div>
+            {templatesLoading ? (
+              <div className="text-center py-8 text-rk-muted text-[14px]">로딩 중…</div>
+            ) : templates.length === 0 ? (
+              <div className="text-center py-8 text-rk-muted text-[14px]">본사가 등록한 표준 템플릿이 아직 없습니다.</div>
+            ) : (
+              <div className="grid grid-cols-2 gap-2 max-h-[60vh] overflow-y-auto">
+                {templates.map(t => (
+                  <button
+                    type="button"
+                    key={t.id}
+                    onClick={() => applyTemplate(t)}
+                    className="bg-rk-soft-2 border border-rk-line rounded overflow-hidden text-left cursor-pointer hover:border-rk-navy transition-colors"
+                  >
+                    <div className="h-[60px] flex items-center justify-center text-[13px] font-medium px-3"
+                         style={{ background: `linear-gradient(135deg, ${t.bgColor1}, ${t.bgColor2})`, color: t.textColor }}>
+                      {t.title}
+                    </div>
+                    <div className="px-2.5 py-1.5">
+                      <b className="text-[12.5px] text-rk-ink block">{t.name}</b>
+                      <small className="text-[11px] text-rk-muted block">{t.category ?? "—"} · {LAYOUTS.find(l => l.id === t.layout)?.label}</small>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {flash && (
         <div className="bg-rk-tint-blue text-rk-info px-3 py-2 rounded text-[13px] mb-2">{flash}</div>
@@ -386,7 +497,7 @@ export default function BannerSchedule() {
             const state = effectiveState(b);
             const fade = state === "ended" || state === "draft";
             return (
-              <div key={b.id} className={"grid grid-cols-[80px_60px_1fr_auto_auto_auto] gap-3 items-center bg-rk-soft-2 border border-rk-line-2 px-3 py-2.5 rounded text-[14px] " + (fade ? "opacity-60" : "")}>
+              <div key={b.id} className={"grid grid-cols-[80px_60px_1fr_90px_auto_auto_auto] gap-3 items-center bg-rk-soft-2 border border-rk-line-2 px-3 py-2.5 rounded text-[14px] " + (fade ? "opacity-60" : "")}>
                 <div className="font-mono font-medium text-[12px] leading-[1.4]">
                   {fmtRange(b.startsAt, b.endsAt)}
                 </div>
@@ -394,7 +505,9 @@ export default function BannerSchedule() {
                 <div className="min-w-0">
                   <b className="block text-rk-ink font-medium truncate">{b.title}</b>
                   {b.subtitle && <small className="text-rk-muted text-[12px] truncate block">{b.subtitle}</small>}
+                  <small className="text-[11px] text-rk-faint">{LAYOUTS.find(l => l.id === (b.layout as Layout))?.label ?? "클래식"}{b.sourceTemplateId ? " · 본사 템플릿" : ""}</small>
                 </div>
+                <BannerStatsCell stats={stats[b.id]} />
                 <span className={"text-[12px] px-1.5 py-px rounded font-medium " + STATE_PILL[state]}>{STATE_LABEL[state]}</span>
                 <button type="button" onClick={() => startEdit(b)} disabled={editing !== null} className="text-rk-info text-[13px] hover:underline disabled:opacity-30 cursor-pointer disabled:cursor-not-allowed">편집</button>
                 <button type="button" onClick={() => remove(b)} className="text-rk-sale text-[13px] hover:underline cursor-pointer">삭제</button>
@@ -413,6 +526,19 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       <span className="text-rk-muted">{label}</span>
       {children}
     </label>
+  );
+}
+
+function BannerStatsCell({ stats }: { stats?: { impressions: number; clicks: number } }) {
+  if (!stats || stats.impressions === 0) {
+    return <span className="text-[11px] text-rk-faint">노출 0</span>;
+  }
+  const ctr = stats.impressions > 0 ? (stats.clicks / stats.impressions * 100) : 0;
+  return (
+    <div className="text-[11px] leading-[1.4]">
+      <div className="text-rk-text rk-num">노출 <b>{stats.impressions.toLocaleString()}</b></div>
+      <div className="text-rk-info rk-num">클릭 <b>{stats.clicks.toLocaleString()}</b> ({ctr.toFixed(1)}%)</div>
+    </div>
   );
 }
 

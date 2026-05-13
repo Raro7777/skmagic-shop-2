@@ -42,6 +42,20 @@ export default function HeroCarousel({
   const cur = slides[idx] ?? slides[0];
   const total = slides.length;
 
+  // 배너 노출 이벤트 (slide 진입 시 1회) — public endpoint, fire-and-forget
+  useEffect(() => {
+    if (cur.kind !== "banner") return;
+    const bid = cur.banner.id;
+    try {
+      const blob = new Blob([JSON.stringify({ bannerId: bid, eventType: "impression" })], { type: "application/json" });
+      if (typeof navigator !== "undefined" && navigator.sendBeacon) {
+        navigator.sendBeacon("/api/banner-events", blob);
+      } else {
+        void fetch("/api/banner-events", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ bannerId: bid, eventType: "impression" }), keepalive: true });
+      }
+    } catch { /* noop */ }
+  }, [cur]);
+
   // 슬라이드별 배경 결정 — banner는 자체 색상, product는 navy + orange radial
   const sectionStyle: React.CSSProperties = cur.kind === "banner"
     ? { background: `linear-gradient(135deg, ${cur.banner.bgColor1}, ${cur.banner.bgColor2})`, color: cur.banner.textColor }
@@ -242,8 +256,19 @@ function BannerSlideContent({ banner }: { banner: ActiveBanner }) {
     );
   })();
 
+  const recordClick = () => {
+    try {
+      const blob = new Blob([JSON.stringify({ bannerId: banner.id, eventType: "click" })], { type: "application/json" });
+      if (typeof navigator !== "undefined" && navigator.sendBeacon) {
+        navigator.sendBeacon("/api/banner-events", blob);
+      } else {
+        void fetch("/api/banner-events", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ bannerId: banner.id, eventType: "click" }), keepalive: true });
+      }
+    } catch { /* noop */ }
+  };
+
   return banner.ctaHref ? (
-    <Link href={banner.ctaHref} className="block no-underline" style={{ color: "inherit" }}>
+    <Link href={banner.ctaHref} onClick={recordClick} className="block no-underline" style={{ color: "inherit" }}>
       {inner}
     </Link>
   ) : (
