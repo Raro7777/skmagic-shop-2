@@ -457,6 +457,19 @@ export default function BannerSchedule() {
                         style={{ minHeight: 180 }}
                       />
                     </Field>
+                    {/* 이미지 업로드 → 자동으로 <img> 마크업 삽입 */}
+                    <div className="mt-1.5 flex items-start gap-2 bg-rk-soft border border-rk-line-2 rounded px-2.5 py-2">
+                      <span className="text-[18px] leading-none">🖼</span>
+                      <div className="flex-1">
+                        <div className="text-[12px] text-rk-muted mb-1">이미지 업로드 (≤ 8MB, WebP 자동 변환) — 업로드 시 마크업 끝에 자동 삽입</div>
+                        <HtmlImageUploader
+                          onUploaded={url => {
+                            const tag = `\n<img src="${url}" alt="" style="width:100%;border-radius:8px;display:block">\n`;
+                            setDraft({ ...draft, htmlContent: (draft.htmlContent ?? "") + tag });
+                          }}
+                        />
+                      </div>
+                    </div>
                     <p className="text-[11px] text-rk-muted mt-1 leading-[1.5]">
                       ⚠ <code>&lt;script&gt;</code>·<code>&lt;iframe&gt;</code>·<code>on*</code> 이벤트는 자동 제거됩니다.
                       외부 링크는 새 탭 + nofollow 로 변환. 최대 10,000자.
@@ -621,6 +634,60 @@ function ImageUploadField({ value, onChange }: { value: string; onChange: (url: 
       />
       {uploading && <small className="text-[11px] text-rk-info">⏳ 업로드 중…</small>}
       {err && <small className="text-[11px] text-rk-sale">⚠ {err}</small>}
+    </div>
+  );
+}
+
+/** HTML 레이아웃용 이미지 업로더 — 업로드 후 호출자가 마크업 삽입 */
+function HtmlImageUploader({ onUploaded }: { onUploaded: (url: string) => void }) {
+  const [uploading, setUploading] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [recent, setRecent] = useState<string | null>(null);
+
+  const handleFile = async (file: File) => {
+    setErr(null);
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/franchise/banners/upload-image", { method: "POST", body: fd });
+      const j = await res.json();
+      if (!res.ok) { setErr(j.error ?? "업로드 실패"); return; }
+      onUploaded(j.url);
+      setRecent(j.url);
+    } catch {
+      setErr("네트워크 오류");
+    } finally { setUploading(false); }
+  };
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <input
+        type="file"
+        accept="image/*"
+        disabled={uploading}
+        onChange={e => {
+          const f = e.target.files?.[0];
+          if (f) void handleFile(f);
+          e.target.value = "";
+        }}
+        className="text-[12px]"
+      />
+      {uploading && <small className="text-[11px] text-rk-info">⏳ 업로드 중…</small>}
+      {err && <small className="text-[11px] text-rk-sale">⚠ {err}</small>}
+      {recent && (
+        <div className="flex items-center gap-2">
+          <img src={recent} alt="" className="w-[60px] h-[40px] object-cover rounded border border-rk-line" />
+          <small className="text-[11px] text-rk-success">✓ 마크업에 &lt;img&gt; 자동 삽입됨</small>
+          <button
+            type="button"
+            onClick={() => { void navigator.clipboard.writeText(recent); }}
+            className="text-[11px] text-rk-info hover:underline cursor-pointer bg-transparent border-0 ml-auto"
+          >
+            URL 복사
+          </button>
+        </div>
+      )}
     </div>
   );
 }
