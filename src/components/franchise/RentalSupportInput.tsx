@@ -51,8 +51,8 @@ export default function RentalSupportInput({
   return (
     <div className="bg-white border border-rk-line rounded-lg p-5 mb-3">
       <div className="flex items-baseline justify-between mb-2">
-        <h3 className="text-[14px] font-semibold text-rk-ink">🎁 렌탈지원금 (협력점 단독 환원)</h3>
-        <small className="text-[12px] text-rk-muted">개통 시 1회 캐시백 · 본사 지급 후 정산 시 차감</small>
+        <h3 className="text-[14px] font-semibold text-rk-ink">🎁 렌탈지원금 (협력점 보장 마진 설정)</h3>
+        <small className="text-[12px] text-rk-muted">영업점수수료에서 이 금액을 제외한 나머지가 고객에게 환원</small>
       </div>
 
       <div className="grid grid-cols-[120px_1fr] gap-x-3 gap-y-2.5 text-[13px] items-center">
@@ -92,7 +92,7 @@ export default function RentalSupportInput({
             disabled={busy}
             className="border border-rk-line rounded px-2.5 py-1.5 text-[14px] focus:outline-none focus:border-rk-navy disabled:opacity-50 rk-num w-[180px]"
           />
-          <span className="text-[12px] text-rk-muted">원 · 개통 1회 환원</span>
+          <span className="text-[12px] text-rk-muted">원 · 협력점이 챙길 보장 마진</span>
         </div>
         {truncated > 0 && (
           <>
@@ -105,9 +105,10 @@ export default function RentalSupportInput({
       </div>
 
       <ul className="mt-3 bg-rk-tint-blue text-rk-info text-[12px] p-3 rounded-md leading-[1.6] list-disc pl-5">
-        <li>모든 상품·옵션 공통 단일 금액. 옵션별 차등 X.</li>
-        <li><b>만원 단위로 절사</b>되어 저장·노출 (예: ₩662,000 → ₩660,000).</li>
-        <li><b>상품 옵션의 수수료 합계 ≥ 설정 금액</b> 인 경우만 그 옵션에 노출. 부족하면 그 옵션은 <b>0</b> 표기.</li>
+        <li><b>이 금액은 협력점이 보장받을 마진</b>. 모든 상품·옵션 공통 단일 금액.</li>
+        <li>고객 환원 렌탈지원금 = <b>영업점수수료 − 이 마진 − 사은품 − 설치 환원</b> (자동 계산).</li>
+        <li>옵션별로 영업점수수료가 다르므로 옵션마다 노출되는 렌탈지원금 액수도 달라짐. 차액이 음수면 0.</li>
+        <li><b>만원 단위로 절사</b>되어 노출 (예: ₩662,000 → ₩660,000).</li>
         <li>0 입력 시 렌탈지원금 미노출.</li>
         <li>개통 (install_done) 시점에 본사가 고객에 1회 캐시백 지급 → 정산 시 협력점 수수료에서 차감.</li>
         <li>가입 취소·환불 시 전체 환수.</li>
