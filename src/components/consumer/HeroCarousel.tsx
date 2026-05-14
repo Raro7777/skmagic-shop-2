@@ -82,12 +82,13 @@ export default function HeroCarousel({
         <img src="/sk-magic-logo.png" alt="SK magic 공식" className="h-[18px] w-auto" />
         <span className="text-[10px] font-bold text-rk-ink leading-none">공식 인증</span>
       </div>
+      {/* 풀-블리드 레이아웃(image-bg / html)에선 라벨이 위쪽에 빈 공간을 만들어 다른 슬라이드의 잔상처럼 보임 → 숨김 */}
       {cur.kind === "product" && (
         <span className="inline-flex gap-1.5 items-center text-[13px] px-2 py-0.5 bg-white/10 rounded-full font-medium mb-2.5">
           {sellerName ?? partnerName} 단독 프로모션
         </span>
       )}
-      {cur.kind === "banner" && (
+      {cur.kind === "banner" && cur.banner.layout !== "image-bg" && cur.banner.layout !== "html" && (
         <span className="inline-flex gap-1.5 items-center text-[13px] px-2 py-0.5 bg-white/20 rounded-full font-medium mb-2.5">
           🎁 진행중 이벤트
         </span>
@@ -169,7 +170,7 @@ function BannerSlideContent({ banner }: { banner: ActiveBanner }) {
     if (banner.layout === "html" && banner.htmlContent) {
       return (
         <div
-          className="banner-html relative -mx-4 -mt-[22px] mb-[-56px] min-h-[200px]"
+          className="banner-html relative -mx-4 -mt-[22px] mb-[-56px] min-h-[260px]"
           dangerouslySetInnerHTML={{ __html: banner.htmlContent }}
         />
       );
@@ -179,7 +180,7 @@ function BannerSlideContent({ banner }: { banner: ActiveBanner }) {
       // 이미지에 텍스트가 이미 들어있으면 title 을 빈 문자열로 두어 시스템 텍스트·그라데이션 안 그리기
       const hasOverlay = (banner.title?.trim().length ?? 0) > 0;
       return (
-        <div className="relative -mx-4 -mt-[22px] mb-[-56px] min-h-[200px]">
+        <div className="relative -mx-4 -mt-[22px] mb-[-56px] min-h-[260px]">
           {banner.imageUrl && (
             <img src={banner.imageUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
           )}
