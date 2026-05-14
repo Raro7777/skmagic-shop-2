@@ -198,7 +198,7 @@ function BannerSlideContent({ banner }: { banner: ActiveBanner }) {
       return (
         <div className="grid grid-cols-[1fr_88px] gap-3 items-center">
           <div>
-            <h2 className="text-[20px] font-bold leading-[1.3] tracking-[-.03em] m-0 mb-1.5">
+            <h2 className="text-[22px] font-bold leading-[1.3] tracking-[-.03em] m-0 mb-1.5">
               {banner.title}
             </h2>
             {banner.subtitle && (

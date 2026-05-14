@@ -242,26 +242,26 @@ export default function PriceConfigurator({
         </div>
       )}
 
-      {/* Price block */}
-      <div className="flex items-baseline justify-between mb-2">
-        <span className="text-[14px] text-rk-muted">월 렌탈가</span>
-        <div>
-          <span className="text-[24px] font-bold tracking-[-.02em] text-rk-ink rk-num">{fmt(finalRental)}</span>
-          <small className="text-[14px] font-medium text-rk-muted">원</small>
-        </div>
-      </div>
-      {finalCard != null && (
-        <div className="flex items-baseline justify-between mb-2">
-          <span className="text-[14px] text-rk-sale font-medium">신용카드 할인가</span>
+      {/* 최종 월 요금 — 강조 박스 (사용자 보고: 최종 월요금 기준 강조 필요) */}
+      <div className="bg-gradient-to-br from-rk-tint-orange to-[#FFE3CC] border-2 border-rk-orange rounded-lg px-3 py-2.5 mb-2.5 shadow-sm">
+        <div className="flex items-baseline justify-between">
+          <span className="text-[13px] text-rk-orange-deep font-bold">💰 최종 월 요금</span>
           <div>
-            <span className="text-[20px] font-bold tracking-[-.02em] text-rk-sale rk-num">{fmt(finalCard)}</span>
-            <small className="text-[13px] font-medium text-rk-sale">원/월</small>
-            {savings != null && savings > 0 && (
-              <small className="block text-[12px] text-rk-muted text-right">−{fmt(savings)}원/월 절약</small>
-            )}
+            <span className="text-[28px] font-extrabold tracking-[-.02em] text-rk-orange-deep rk-num">
+              {fmt(finalCard ?? finalRental)}
+            </span>
+            <small className="text-[14px] font-bold text-rk-orange-deep">원/월</small>
           </div>
         </div>
-      )}
+        {finalCard != null && savings != null && savings > 0 && (
+          <div className="flex items-baseline justify-between mt-1 pt-1.5 border-t border-rk-orange/30">
+            <small className="text-[12px] text-rk-muted">카드할인 없이</small>
+            <small className="text-[13px] text-rk-muted rk-num">
+              ₩{fmt(finalRental)}/월 (−₩{fmt(savings)} 절약)
+            </small>
+          </div>
+        )}
+      </div>
 
       {/* 협력점 렌탈지원금 — 강조 카드 (한도 부족 옵션은 박스 자체 미노출) */}
       {partnerRentalSupportEnabled && partnerRentalSupportAmount > 0 && (() => {
