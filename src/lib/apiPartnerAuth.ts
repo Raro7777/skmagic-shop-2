@@ -33,7 +33,7 @@ export async function authenticateApiPartner(req: Request): Promise<{
   // 사용 통계 비동기 갱신 (응답 지연 X)
   prisma.apiPartner
     .update({ where: { id: partner.id }, data: { lastUsedAt: new Date() } })
-    .catch(() => { /* noop */ });
+    .catch(e => { console.error("[apiPartnerAuth] lastUsedAt update failed:", e instanceof Error ? e.message : e); });
 
   return {
     id: partner.id,

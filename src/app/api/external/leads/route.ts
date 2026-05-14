@@ -130,10 +130,10 @@ export async function POST(req: Request) {
     data: { source: "api_partner", externalChannel: partner.slug },
   });
 
-  // 통계
+  // 통계 — 실패해도 응답 영향 X, Vercel Logs 에 흔적만
   prisma.apiPartner
     .update({ where: { id: partner.id }, data: { totalLeads: { increment: 1 } } })
-    .catch(() => { /* noop */ });
+    .catch(e => { console.error("[external/leads] stat update failed:", e instanceof Error ? e.message : e); });
 
   return new NextResponse(
     JSON.stringify({

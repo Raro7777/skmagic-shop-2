@@ -66,10 +66,10 @@ export async function GET(req: Request) {
     prisma.product.count({ where }),
   ]);
 
-  // 통계 카운터
+  // 통계 카운터 — 실패해도 응답 영향 X, Vercel Logs 에 흔적만
   prisma.apiPartner
     .update({ where: { id: partner.id }, data: { totalProductFetches: { increment: 1 } } })
-    .catch(() => { /* noop */ });
+    .catch(e => { console.error("[external/products] stat update failed:", e instanceof Error ? e.message : e); });
 
   return new NextResponse(
     JSON.stringify({

@@ -374,7 +374,10 @@ export default function EnrollmentFormModal({
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ status: "revise_resubmit", memo: "[신청서 수정 후 재제출 — fallback]" }),
           });
-        } catch { /* fallback 실패는 무시 — 사용자에겐 저장은 성공으로 표시 */ }
+        } catch (e) {
+          // fallback 자체 실패 — 사용자 흐름은 유지하되 운영자가 알 수 있게 로그
+          console.error("[EnrollmentFormModal] fallback status PATCH failed:", e instanceof Error ? e.message : e);
+        }
       }
 
       onSaved(!!j.advanced || wasReturned);
