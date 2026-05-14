@@ -44,23 +44,23 @@ export default function RankingTabs({
         </Link>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1.5 mb-3 overflow-x-auto -mx-4 px-4 pb-1">
+      {/* Tabs — 모바일 frame 폭에 맞춰 4개 탭이 한 줄에 fit. flex-1 로 동일 폭 */}
+      <div className="grid grid-cols-4 gap-1 mb-3">
         {categories.map(c => (
           <button
             key={c.slug}
             type="button"
             onClick={() => setActiveSlug(c.slug)}
             className={
-              "px-3 py-1.5 rounded-full text-[14px] whitespace-nowrap cursor-pointer border transition-colors " +
+              "px-1.5 py-1.5 rounded-full text-[12px] cursor-pointer border transition-colors flex items-center justify-center gap-0.5 min-w-0 " +
               (c.slug === activeSlug
                 ? "bg-rk-navy text-white font-medium border-rk-navy"
                 : "bg-white text-rk-text border-rk-line hover:bg-rk-soft-2")
             }
           >
-            <span className="mr-1">{c.icon}</span>
-            {c.label}
-            <span className={"ml-1.5 text-[12px] " + (c.slug === activeSlug ? "opacity-70" : "text-rk-faint")}>
+            <span className="shrink-0">{c.icon}</span>
+            <span className="truncate">{c.label}</span>
+            <span className={"text-[11px] shrink-0 " + (c.slug === activeSlug ? "opacity-70" : "text-rk-faint")}>
               {c.count}
             </span>
           </button>
