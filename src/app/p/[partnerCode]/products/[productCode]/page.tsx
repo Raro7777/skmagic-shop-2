@@ -165,6 +165,31 @@ export default async function ProductDetailPage({
           partnerInstallAmount={detail.partnerInstallAmount}
         />
 
+        {/* 타사보상 흐름 안내 — 3단계 시각화 (사용자 보고: 타사보상 설명 부족) */}
+        <section className="bg-rk-tint-orange border-y border-[#F4DCC9] px-4 py-3.5">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-[18px]">🔄</span>
+            <b className="text-[14px] text-rk-orange-deep">타사보상 신청 절차 (3단계로 끝)</b>
+          </div>
+          <ol className="m-0 pl-0 list-none flex gap-2 text-[12px]">
+            <li className="flex-1 bg-white rounded-md p-2 border border-[#F4DCC9]">
+              <div className="font-bold text-rk-orange-deep mb-0.5">① 타사 사용 인증</div>
+              <div className="text-rk-text leading-[1.45]">현재 사용 중인 타사 정수기·공기청정기·비데 사진 또는 약정서 1장</div>
+            </li>
+            <li className="flex-1 bg-white rounded-md p-2 border border-[#F4DCC9]">
+              <div className="font-bold text-rk-orange-deep mb-0.5">② 설치 진행</div>
+              <div className="text-rk-text leading-[1.45]">기존 제품 철거 + 신규 SK매직 설치 (1회 방문 처리)</div>
+            </li>
+            <li className="flex-1 bg-white rounded-md p-2 border border-[#F4DCC9]">
+              <div className="font-bold text-rk-orange-deep mb-0.5">③ 혜택 즉시 지급</div>
+              <div className="text-rk-text leading-[1.45]">반값할인 월 요금 + 현금 캐시백 자동 적용</div>
+            </li>
+          </ol>
+          <small className="text-[11px] text-rk-orange-deep block mt-2 opacity-90">
+            ⓘ 위 &apos;타사보상 적용&apos; 토글을 켜면 적용된 월 요금이 즉시 반영됩니다.
+          </small>
+        </section>
+
         {/* 월 렌탈가 하단 — 상담신청 버튼 (항목 7) */}
         <section className="bg-white px-4 py-3 border-b-8 border-rk-soft">
           <ConsultForm
