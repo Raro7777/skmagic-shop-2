@@ -67,7 +67,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     });
 
     // 사용자 이메일로 발송 + Outbox 적재 (본사가 요청 시 안내 가능)
-    let mailResult: { ok: true; provider: string } | { error: string } = { error: "" };
+    let mailResult: { ok: boolean; provider?: string; error?: string } = { ok: false, error: "" };
     try {
       mailResult = await sendCredentialEmail({
         to: target.email,
@@ -78,21 +78,22 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
         isReset: true,
       });
     } catch (e) {
-      mailResult = { error: e instanceof Error ? e.message : "email send failed" };
+      mailResult = { ok: false, error: e instanceof Error ? e.message : "email send failed" };
     }
 
     await writeAudit({
       ...actor,
       action: "password_reset",
       targetUserId: target.id, targetEmail: target.email,
-      metadata: { mailDelivered: "ok" in mailResult },
+      metadata: { mailDelivered: mailResult.ok, mailProvider: mailResult.provider ?? null },
     });
 
     return NextResponse.json({
       ok: true,
       tempPassword,                       // ⚠ 1회만 노출. 프론트에서 사용자 안내 후 즉시 폐기.
-      mailDelivered: "ok" in mailResult,
-      mailProvider: "ok" in mailResult ? mailResult.provider : null,
+      mailDelivered: mailResult.ok,
+      mailProvider: mailResult.ok ? mailResult.provider : null,
+      mailError: mailResult.ok ? null : mailResult.error,
       message: `${target.email} 임시 비밀번호가 발급되었습니다. 사용자 이메일로 자동 발송됐고, 본사 콘솔에서도 즉시 안내할 수 있도록 1회 노출됩니다.`,
     });
   }
