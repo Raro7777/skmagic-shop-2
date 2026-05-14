@@ -35,7 +35,12 @@ export default auth(async (req) => {
 
   // ─── 1) 협력점 customDomain rewrite ───
   if (host && !isSystemHost(host)) {
-    if (path.startsWith("/p/") || path === "/p" || path.startsWith("/admin") || path.startsWith("/login") || path.startsWith("/api/auth")) {
+    // 정적 자산 (public/ 안의 파일들) 은 rewrite 대상 아님 — 그대로 root path 에서 서빙되어야 함.
+    // 예: /sk-magic-logo.png, /favicon.ico, /robots.txt 등.
+    const isStaticAsset = /\.[a-z0-9]{2,5}$/i.test(path);
+    if (isStaticAsset) {
+      // 통과
+    } else if (path.startsWith("/p/") || path === "/p" || path.startsWith("/admin") || path.startsWith("/login") || path.startsWith("/api/auth")) {
       // 이미 partner namespace 거나 admin/login (인증 게이트가 알아서 처리) — 그대로 통과
     } else if (path.startsWith("/preview/")) {
       // customDomain 으로 들어온 컨슈머에게 PC 프리뷰 노출 금지
