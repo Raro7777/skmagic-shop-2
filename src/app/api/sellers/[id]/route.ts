@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { normalizeKoreanPhone } from "@/lib/sellerPhone";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -42,11 +43,26 @@ export async function PATCH(
     status: string;
   }>;
 
+  // phone 수정 시 정규화 (sellerCode = URL 은 변경하지 않음 — 기존 카톡 링크 보호)
+  let nextPhone: string | null | undefined;
+  if (b.phone !== undefined) {
+    const raw = b.phone?.trim();
+    if (!raw) {
+      nextPhone = null;
+    } else {
+      const norm = normalizeKoreanPhone(raw);
+      if (!norm) {
+        return NextResponse.json({ error: "전화번호 형식이 올바르지 않습니다." }, { status: 400 });
+      }
+      nextPhone = norm;
+    }
+  }
+
   const updated = await prisma.seller.update({
     where: { id },
     data: {
       ...(b.name != null && { name: b.name.trim().slice(0, 32) }),
-      ...(b.phone !== undefined && { phone: b.phone?.trim() || null }),
+      ...(nextPhone !== undefined && { phone: nextPhone }),
       ...(b.email !== undefined && { email: b.email?.trim() || null }),
       ...(b.status && ["active", "inactive"].includes(b.status) && { status: b.status }),
     },

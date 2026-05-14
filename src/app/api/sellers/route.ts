@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { HQ_VIEW_COOKIE, gatePartnerOrHq } from "@/lib/effectivePartner";
+import { normalizeKoreanPhone } from "@/lib/sellerPhone";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -69,22 +70,23 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
   const b = body as Partial<{
-    sellerCode: string;
     name: string;
     phone: string;
     email: string;
   }>;
 
-  if (!b.sellerCode?.trim() || !b.name?.trim()) {
-    return NextResponse.json({ error: "sellerCode + name 필수" }, { status: 400 });
+  if (!b.name?.trim() || !b.phone?.trim()) {
+    return NextResponse.json({ error: "이름과 전화번호는 필수입니다." }, { status: 400 });
   }
-  const code = b.sellerCode.trim().toLowerCase();
-  if (!/^[a-z0-9-]{2,32}$/.test(code)) {
+  const normalizedPhone = normalizeKoreanPhone(b.phone);
+  if (!normalizedPhone) {
     return NextResponse.json(
-      { error: "sellerCode는 영문 소문자/숫자/하이픈 2~32자" },
+      { error: "전화번호 형식이 올바르지 않습니다. (예: 010-1234-5678)" },
       { status: 400 }
     );
   }
+  // sellerCode = 정규화된 전화번호 — URL `/p/[code]/s/<phone>` 에 그대로 들어감
+  const code = normalizedPhone;
 
   try {
     const created = await prisma.seller.create({
@@ -92,7 +94,7 @@ export async function POST(req: Request) {
         partnerId: eff.partnerId,
         sellerCode: code,
         name: b.name.trim().slice(0, 32),
-        phone: b.phone?.trim() || null,
+        phone: normalizedPhone,
         email: b.email?.trim() || null,
         status: "active",
       },
@@ -108,7 +110,7 @@ export async function POST(req: Request) {
   } catch (e) {
     const code = (e as { code?: string }).code;
     if (code === "P2002") {
-      return NextResponse.json({ error: "이미 사용 중인 sellerCode 입니다." }, { status: 400 });
+      return NextResponse.json({ error: "이미 등록된 전화번호입니다." }, { status: 400 });
     }
     return NextResponse.json({ error: "생성 실패" }, { status: 500 });
   }

@@ -43,7 +43,6 @@ export default function LinksManager({
 
   // Form state for adding seller
   const [showAdd, setShowAdd] = useState(false);
-  const [newCode, setNewCode] = useState("");
   const [newName, setNewName] = useState("");
   const [newPhone, setNewPhone] = useState("");
   const [adding, setAdding] = useState(false);
@@ -132,7 +131,6 @@ export default function LinksManager({
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          sellerCode: newCode,
           name: newName,
           phone: newPhone,
         }),
@@ -143,7 +141,6 @@ export default function LinksManager({
         return;
       }
       setShowAdd(false);
-      setNewCode("");
       setNewName("");
       setNewPhone("");
       fetchSellers();
@@ -353,26 +350,18 @@ export default function LinksManager({
                 <div className="flex gap-2 items-baseline flex-wrap">
                   <input
                     required
-                    placeholder="sellerCode (예: kim-yh)"
-                    value={newCode}
-                    onChange={e => setNewCode(e.target.value)}
-                    className="px-2 py-1 border border-rk-line rounded text-[14px] font-mono w-[150px]"
+                    placeholder="이름 (예: 홍길동)"
+                    value={newName}
+                    onChange={e => setNewName(e.target.value)}
+                    className="px-2 py-1 border border-rk-line rounded text-[14px] w-[140px]"
                   />
                   <input
                     required
-                    placeholder="이름"
-                    value={newName}
-                    onChange={e => setNewName(e.target.value)}
-                    className="px-2 py-1 border border-rk-line rounded text-[14px] w-[120px]"
-                  />
-                </div>
-                <div className="flex gap-2 items-baseline flex-wrap">
-                  <input
                     type="tel"
-                    placeholder="전화 (예: 010-1234-5678)"
+                    placeholder="전화번호 (010-1234-5678)"
                     value={newPhone}
                     onChange={e => setNewPhone(e.target.value)}
-                    className="px-2 py-1 border border-rk-line rounded text-[14px] font-mono w-[180px]"
+                    className="px-2 py-1 border border-rk-line rounded text-[14px] font-mono w-[200px]"
                   />
                 </div>
                 <div className="flex gap-2 items-baseline flex-wrap">
@@ -391,7 +380,7 @@ export default function LinksManager({
                     취소
                   </button>
                   <small className="text-rk-faint text-[12px]">
-                    전화 입력 시 이 영업자 링크에서 발생한 상담이 본인 번호로 연결됩니다. 비워두면 점 대표 번호 사용. (카톡은 항상 점 대표 채널)
+                    영업자 단독 링크는 전화번호로 만들어집니다 (예: <code className="font-mono bg-rk-soft px-1 rounded">/s/010-1234-5678</code>). 카톡은 항상 점 대표 채널로 연결됩니다.
                   </small>
                   {addError && <small className="text-rk-sale text-[13px] basis-full mt-1">⚠ {addError}</small>}
                 </div>
