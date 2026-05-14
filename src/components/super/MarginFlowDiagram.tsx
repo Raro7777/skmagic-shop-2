@@ -30,26 +30,37 @@ export type MarginFlowData = {
 const fmt = (n: number) => "₩" + n.toLocaleString("ko-KR");
 const fmtSigned = (n: number) => (n >= 0 ? "+" : "") + fmt(n);
 
-export default function MarginFlowDiagram({ data, compact = false }: { data: MarginFlowData; compact?: boolean }) {
+export default function MarginFlowDiagram({
+  data, compact = false, audience = "hq",
+}: {
+  data: MarginFlowData;
+  compact?: boolean;
+  /** "hq" — 본사 콘솔 (본사수수료·본사마진 단계 표시) / "partner" — 협력점 콘솔 (영업점수수료부터 시작) */
+  audience?: "hq" | "partner";
+}) {
   const hasSeller = data.sellerPayout > 0 || data.sellerMargin > 0;
   const poolBeforeSeller = data.partnerCommission - data.giftReturned - data.installReturned - data.rentalSupportReturned;
+  const showHqStages = audience === "hq";
 
   return (
     <div className={"flex flex-col gap-1 " + (compact ? "text-[12px]" : "text-[13px]")}>
-      {/* 1. 본사수수료 */}
-      <Stage tone="navy" label="본사수수료" amount={data.baseCommission} note="본사가 SK매직에서 받은 수수료" />
+      {/* 1. 본사수수료 — 협력점 모드에선 숨김 */}
+      {showHqStages && (
+        <>
+          <Stage tone="navy" label="본사수수료" amount={data.baseCommission} note="본사가 SK매직에서 받은 수수료" />
+          <Arrow>
+            <Deduction label="본사마진" amount={data.hqMargin} note="본사가 떼는 몫 (티어/옵션별)" />
+          </Arrow>
+        </>
+      )}
 
-      <Arrow>
-        <Deduction label="본사마진" amount={data.hqMargin} note="본사가 떼는 몫 (티어/옵션별)" />
-      </Arrow>
-
-      {/* 2. 영업점수수료 ★ */}
+      {/* 2. 영업점수수료 ★ (협력점 모드에서는 시작점) */}
       <Stage
         tone="orange"
         label="영업점수수료"
         amount={data.partnerCommission}
-        badge="★ 정책 표기 + 환수 기준"
-        note="협력점에 내려보내는 금액"
+        badge={showHqStages ? "★ 정책 표기 + 환수 기준" : "★ 시작 금액"}
+        note={showHqStages ? "협력점에 내려보내는 금액" : ""}
       />
 
       <Arrow>

@@ -87,7 +87,7 @@ export default function SettlementSummary() {
         <table className="w-full text-[14px] border-collapse">
           <thead>
             <tr>
-              {["생성", "상품", "본사→영업점", "사은품 환원", "설치비 환원", "렌탈지원 환원", "실수령", "상태", "흐름"].map((h, i) => (
+              {["생성", "상품", "영업점수수료", "사은품 환원", "설치비 환원", "렌탈지원 환원", "실수령", "상태", "흐름"].map((h, i) => (
                 <th key={i} className="text-left px-1.5 py-2 font-medium text-rk-muted text-[13px] uppercase tracking-[.04em] border-b border-rk-line">
                   {h}
                 </th>
@@ -107,9 +107,7 @@ export default function SettlementSummary() {
                     {r.productCode && <small className="block text-rk-faint font-mono text-[12px]">{r.productCode}</small>}
                   </td>
                   <td className="px-1.5 py-2.5 border-b border-rk-line-2 rk-num">
-                    <div className="text-rk-success">+{fmt(r.baseCommission)}</div>
-                    {r.hqMargin > 0 && <small className="block text-[10px] text-rk-orange-deep">−본사마진 {fmt(r.hqMargin)}</small>}
-                    <small className="block text-[11px] text-rk-ink font-semibold">→ 영업점 {fmt(r.partnerCommission)}</small>
+                    <b className="text-rk-success">+{fmt(r.partnerCommission)}</b>
                   </td>
                   <td className="px-1.5 py-2.5 border-b border-rk-line-2 rk-num">
                     {r.giftReturned > 0 ? <span className="text-rk-orange-deep">−{fmt(r.giftReturned)}</span> : <span className="text-rk-muted">—</span>}
@@ -160,6 +158,7 @@ export default function SettlementSummary() {
               {flowModal.productCode && <span className="ml-1 font-mono text-rk-faint">({flowModal.productCode})</span>}
             </div>
             <MarginFlowDiagram
+              audience="partner"
               data={{
                 baseCommission: flowModal.baseCommission,
                 hqMargin: flowModal.hqMargin,

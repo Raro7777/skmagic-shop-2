@@ -240,8 +240,8 @@ export default function PolicyEditor() {
       </div>
 
       <div className="bg-rk-tint-blue text-rk-info px-2.5 py-2 rounded text-[13px] mb-3 leading-[1.5]">
-        💡 카드 메인 숫자는 <b>영업점수수료</b>(=본사수수료 − 본사마진) 입니다. 사은품·설치 환원은 영업점수수료에서 별도로 차감.
-        <br />환원 한도는 <b>가장 낮은 수수료 옵션</b>의 영업점수수료 ⅔ 기준. 환수는 영업점수수료 기준으로 처리됩니다.
+        💡 카드 메인 숫자는 <b>영업점수수료</b>. 사은품·설치 환원은 영업점수수료에서 차감되어 정산됩니다.
+        <br />환원 한도는 <b>가장 낮은 수수료 옵션</b>의 영업점수수료 기준. 환수도 영업점수수료 기준으로 처리됩니다.
       </div>
 
       <div className="flex flex-col gap-1.5">
@@ -250,9 +250,8 @@ export default function PolicyEditor() {
           const myPolicy = p.myPolicy;
           const isMissing = !((myPolicy?.giftAmount ?? 0) > 0 || (myPolicy?.installAmount ?? 0) > 0);
 
-          // 정책 표기 = 영업점수수료 (= 본사수수료 - 본사마진). 환수 한도도 이 기준.
-          const baseCommission = p.hqPolicy?.baseCommission ?? 0;
-          const hqMargin = p.hqPolicy?.hqMargin ?? 0;
+          // 정책 표기 = 영업점수수료. 환수 한도도 이 기준.
+          // (본사수수료·본사마진은 내부 데이터에만 존재, UI 노출 안 함)
           const partnerCommission = p.hqPolicy?.partnerCommission ?? 0;
           const limit = p.hqPolicy ? Math.floor(partnerCommission * p.hqPolicy.refundLimitRatio) : 0;
 
@@ -319,9 +318,6 @@ export default function PolicyEditor() {
                         {(p.hqPolicy.optionCount ?? 0) > 1 && ` · 총 ${p.hqPolicy.optionCount}옵션`})
                       </span>
                     )}
-                  </small>
-                  <small className="text-[11px] text-rk-faint block">
-                    본사수수료 ₩{fmt(baseCommission)} − 본사마진 ₩{fmt(hqMargin)} = 영업점수수료 ₩{fmt(partnerCommission)}
                   </small>
                 </div>
 
