@@ -121,7 +121,7 @@ export default async function PartnerSiteShell({
               style={{ color: "inherit" }}
               aria-label="홈으로"
             >
-              <img src="/sk-magic-logo.png" alt="SK인텔릭스" className="h-[24px] w-auto" />
+              <img src="/sk-magic-logo.png" alt="SK인텔릭스" className="h-[36px] w-auto" />
 
               <div>
                 <div className="font-bold text-[16px] text-rk-ink tracking-[-.02em] leading-tight">{partner.partnerName}</div>

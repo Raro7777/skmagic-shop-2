@@ -33,7 +33,7 @@ export default function PartnerHeader({
           <div className="px-4 py-3 flex items-center gap-2.5">
             <Link href={`/p/${partner.partnerCode}`} className="text-[24px] text-rk-ink no-underline">≡</Link>
             <Link href={`/p/${partner.partnerCode}`} className="flex items-center gap-2 no-underline text-inherit">
-              <img src="/sk-magic-logo.png" alt="SK인텔릭스" className="h-[24px] w-auto" />
+              <img src="/sk-magic-logo.png" alt="SK인텔릭스" className="h-[36px] w-auto" />
 
               <div>
                 <div className="font-bold text-[16px] text-rk-ink tracking-[-.02em] leading-tight">{partner.partnerName}</div>
@@ -82,9 +82,7 @@ export default function PartnerHeader({
             href={`/p/${partner.partnerCode}`}
             className="flex items-center gap-2 flex-1 min-w-0 no-underline text-inherit"
           >
-            <div className="w-[24px] h-[24px] bg-rk-orange text-white rounded-[4px] grid place-items-center font-bold text-[13px] shrink-0">
-              SK
-            </div>
+            <img src="/sk-magic-logo.png" alt="SK인텔릭스" className="h-[28px] w-auto shrink-0" />
             <div className="min-w-0">
               <div className="font-bold text-[13px] text-rk-ink leading-tight truncate">
                 {partner.partnerName}
