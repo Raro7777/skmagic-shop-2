@@ -19,6 +19,7 @@ type LinkRow = {
   url: string;
   shareText: string;
   type: "partner" | "seller" | "product";
+  seller?: Seller;
 };
 
 const QR_API = (url: string, size = 240) =>
@@ -44,8 +45,15 @@ export default function LinksManager({
   const [showAdd, setShowAdd] = useState(false);
   const [newCode, setNewCode] = useState("");
   const [newName, setNewName] = useState("");
+  const [newPhone, setNewPhone] = useState("");
   const [adding, setAdding] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
+
+  // Inline edit state (per seller id)
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editPhone, setEditPhone] = useState("");
+  const [editSaving, setEditSaving] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
 
   useEffect(() => {
     setOrigin(window.location.origin);
@@ -88,6 +96,7 @@ export default function LinksManager({
 
   for (const s of sellers.filter(x => x.status === "active")) {
     const url = `${origin}/p/${partnerCode}/s/${s.sellerCode}`;
+    const sellerPhone = s.phone?.trim() || hotline;
     links.push({
       key: `seller-${s.id}`,
       label: `👤 ${s.name}`,
@@ -98,8 +107,9 @@ export default function LinksManager({
         `안녕하세요, ${partnerName}의 ${s.name}입니다.\n` +
         `렌탈 상담 도와드릴게요. 아래 링크에서 신청해주시면 30분 내 연락드립니다.\n\n` +
         `상담 신청: ${url}\n` +
-        `전화: ${hotline}`,
+        `전화: ${sellerPhone}`,
       type: "seller",
+      seller: s,
     });
   }
 
@@ -121,7 +131,11 @@ export default function LinksManager({
       const res = await fetch("/api/sellers", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ sellerCode: newCode, name: newName }),
+        body: JSON.stringify({
+          sellerCode: newCode,
+          name: newName,
+          phone: newPhone,
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -131,11 +145,46 @@ export default function LinksManager({
       setShowAdd(false);
       setNewCode("");
       setNewName("");
+      setNewPhone("");
       fetchSellers();
     } catch {
       setAddError("네트워크 오류");
     } finally {
       setAdding(false);
+    }
+  };
+
+  const startEdit = (s: Seller) => {
+    setEditingId(s.id);
+    setEditPhone(s.phone ?? "");
+    setEditError(null);
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditError(null);
+  };
+
+  const saveEdit = async (id: string) => {
+    setEditSaving(true);
+    setEditError(null);
+    try {
+      const res = await fetch(`/api/sellers/${id}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ phone: editPhone }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setEditError(data.error ?? "저장 실패");
+        return;
+      }
+      setEditingId(null);
+      fetchSellers();
+    } catch {
+      setEditError("네트워크 오류");
+    } finally {
+      setEditSaving(false);
     }
   };
 
@@ -169,20 +218,69 @@ export default function LinksManager({
                 <div className="flex-1 min-w-[240px]">
                   <div className="flex items-baseline gap-2 mb-0.5">
                     <b className="text-[13px] text-rk-ink">{l.label}</b>
-                    {l.type === "seller" && (
-                      <button
-                        type="button"
-                        onClick={() => removeSeller(l.key.replace("seller-", ""))}
-                        className="text-[12px] text-rk-faint hover:text-rk-sale bg-transparent border-0 cursor-pointer"
-                      >
-                        비활성화
-                      </button>
+                    {l.type === "seller" && l.seller && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => (editingId === l.seller!.id ? cancelEdit() : startEdit(l.seller!))}
+                          className="text-[12px] text-rk-info hover:text-rk-navy bg-transparent border-0 cursor-pointer"
+                        >
+                          {editingId === l.seller.id ? "닫기" : "✏ 전화"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => removeSeller(l.seller!.id)}
+                          className="text-[12px] text-rk-faint hover:text-rk-sale bg-transparent border-0 cursor-pointer"
+                        >
+                          비활성화
+                        </button>
+                      </>
                     )}
                   </div>
                   <small className="text-rk-muted text-[13px] block mb-1">{l.description}</small>
+                  {l.type === "seller" && l.seller && (
+                    <div className="flex flex-wrap gap-2 mb-1 text-[12px]">
+                      <span className={l.seller.phone ? "text-rk-text" : "text-rk-faint"}>
+                        📞 {l.seller.phone ?? <i>점 대표번호 사용</i>}
+                      </span>
+                      <span className="text-rk-faint">💬 점 대표 카톡 채널 사용</span>
+                    </div>
+                  )}
                   <div className="font-mono text-[13px] text-rk-info bg-rk-soft-2 rounded px-2 py-1 break-all">
                     {l.url}
                   </div>
+                  {l.type === "seller" && l.seller && editingId === l.seller.id && (
+                    <div className="bg-rk-soft-2 border border-rk-line rounded p-2 mt-2 flex flex-col gap-2">
+                      <label className="flex flex-col gap-1 text-[12px] text-rk-muted">
+                        전화
+                        <input
+                          type="tel"
+                          placeholder="010-1234-5678 (비우면 점 대표 사용)"
+                          value={editPhone}
+                          onChange={e => setEditPhone(e.target.value)}
+                          className="px-2 py-1 border border-rk-line rounded text-[14px] font-mono"
+                        />
+                      </label>
+                      <div className="flex gap-2 items-center">
+                        <button
+                          type="button"
+                          disabled={editSaving}
+                          onClick={() => saveEdit(l.seller!.id)}
+                          className="bg-rk-navy hover:bg-rk-navy-deep text-white border-0 px-3 py-1 rounded text-[13px] cursor-pointer font-medium"
+                        >
+                          {editSaving ? "…" : "저장"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={cancelEdit}
+                          className="bg-rk-soft text-rk-text border-0 px-3 py-1 rounded text-[13px] cursor-pointer"
+                        >
+                          취소
+                        </button>
+                        {editError && <small className="text-rk-sale text-[13px]">⚠ {editError}</small>}
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <div className="flex flex-col gap-1.5 min-w-[120px]">
                   <button
@@ -251,36 +349,52 @@ export default function LinksManager({
                 + 영업자 추가 (개인 링크 생성)
               </button>
             ) : (
-              <form onSubmit={submitAdd} className="flex gap-2 items-baseline flex-wrap">
-                <input
-                  required
-                  placeholder="sellerCode (예: kim-yh)"
-                  value={newCode}
-                  onChange={e => setNewCode(e.target.value)}
-                  className="px-2 py-1 border border-rk-line rounded text-[14px] font-mono w-[150px]"
-                />
-                <input
-                  required
-                  placeholder="이름"
-                  value={newName}
-                  onChange={e => setNewName(e.target.value)}
-                  className="px-2 py-1 border border-rk-line rounded text-[14px] w-[120px]"
-                />
-                <button
-                  type="submit"
-                  disabled={adding}
-                  className="bg-rk-navy hover:bg-rk-navy-deep text-white border-0 px-3 py-1 rounded text-[13px] cursor-pointer font-medium"
-                >
-                  {adding ? "…" : "추가"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setShowAdd(false); setAddError(null); }}
-                  className="bg-rk-soft text-rk-text border-0 px-3 py-1 rounded text-[13px] cursor-pointer"
-                >
-                  취소
-                </button>
-                {addError && <small className="text-rk-sale text-[13px] basis-full mt-1">⚠ {addError}</small>}
+              <form onSubmit={submitAdd} className="flex flex-col gap-2">
+                <div className="flex gap-2 items-baseline flex-wrap">
+                  <input
+                    required
+                    placeholder="sellerCode (예: kim-yh)"
+                    value={newCode}
+                    onChange={e => setNewCode(e.target.value)}
+                    className="px-2 py-1 border border-rk-line rounded text-[14px] font-mono w-[150px]"
+                  />
+                  <input
+                    required
+                    placeholder="이름"
+                    value={newName}
+                    onChange={e => setNewName(e.target.value)}
+                    className="px-2 py-1 border border-rk-line rounded text-[14px] w-[120px]"
+                  />
+                </div>
+                <div className="flex gap-2 items-baseline flex-wrap">
+                  <input
+                    type="tel"
+                    placeholder="전화 (예: 010-1234-5678)"
+                    value={newPhone}
+                    onChange={e => setNewPhone(e.target.value)}
+                    className="px-2 py-1 border border-rk-line rounded text-[14px] font-mono w-[180px]"
+                  />
+                </div>
+                <div className="flex gap-2 items-baseline flex-wrap">
+                  <button
+                    type="submit"
+                    disabled={adding}
+                    className="bg-rk-navy hover:bg-rk-navy-deep text-white border-0 px-3 py-1 rounded text-[13px] cursor-pointer font-medium"
+                  >
+                    {adding ? "…" : "추가"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setShowAdd(false); setAddError(null); }}
+                    className="bg-rk-soft text-rk-text border-0 px-3 py-1 rounded text-[13px] cursor-pointer"
+                  >
+                    취소
+                  </button>
+                  <small className="text-rk-faint text-[12px]">
+                    전화 입력 시 이 영업자 링크에서 발생한 상담이 본인 번호로 연결됩니다. 비워두면 점 대표 번호 사용. (카톡은 항상 점 대표 채널)
+                  </small>
+                  {addError && <small className="text-rk-sale text-[13px] basis-full mt-1">⚠ {addError}</small>}
+                </div>
               </form>
             )}
           </div>

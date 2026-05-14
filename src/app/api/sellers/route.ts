@@ -68,7 +68,12 @@ export async function POST(req: Request) {
   } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
-  const b = body as Partial<{ sellerCode: string; name: string; phone: string; email: string }>;
+  const b = body as Partial<{
+    sellerCode: string;
+    name: string;
+    phone: string;
+    email: string;
+  }>;
 
   if (!b.sellerCode?.trim() || !b.name?.trim()) {
     return NextResponse.json({ error: "sellerCode + name 필수" }, { status: 400 });

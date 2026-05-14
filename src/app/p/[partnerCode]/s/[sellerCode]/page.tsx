@@ -37,7 +37,11 @@ export default async function SellerSitePage({
   return (
     <PartnerSiteShell
       data={data}
-      seller={{ sellerCode: seller.sellerCode, name: seller.name }}
+      seller={{
+        sellerCode: seller.sellerCode,
+        name: seller.name,
+        phone: seller.phone,
+      }}
     />
   );
 }

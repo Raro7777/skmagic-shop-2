@@ -35,7 +35,12 @@ export async function PATCH(
   } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
-  const b = body as Partial<{ name: string; phone: string; email: string; status: string }>;
+  const b = body as Partial<{
+    name: string;
+    phone: string;
+    email: string;
+    status: string;
+  }>;
 
   const updated = await prisma.seller.update({
     where: { id },

@@ -27,6 +27,7 @@ const PICK_BG = [
 export type SellerInfo = {
   sellerCode: string;
   name: string;
+  phone?: string | null;
 };
 
 export default async function PartnerSiteShell({
@@ -306,7 +307,7 @@ export default async function PartnerSiteShell({
             </a>
           ) : (
             <a
-              href={`tel:${partner.hotlineNumber.replace(/[^\d+]/g, "")}`}
+              href={`tel:${(seller?.phone?.trim() || partner.hotlineNumber).replace(/[^\d+]/g, "")}`}
               className="flex-1 bg-[#FEE500] hover:bg-[#F4DC00] text-[#1A1D24] py-3 rounded-lg font-semibold text-[13px] text-center flex gap-1.5 items-center justify-center no-underline cursor-pointer"
             >
               📞 전화상담

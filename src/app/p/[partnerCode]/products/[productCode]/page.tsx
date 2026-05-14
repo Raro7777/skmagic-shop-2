@@ -62,8 +62,14 @@ export default async function ProductDetailPage({
       })
     : null;
   const sellerInfo = seller && seller.status === "active"
-    ? { sellerCode: seller.sellerCode, name: seller.name }
+    ? {
+        sellerCode: seller.sellerCode,
+        name: seller.name,
+        phone: seller.phone,
+      }
     : null;
+  // 전화는 영업자 본인 번호 우선, 카톡은 항상 점 대표 채널
+  const effectivePhone = sellerInfo?.phone?.trim() || detail.partner.hotlineNumber;
 
   const { partner } = detail;
   const categoryLabel = CATEGORY_LABEL[detail.category] ?? detail.category;
@@ -369,9 +375,9 @@ export default async function ProductDetailPage({
         {/* Sticky bottom CTA */}
         <div className="sticky bottom-0 px-3.5 py-2.5 bg-white border-t border-rk-line flex gap-2 items-center z-10">
           <a
-            href={`tel:${partner.hotlineNumber.replace(/\D/g, "")}`}
+            href={`tel:${effectivePhone.replace(/\D/g, "")}`}
             className="bg-rk-soft hover:bg-rk-line text-rk-ink px-3 py-3 rounded-lg font-semibold text-[14px] no-underline cursor-pointer flex items-center justify-center"
-            title={`전화 ${partner.hotlineNumber}`}
+            title={`전화 ${effectivePhone}`}
           >
             📞
           </a>
@@ -387,7 +393,7 @@ export default async function ProductDetailPage({
             </a>
           ) : (
             <a
-              href={`tel:${partner.hotlineNumber.replace(/\D/g, "")}`}
+              href={`tel:${effectivePhone.replace(/\D/g, "")}`}
               className="bg-[#FEE500] hover:bg-[#F4DC00] text-[#1A1D24] px-3 py-3 rounded-lg font-semibold text-[14px] no-underline cursor-pointer flex items-center justify-center"
               title="카톡 채널 미설정 — 전화로 연결"
             >
