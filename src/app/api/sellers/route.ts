@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { HQ_VIEW_COOKIE, gatePartnerOrHq } from "@/lib/effectivePartner";
 import { normalizeKoreanPhone } from "@/lib/sellerPhone";
+import { generateSellerCode } from "@/lib/sellerCode";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -85,33 +86,44 @@ export async function POST(req: Request) {
       { status: 400 }
     );
   }
-  // sellerCode = 정규화된 전화번호 — URL `/p/[code]/s/<phone>` 에 그대로 들어감
-  const code = normalizedPhone;
 
-  try {
-    const created = await prisma.seller.create({
-      data: {
-        partnerId: eff.partnerId,
-        sellerCode: code,
-        name: b.name.trim().slice(0, 32),
-        phone: normalizedPhone,
-        email: b.email?.trim() || null,
-        status: "active",
-      },
-    });
-    return NextResponse.json({
-      ok: true,
-      seller: {
-        id: created.id,
-        sellerCode: created.sellerCode,
-        name: created.name,
-      },
-    });
-  } catch (e) {
-    const code = (e as { code?: string }).code;
-    if (code === "P2002") {
-      return NextResponse.json({ error: "이미 등록된 전화번호입니다." }, { status: 400 });
-    }
-    return NextResponse.json({ error: "생성 실패" }, { status: 500 });
+  // 같은 협력점 내 같은 phone 으로 이미 등록된 활성 영업자가 있으면 사전 차단
+  // (sellerCode 가 별도 자동 생성이라 phone unique constraint 가 없음)
+  const dup = await prisma.seller.findFirst({
+    where: { partnerId: eff.partnerId, phone: normalizedPhone, status: "active" },
+    select: { id: true },
+  });
+  if (dup) {
+    return NextResponse.json({ error: "이미 등록된 전화번호입니다." }, { status: 400 });
   }
+
+  // sellerCode 자동 생성 (12자리 영문소문자+숫자). 충돌 시 최대 5회 재시도.
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const code = generateSellerCode();
+    try {
+      const created = await prisma.seller.create({
+        data: {
+          partnerId: eff.partnerId,
+          sellerCode: code,
+          name: b.name.trim().slice(0, 32),
+          phone: normalizedPhone,
+          email: b.email?.trim() || null,
+          status: "active",
+        },
+      });
+      return NextResponse.json({
+        ok: true,
+        seller: {
+          id: created.id,
+          sellerCode: created.sellerCode,
+          name: created.name,
+        },
+      });
+    } catch (e) {
+      const pcode = (e as { code?: string }).code;
+      if (pcode === "P2002") continue; // sellerCode 충돌 — 재시도
+      return NextResponse.json({ error: "생성 실패" }, { status: 500 });
+    }
+  }
+  return NextResponse.json({ error: "코드 충돌 — 잠시 후 다시 시도해주세요." }, { status: 500 });
 }

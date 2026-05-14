@@ -99,7 +99,7 @@ export default function LinksManager({
     links.push({
       key: `seller-${s.id}`,
       label: `👤 ${s.name}`,
-      description: `${s.sellerCode} · 누적 lead ${s.leadCount}건 · 본인 영업용 단독 링크`,
+      description: `${s.phone ?? s.sellerCode} · 누적 lead ${s.leadCount}건 · 본인 영업용 단독 링크`,
       url,
       shareText:
         `[${partnerName} · 담당 ${s.name}]\n\n` +
@@ -380,7 +380,7 @@ export default function LinksManager({
                     취소
                   </button>
                   <small className="text-rk-faint text-[12px]">
-                    영업자 단독 링크는 전화번호로 만들어집니다 (예: <code className="font-mono bg-rk-soft px-1 rounded">/s/010-1234-5678</code>). 카톡은 항상 점 대표 채널로 연결됩니다.
+                    영업자 단독 링크는 12자리 랜덤 코드로 만들어집니다 (예: <code className="font-mono bg-rk-soft px-1 rounded">/s/a3k8x9z2m1p4</code>) — 전화번호는 URL에 노출되지 않습니다. 카톡은 항상 점 대표 채널로 연결됩니다.
                   </small>
                   {addError && <small className="text-rk-sale text-[13px] basis-full mt-1">⚠ {addError}</small>}
                 </div>
