@@ -432,6 +432,8 @@ export type ReviewItem = {
   selectedContractPeriod: number | null;
   isVerified: boolean;
   daysAgo: number;
+  installPhotoUrl: string | null;
+  region: string | null;
 };
 export type ReviewSummary = {
   count: number;
@@ -579,13 +581,15 @@ export async function getPartnerProductDetail(
     related: [],
   };
 
-  // Reviews — 이 상품의 후기 (최신 published 우선, 협력점 무관 모두 합산)
+  // Reviews — 이 상품의 후기. status=published + approvalStatus=approved 만 컨슈머 노출.
+  // approvalStatus 의 default 가 'approved' 라 기존 후기는 영향 없음.
+  const REVIEW_WHERE = { productId: product.id, status: "published", approvalStatus: "approved" } as const;
   const [reviewCount, reviewAvg, reviewVerified, recentReviews] = await Promise.all([
-    prisma.review.count({ where: { productId: product.id, status: "published" } }),
-    prisma.review.aggregate({ where: { productId: product.id, status: "published" }, _avg: { rating: true } }),
-    prisma.review.count({ where: { productId: product.id, status: "published", isVerified: true } }),
+    prisma.review.count({ where: REVIEW_WHERE }),
+    prisma.review.aggregate({ where: REVIEW_WHERE, _avg: { rating: true } }),
+    prisma.review.count({ where: { ...REVIEW_WHERE, isVerified: true } }),
     prisma.review.findMany({
-      where: { productId: product.id, status: "published" },
+      where: REVIEW_WHERE,
       orderBy: [{ isVerified: "desc" }, { createdAt: "desc" }],
       take: 3,
     }),
@@ -605,6 +609,8 @@ export async function getPartnerProductDetail(
       selectedContractPeriod: r.selectedContractPeriod,
       isVerified: r.isVerified,
       daysAgo: Math.max(0, Math.floor((NOW - r.createdAt.getTime()) / (24 * 60 * 60 * 1000))),
+      installPhotoUrl: r.installPhotoUrl,
+      region: r.region,
     })),
   };
 

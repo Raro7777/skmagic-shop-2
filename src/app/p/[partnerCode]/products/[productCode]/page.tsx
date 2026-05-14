@@ -341,17 +341,23 @@ export default async function ProductDetailPage({
               </div>
               <div className="flex flex-col gap-2">
                 {detail.reviews.top.map(r => (
-                  <article key={r.id} className="bg-rk-soft-2 rounded-md p-3 text-[14px] leading-[1.5]">
-                    <div className="flex items-baseline gap-2 mb-1 flex-wrap">
-                      <span className="text-rk-warn text-[14px]">{"★".repeat(r.rating)}</span>
-                      <b className="text-rk-ink">{r.customerName}</b>
-                      {r.isVerified && <span className="text-[9px] px-1 py-px rounded bg-rk-tint-green text-rk-success font-medium">가입 인증</span>}
-                      {r.selectedMode && <span className="text-[9px] px-1 py-px rounded bg-rk-tint-blue text-rk-info">{r.selectedMode}</span>}
-                      {r.selectedContractPeriod && <span className="text-[9px] px-1 py-px rounded bg-rk-soft text-rk-muted">{r.selectedContractPeriod}개월</span>}
-                      <small className="ml-auto text-rk-faint">{r.daysAgo === 0 ? "오늘" : `${r.daysAgo}일 전`}</small>
+                  <article key={r.id} className="bg-rk-soft-2 rounded-md p-3 text-[14px] leading-[1.5] flex gap-2.5">
+                    {r.installPhotoUrl && (
+                      <img src={r.installPhotoUrl} alt="" className="w-[80px] h-[80px] object-cover rounded shrink-0 border border-rk-line" />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-baseline gap-1.5 mb-1 flex-wrap">
+                        <span className="text-rk-warn text-[14px]">{"★".repeat(r.rating)}</span>
+                        <b className="text-rk-ink">{r.customerName}</b>
+                        {r.region && <span className="text-[12px] text-rk-muted">· {r.region}</span>}
+                        {r.isVerified && <span className="text-[9px] px-1 py-px rounded bg-rk-tint-green text-rk-success font-medium">가입 인증</span>}
+                        {r.selectedMode && <span className="text-[9px] px-1 py-px rounded bg-rk-tint-blue text-rk-info">{r.selectedMode}</span>}
+                        {r.selectedContractPeriod && <span className="text-[9px] px-1 py-px rounded bg-rk-soft text-rk-muted">{r.selectedContractPeriod}개월</span>}
+                        <small className="ml-auto text-rk-faint">{r.daysAgo === 0 ? "오늘" : `${r.daysAgo}일 전`}</small>
+                      </div>
+                      {r.title && <div className="font-medium text-rk-ink mb-0.5">&quot;{r.title}&quot;</div>}
+                      <p className="text-rk-text m-0">{r.body}</p>
                     </div>
-                    {r.title && <div className="font-medium text-rk-ink mb-0.5">"{r.title}"</div>}
-                    <p className="text-rk-text m-0">{r.body}</p>
                   </article>
                 ))}
               </div>

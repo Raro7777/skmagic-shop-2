@@ -19,6 +19,7 @@ const NAV_OPS: NavItem[] = [
   { href: "/admin/super/audit-log",  ico: "🛡", label: "감사 로그" },
   { href: "/admin/super/approvals",  ico: "✅", label: "승인 대기열" },
   { href: "/admin/super/duplicates", ico: "🔁", label: "중복 DB 판정" },
+  { href: "/admin/super/reviews",    ico: "⭐", label: "후기 승인" },
   { href: "/admin/super/anomalies",  ico: "🚨", label: "운영 이상감지" },
   { href: "/admin/super/analytics",  ico: "📈", label: "마케팅 분석" },
 ];

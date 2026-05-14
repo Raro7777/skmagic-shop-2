@@ -587,11 +587,25 @@ model Review {
   isVerified      Boolean  @default(false)   // 가입 확인된 후기
   status          String   @default("published") // published | hidden | reported
 
+  // 후기 워크플로우 — 협력점 등록 → 본사 승인 → 컨슈머 노출
+  // 신규 후기는 'pending', 기존 후기는 'approved' 기본값
+  approvalStatus  String   @default("approved") // pending | approved | rejected
+  approvedAt      DateTime?
+  approvedById    String?
+  submittedById   String?
+  submittedByRole String?  // partner_admin | seller | hq
+  rejectReason    String?
+
+  // 설치 사진 + 지역 — 신뢰도 강화 요소
+  installPhotoUrl String?
+  region          String?
+
   createdAt       DateTime @default(now())
 
   @@index([productId, status, createdAt])
   @@index([partnerId, status, createdAt])
   @@index([rating])
+  @@index([approvalStatus, createdAt])
 }
 
 // ----------------------------------------------------------------
