@@ -261,6 +261,13 @@ export default function PriceConfigurator({
             </small>
           </div>
         )}
+        {finalCard != null && (
+          <div className="mt-1.5 pt-1.5 border-t border-rk-orange/30 text-[11px] text-rk-muted leading-[1.5]">
+            💳 SK인텔릭스 제휴카드 8개사 (KB국민·삼성·KJ·LOCA·하나·우리·신한·현대) 할인 적용 시
+            <br />
+            <span className="opacity-80">전월실적 30만원 이상 충족 · 약정 기간 내내 지속</span>
+          </div>
+        )}
       </div>
 
       {/* 협력점 렌탈지원금 — 강조 카드 (한도 부족 옵션은 박스 자체 미노출) */}
