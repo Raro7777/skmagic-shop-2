@@ -121,15 +121,19 @@ export default function PriceConfigurator({
   const newPolicyHalfMonths = currentOption?.rivalCompensationHalfPriceMonths ?? null;
   const useNewPolicy = newPolicyRival != null;
 
-  // 신정책: 렌탈가 자체가 rivalCompensationPrice 로 대체. 카드할인은 별개로 그대로 노출.
+  // 신정책: 렌탈가 자체가 rivalCompensationPrice 로 대체. 카드할인 효과(=baseRental-baseCard)는
+  //         타사보상 적용 후에도 동일하게 유지되어 카드할인가도 함께 내려감.
   // 구정책 fallback: 월 −N원 일률 차감.
   const rental = rivalApplied && useNewPolicy ? newPolicyRival! : baseRental;
-  const card = baseCard; // 카드할인은 타사보상과 별개로 들어간다 (본사 정책)
   const rivalLegacyDiscount = rivalApplied && !useNewPolicy && rivalCompensation.enabled
     ? rivalCompensation.monthlyDiscount
     : 0;
   const finalRental = Math.max(0, rental - rivalLegacyDiscount);
-  const finalCard = card != null ? Math.max(0, card - rivalLegacyDiscount) : null;
+  // 카드할인 효과 (예: baseRental 57,900 − baseCard 50,400 = 7,500) 를 finalRental 에서도 동일하게 차감
+  const cardDiscountEffect = baseCard != null && baseCard < baseRental ? baseRental - baseCard : 0;
+  const finalCard = baseCard != null
+    ? Math.max(0, finalRental - cardDiscountEffect)
+    : null;
   const savings = finalCard != null ? finalRental - finalCard : null;
   // 신정책 절약 표시용 — 기본가 대비 차감액
   const rivalNewSavings = rivalApplied && useNewPolicy ? Math.max(0, baseRental - newPolicyRival!) : 0;
@@ -142,14 +146,14 @@ export default function PriceConfigurator({
       selectedMode: (currentOption?.mode as "방문형" | "셀프형" | null) ?? null,
       selectedContractPeriod: contractPeriod,
       selectedRentalPrice: rental,           // 타사보상 적용 전 운영가
-      selectedCardDiscountPrice: card,
+      selectedCardDiscountPrice: baseCard,
       rivalCompensationRequested: rivalApplied,
       selectedColor,
     };
     try {
       sessionStorage.setItem(PRICE_CONFIG_STORAGE_KEY, JSON.stringify(payload));
     } catch { /* noop */ }
-  }, [productCode, currentOption, contractPeriod, rental, card, rivalApplied, selectedColor]);
+  }, [productCode, currentOption, contractPeriod, rental, baseCard, rivalApplied, selectedColor]);
 
   // 관리방식 표시 (선택 옵션 기반 또는 default)
   const mgmtLabel = currentOption
