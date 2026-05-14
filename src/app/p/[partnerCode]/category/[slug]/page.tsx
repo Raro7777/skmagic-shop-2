@@ -140,6 +140,9 @@ function ProductCard({ product, href }: { product: ConsumerProduct; href: string
         {product.giftAmount > 0 && <span className="text-[9px] px-1 py-px rounded text-white font-semibold bg-rk-orange">사은품</span>}
         {product.isFeatured && <span className="text-[9px] px-1 py-px rounded text-white font-semibold bg-rk-navy">MD추천</span>}
         {product.installFreed && <span className="text-[9px] px-1 py-px rounded text-white font-semibold bg-rk-success">설치비 면제</span>}
+        {product.maxRentalSupport > 0 && (
+          <span className="text-[9px] px-1 py-px rounded text-white font-semibold bg-rk-success">💰 +{fmt(product.maxRentalSupport)}</span>
+        )}
       </ProductThumb>
       <div className="text-[13px] text-rk-muted mt-2">SK매직</div>
       <h4 className="text-[13px] font-medium text-rk-ink leading-[1.4] m-0 mt-0.5">{product.name}</h4>

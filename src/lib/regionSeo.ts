@@ -178,6 +178,7 @@ export async function listRegionRecommendedProducts(
       giftAmount: policy?.giftAmount ?? 0,
       giftLabel: policy?.giftLabel ?? null,
       installFreed: (policy?.installAmount ?? 0) > 0,
+      maxRentalSupport: 0, // 지역 SEO 진입 화면은 메인 카드 표기 없음
     };
   });
 }

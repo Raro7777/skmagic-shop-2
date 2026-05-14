@@ -1,6 +1,28 @@
 import { prisma } from "@/lib/prisma";
 import { pickRepresentativeHqPolicy } from "@/lib/hqPolicy";
 import { computeHqMargin } from "@/lib/marginFlow";
+import { rentalSupportFor } from "@/lib/rentalSupport";
+
+/** 상품의 옵션별 렌탈지원금 중 최대값 계산. enabled=false면 0. */
+function computeMaxRentalSupport(args: {
+  hqPolicies: Array<{ baseCommission: number; monthIncentive: number; marginType: string | null; marginAmount: number | null; marginPercent: number | null }>;
+  tierMargin: { type: "fixed" | "percent"; amount: number; percent: number } | null;
+  partnerSupportAmount: number;
+  rentalSupportEnabled: boolean;
+  giftAmount: number;
+  installAmount: number;
+}): number {
+  if (!args.rentalSupportEnabled || args.partnerSupportAmount <= 0) return 0;
+  let max = 0;
+  for (const opt of args.hqPolicies) {
+    const base = opt.baseCommission + opt.monthIncentive;
+    const hqMargin = computeHqMargin(base, opt as never, args.tierMargin);
+    const partnerCommission = base - hqMargin;
+    const s = rentalSupportFor(partnerCommission, args.partnerSupportAmount, args.giftAmount, args.installAmount);
+    if (s > max) max = s;
+  }
+  return max;
+}
 
 export type ConsumerProduct = {
   productCode: string;
@@ -17,6 +39,8 @@ export type ConsumerProduct = {
   giftAmount: number;
   giftLabel: string | null;
   installFreed: boolean;
+  // 옵션별 렌탈지원금 중 최대값 (메인 카드 배지용). enabled=false 또는 모든 옵션 0이면 0.
+  maxRentalSupport: number;
 };
 
 function pickThumbnail(p: { imageUrl: string | null; imageUrls: string[] }): string | null {
@@ -121,6 +145,8 @@ export async function getPartnerSite(partnerCode: string): Promise<PartnerSiteDa
 
   const all: ConsumerProduct[] = products.map(p => {
     const policy = p.partnerPolicies[0];
+    const gift = policy?.giftAmount ?? 0;
+    const install = policy?.installAmount ?? 0;
     return {
       productCode: p.productCode,
       category: p.category,
@@ -132,9 +158,17 @@ export async function getPartnerSite(partnerCode: string): Promise<PartnerSiteDa
       managementType: p.managementType,
       isFeatured: p.isFeatured,
       imageUrl: pickThumbnail(p),
-      giftAmount: policy?.giftAmount ?? 0,
+      giftAmount: gift,
       giftLabel: policy?.giftLabel ?? null,
-      installFreed: (policy?.installAmount ?? 0) > 0,
+      installFreed: install > 0,
+      maxRentalSupport: computeMaxRentalSupport({
+        hqPolicies: p.hqPolicies,
+        tierMargin: tierMarginConfig,
+        partnerSupportAmount: partner.rentalSupportAmount,
+        rentalSupportEnabled: partner.rentalSupportEnabled,
+        giftAmount: gift,
+        installAmount: install,
+      }),
     };
   });
 
@@ -265,7 +299,7 @@ export async function listPartnerProducts(
   const [partner, products] = await Promise.all([
     prisma.partner.findUnique({
       where: { partnerCode },
-      select: { tier: true, displayConfig: true },
+      select: { tier: true, displayConfig: true, rentalSupportAmount: true, rentalSupportEnabled: true },
     }),
     prisma.product.findMany({
       where: {
@@ -293,6 +327,8 @@ export async function listPartnerProducts(
 
   const mapped: ConsumerProduct[] = products.map(p => {
     const policy = p.partnerPolicies[0];
+    const gift = policy?.giftAmount ?? 0;
+    const install = policy?.installAmount ?? 0;
     return {
       productCode: p.productCode,
       category: p.category,
@@ -304,9 +340,17 @@ export async function listPartnerProducts(
       managementType: p.managementType,
       isFeatured: p.isFeatured,
       imageUrl: pickThumbnail(p),
-      giftAmount: policy?.giftAmount ?? 0,
+      giftAmount: gift,
       giftLabel: policy?.giftLabel ?? null,
-      installFreed: (policy?.installAmount ?? 0) > 0,
+      installFreed: install > 0,
+      maxRentalSupport: partner ? computeMaxRentalSupport({
+        hqPolicies: p.hqPolicies,
+        tierMargin: tierMarginConfig,
+        partnerSupportAmount: partner.rentalSupportAmount,
+        rentalSupportEnabled: partner.rentalSupportEnabled,
+        giftAmount: gift,
+        installAmount: install,
+      }) : 0,
     };
   });
 
@@ -490,6 +534,7 @@ export async function getPartnerProductDetail(
     giftAmount: policy?.giftAmount ?? 0,
     giftLabel: policy?.giftLabel ?? null,
     installFreed: (policy?.installAmount ?? 0) > 0,
+    maxRentalSupport: 0, // 상품 상세는 PriceConfigurator가 옵션별 정확 계산
     partnerRentalSupportAmount: partner.rentalSupportAmount ?? 0,
     partnerRentalSupportEnabled: partner.rentalSupportEnabled ?? true,
     partnerInstallAmount: policy?.installAmount ?? 0,
@@ -567,12 +612,23 @@ export async function getPartnerProductDetail(
       category: product.category,
       productCode: { not: productCode },
     },
-    include: { partnerPolicies: { where: { partnerId: partnerCode } } },
+    include: {
+      partnerPolicies: { where: { partnerId: partnerCode } },
+      hqPolicies: true,
+    },
     take: 4,
     orderBy: [{ isFeatured: "desc" }, { rentalPrice: "asc" }],
   });
+  const relatedTierMargin = await prisma.hqMarginByTier.findUnique({ where: { tier: partner.tier } });
+  const relatedTierConfig = relatedTierMargin ? {
+    type: relatedTierMargin.marginType as "fixed" | "percent",
+    amount: relatedTierMargin.marginAmount,
+    percent: relatedTierMargin.marginPercent,
+  } : null;
   detail.related = relatedRows.map(p => {
     const pp = p.partnerPolicies[0];
+    const gift = pp?.giftAmount ?? 0;
+    const install = pp?.installAmount ?? 0;
     return {
       productCode: p.productCode,
       category: p.category,
@@ -584,9 +640,17 @@ export async function getPartnerProductDetail(
       managementType: p.managementType,
       isFeatured: p.isFeatured,
       imageUrl: pickThumbnail(p),
-      giftAmount: pp?.giftAmount ?? 0,
+      giftAmount: gift,
       giftLabel: pp?.giftLabel ?? null,
-      installFreed: (pp?.installAmount ?? 0) > 0,
+      installFreed: install > 0,
+      maxRentalSupport: computeMaxRentalSupport({
+        hqPolicies: p.hqPolicies,
+        tierMargin: relatedTierConfig,
+        partnerSupportAmount: partner.rentalSupportAmount,
+        rentalSupportEnabled: partner.rentalSupportEnabled,
+        giftAmount: gift,
+        installAmount: install,
+      }),
     };
   });
 

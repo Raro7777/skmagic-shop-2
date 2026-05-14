@@ -160,6 +160,21 @@ export default async function PartnerSiteShell({
           </div>
         )}
 
+        {/* 렌탈지원금 promo 띠 — 협력점이 ON 한 경우만 */}
+        {heroSlides.some(p => p.maxRentalSupport > 0) && (
+          <div className="bg-gradient-to-r from-[#FFEFE0] to-[#FFE2CC] px-3.5 py-2.5 flex items-center gap-2 border-b border-[#F4DCC9]">
+            <span className="text-base">🎁</span>
+            <div className="flex-1 leading-tight">
+              <div className="text-[13px] font-semibold text-rk-orange-deep">
+                협력점 단독 · 개통 후 현금 캐시백
+              </div>
+              <div className="text-[11px] text-rk-orange-deep/85">
+                상품별 최대 +{fmt(Math.max(...heroSlides.map(p => p.maxRentalSupport)))}원 지급 · 가입 취소 시 전액 환수
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Hero 슬라이더 — 활성 이벤트 배너(앞쪽) + 상품 슬라이드(뒤쪽) 통합 회전 */}
         {(heroSlides.length > 0 || data.banners.length > 0) && (
           <HeroCarousel
@@ -371,6 +386,12 @@ function PickCard({ product, bg, href }: { product: ConsumerProduct; bg: string;
           {product.giftAmount > 0 && <span className="text-[9px] px-1 py-px rounded text-white font-semibold bg-rk-orange">사은품</span>}
           {product.isFeatured && <span className="text-[9px] px-1 py-px rounded text-white font-semibold bg-rk-navy">MD추천</span>}
         </div>
+        {/* 렌탈지원금 캐시백 배지 */}
+        {product.maxRentalSupport > 0 && (
+          <div className="absolute top-1.5 right-1.5 bg-rk-success text-white text-[9px] px-1.5 py-0.5 rounded font-bold rk-num z-10 shadow">
+            💰 최대 +{fmt(product.maxRentalSupport)}
+          </div>
+        )}
         {savings > 0 && (
           <div className="absolute bottom-1.5 right-1.5 bg-rk-sale text-white text-[9px] px-1.5 py-0.5 rounded font-bold rk-num z-10">
             카드 −{fmt(savings)}원

@@ -102,6 +102,9 @@ export default function RankingTabs({
                   {p.giftLabel && <span className="text-[9px] px-1 py-px rounded bg-rk-tint-orange text-rk-orange-deep font-medium">사은품</span>}
                   {p.installFreed && <span className="text-[9px] px-1 py-px rounded bg-rk-tint-green text-rk-success font-medium">설치비 면제</span>}
                   {p.isFeatured && <span className="text-[9px] px-1 py-px rounded bg-rk-tint-blue text-rk-info font-medium">MD추천</span>}
+                  {p.maxRentalSupport > 0 && (
+                    <span className="text-[9px] px-1 py-px rounded bg-rk-success text-white font-semibold rk-num">💰 +{fmt(p.maxRentalSupport)}</span>
+                  )}
                 </div>
               </div>
               <div className="text-right shrink-0">
