@@ -25,6 +25,37 @@ type LinkRow = {
 const QR_API = (url: string, size = 240) =>
   `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(url)}&size=${size}x${size}&margin=0`;
 
+// 일괄 등록 입력 파싱 — 각 줄을 { name, phone } 으로 분해
+// 허용 형태:
+//   "홍길동, 010-1234-5678"
+//   "홍길동 010-1234-5678"
+//   "홍길동	010-1234-5678" (탭)
+//   "010-1234-5678 홍길동" (전화번호가 앞이어도 OK)
+// 빈 줄은 무시. 파싱 못 한 줄은 reason 과 함께 반환.
+type ParsedRow = { ok: true; name: string; phone: string } | { ok: false; raw: string; reason: string };
+function parseBulkInput(text: string): ParsedRow[] {
+  return text
+    .split(/\r?\n/)
+    .map(l => l.trim())
+    .filter(l => l.length > 0)
+    .map<ParsedRow>(line => {
+      // 쉼표, 탭, 한국 공백, 일반 공백을 separator 로 사용
+      const parts = line.split(/[,\t]|\s+/).map(s => s.trim()).filter(Boolean);
+      if (parts.length < 2) {
+        return { ok: false, raw: line, reason: "이름과 전화번호 모두 필요" };
+      }
+      // 전화번호로 보이는 파트(숫자/하이픈/+ 위주) 찾기
+      const phoneIdx = parts.findIndex(p => /^[\d+\-()\s]{8,}$/.test(p) && /\d{3}/.test(p));
+      if (phoneIdx < 0) {
+        return { ok: false, raw: line, reason: "전화번호를 인식할 수 없음" };
+      }
+      const phone = parts[phoneIdx];
+      const name = parts.filter((_, i) => i !== phoneIdx).join(" ");
+      if (!name) return { ok: false, raw: line, reason: "이름이 비어있음" };
+      return { ok: true, name, phone };
+    });
+}
+
 // 영업자 카톡 공유 문구 — 영업자 추가 직후 자동 복사에도 재사용
 function makeSellerShareText(opts: {
   partnerName: string;
@@ -57,10 +88,9 @@ export default function LinksManager({
   const [qrFor, setQrFor] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
 
-  // Form state for adding seller
+  // Form state for adding seller (단일/일괄 통합 — 한 줄=1명, 여러 줄=일괄)
   const [showAdd, setShowAdd] = useState(false);
-  const [newName, setNewName] = useState("");
-  const [newPhone, setNewPhone] = useState("");
+  const [bulkInput, setBulkInput] = useState("");
   const [adding, setAdding] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
 
@@ -70,8 +100,13 @@ export default function LinksManager({
   const [editSaving, setEditSaving] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
 
-  // 영업자 추가 직후 토스트 (자동 클립보드 복사 알림)
-  const [addedToast, setAddedToast] = useState<{ name: string; copied: boolean } | null>(null);
+  // 영업자 추가 직후 토스트
+  // 단일: 카톡 문구 자동 클립보드 복사 안내
+  // 일괄: 성공/실패 명단 안내
+  type AddedToast =
+    | { mode: "single"; name: string; copied: boolean }
+    | { mode: "bulk"; added: string[]; failed: Array<{ raw: string; reason: string }> };
+  const [addedToast, setAddedToast] = useState<AddedToast | null>(null);
 
   useEffect(() => {
     setOrigin(window.location.origin);
@@ -144,23 +179,46 @@ export default function LinksManager({
   const submitAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     setAddError(null);
+    const rows = parseBulkInput(bulkInput);
+    if (rows.length === 0) {
+      setAddError("이름과 전화번호를 한 줄 이상 입력하세요.");
+      return;
+    }
     setAdding(true);
-    try {
-      const res = await fetch("/api/sellers", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          name: newName,
-          phone: newPhone,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setAddError(data.error ?? "생성 실패");
-        return;
+    const added: Array<{ name: string; sellerCode: string; phone: string | null }> = [];
+    const failed: Array<{ raw: string; reason: string }> = rows
+      .filter(r => !r.ok)
+      .map(r => (r as Extract<ParsedRow, { ok: false }>));
+
+    for (const r of rows) {
+      if (!r.ok) continue;
+      try {
+        const res = await fetch("/api/sellers", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ name: r.name, phone: r.phone }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          failed.push({ raw: `${r.name} ${r.phone}`, reason: data.error ?? "생성 실패" });
+        } else {
+          const s = data.seller as { sellerCode: string; name: string; phone: string | null };
+          added.push(s);
+        }
+      } catch {
+        failed.push({ raw: `${r.name} ${r.phone}`, reason: "네트워크 오류" });
       }
-      // 자동 카톡 문구 생성 + 클립보드 복사 — 협력점은 바로 카톡에 붙여넣기 가능
-      const s = data.seller as { sellerCode: string; name: string; phone: string | null };
+    }
+    setAdding(false);
+
+    if (added.length === 0 && failed.length > 0) {
+      setAddError(failed.map(f => `${f.raw}: ${f.reason}`).join(" / "));
+      return;
+    }
+
+    // 단일 추가일 때만 카톡 문구 자동 클립보드 복사
+    if (added.length === 1 && failed.length === 0) {
+      const s = added[0];
       const sellerUrl = `${origin}/p/${partnerCode}/s/${s.sellerCode}`;
       const text = makeSellerShareText({
         partnerName,
@@ -172,19 +230,20 @@ export default function LinksManager({
       try {
         await navigator.clipboard.writeText(text);
         copied = true;
-      } catch { /* 클립보드 접근 실패해도 추가 자체는 성공 처리 */ }
-      setAddedToast({ name: s.name, copied });
-      setTimeout(() => setAddedToast(null), 5000);
-
-      setShowAdd(false);
-      setNewName("");
-      setNewPhone("");
-      fetchSellers();
-    } catch {
-      setAddError("네트워크 오류");
-    } finally {
-      setAdding(false);
+      } catch { /* 클립보드 차단되어도 추가는 성공 */ }
+      setAddedToast({ mode: "single", name: s.name, copied });
+    } else {
+      setAddedToast({
+        mode: "bulk",
+        added: added.map(a => a.name),
+        failed,
+      });
     }
+    setTimeout(() => setAddedToast(null), 8000);
+
+    setShowAdd(false);
+    setBulkInput("");
+    fetchSellers();
   };
 
   const startEdit = (s: Seller) => {
@@ -245,13 +304,32 @@ export default function LinksManager({
         <div className="bg-rk-tint-green text-rk-success text-[13px] px-3 py-2.5 rounded mb-2 flex items-start gap-2">
           <span className="text-[15px] leading-none mt-0.5">✓</span>
           <div className="flex-1 leading-[1.5]">
-            <b>{addedToast.name}</b> 영업자가 추가되었습니다.{" "}
-            {addedToast.copied ? (
+            {addedToast.mode === "single" ? (
               <>
-                카톡 공유 문구가 <b>자동으로 복사</b>되어 있어요 — 그대로 카톡에 붙여넣으면 됩니다.
+                <b>{addedToast.name}</b> 영업자가 추가되었습니다.{" "}
+                {addedToast.copied ? (
+                  <>카톡 공유 문구가 <b>자동으로 복사</b>되어 있어요 — 그대로 카톡에 붙여넣으면 됩니다.</>
+                ) : (
+                  <>아래 영업자 목록에서 <b>💬 카톡 문구</b> 버튼으로 복사할 수 있어요.</>
+                )}
               </>
             ) : (
-              <>아래 영업자 목록에서 <b>💬 카톡 문구</b> 버튼으로 복사할 수 있어요.</>
+              <>
+                <b>{addedToast.added.length}명</b> 추가 완료
+                {addedToast.added.length > 0 && (
+                  <span className="ml-1 opacity-80">({addedToast.added.join(", ")})</span>
+                )}
+                {addedToast.failed.length > 0 && (
+                  <div className="mt-1 text-rk-sale">
+                    실패 {addedToast.failed.length}건:
+                    <ul className="m-0 pl-4 list-disc text-[12px]">
+                      {addedToast.failed.map((f, i) => (
+                        <li key={i}><code className="font-mono">{f.raw}</code> — {f.reason}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </>
             )}
           </div>
           <button
@@ -405,40 +483,47 @@ export default function LinksManager({
               </button>
             ) : (
               <form onSubmit={submitAdd} className="flex flex-col gap-2">
-                <div className="flex gap-2 items-baseline flex-wrap">
-                  <input
-                    required
-                    placeholder="이름 (예: 홍길동)"
-                    value={newName}
-                    onChange={e => setNewName(e.target.value)}
-                    className="px-2 py-1 border border-rk-line rounded text-[14px] w-[140px]"
-                  />
-                  <input
-                    required
-                    type="tel"
-                    placeholder="전화번호 (010-1234-5678)"
-                    value={newPhone}
-                    onChange={e => setNewPhone(e.target.value)}
-                    className="px-2 py-1 border border-rk-line rounded text-[14px] font-mono w-[200px]"
-                  />
-                </div>
+                <label className="text-[12px] text-rk-muted">
+                  한 줄에 한 명씩 — <b>이름 전화번호</b> (쉼표/공백/탭 어떤 구분자든 OK)
+                </label>
+                <textarea
+                  required
+                  value={bulkInput}
+                  onChange={e => setBulkInput(e.target.value)}
+                  rows={Math.min(8, Math.max(2, bulkInput.split("\n").length + 1))}
+                  placeholder={"홍길동, 010-1234-5678\n김철수 010-2345-6789\n이영희\t010-3456-7890"}
+                  className="px-2 py-1.5 border border-rk-line rounded text-[14px] font-mono w-full resize-y"
+                />
+                {bulkInput.trim().length > 0 && (() => {
+                  const parsed = parseBulkInput(bulkInput);
+                  const ok = parsed.filter(r => r.ok).length;
+                  const bad = parsed.length - ok;
+                  return (
+                    <div className="text-[12px] text-rk-muted flex gap-2 flex-wrap">
+                      <span className={ok > 0 ? "text-rk-success" : ""}>인식 {ok}명</span>
+                      {bad > 0 && <span className="text-rk-sale">파싱 실패 {bad}줄</span>}
+                      {ok > 1 && <span className="text-rk-info">· 일괄 등록 모드</span>}
+                      {ok === 1 && <span className="text-rk-info">· 추가 후 카톡 문구 자동 복사</span>}
+                    </div>
+                  );
+                })()}
                 <div className="flex gap-2 items-baseline flex-wrap">
                   <button
                     type="submit"
                     disabled={adding}
                     className="bg-rk-navy hover:bg-rk-navy-deep text-white border-0 px-3 py-1 rounded text-[13px] cursor-pointer font-medium"
                   >
-                    {adding ? "…" : "추가"}
+                    {adding ? "추가 중…" : "추가"}
                   </button>
                   <button
                     type="button"
-                    onClick={() => { setShowAdd(false); setAddError(null); }}
+                    onClick={() => { setShowAdd(false); setAddError(null); setBulkInput(""); }}
                     className="bg-rk-soft text-rk-text border-0 px-3 py-1 rounded text-[13px] cursor-pointer"
                   >
                     취소
                   </button>
                   <small className="text-rk-faint text-[12px]">
-                    영업자 단독 링크는 12자리 랜덤 코드로 만들어집니다 (예: <code className="font-mono bg-rk-soft px-1 rounded">/s/a3k8x9z2m1p4</code>) — 전화번호는 URL에 노출되지 않습니다. 카톡은 항상 점 대표 채널로 연결됩니다.
+                    영업자 단독 링크는 12자리 랜덤 코드로 만들어집니다 — 전화번호는 URL에 노출되지 않습니다. 카톡은 항상 점 대표 채널로 연결됩니다.
                   </small>
                   {addError && <small className="text-rk-sale text-[13px] basis-full mt-1">⚠ {addError}</small>}
                 </div>
