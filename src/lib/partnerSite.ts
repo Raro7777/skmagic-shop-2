@@ -273,6 +273,29 @@ export async function getPartnerSite(partnerCode: string): Promise<PartnerSiteDa
     htmlContent: b.htmlContent ? sanitizeBannerHtml(b.htmlContent) : null,
   }));
 
+  // 본사 공식 캠페인 — 모든 협력점 헤로에 자동 첫 슬라이드로 prepend.
+  // 종료일 지나면 자동으로 빠짐.
+  const HQ_CAMPAIGN_ENDS = "2026-05-26T23:59:59+09:00";
+  if (new Date(HQ_CAMPAIGN_ENDS).getTime() > Date.now()) {
+    banners.unshift({
+      id: "hq-2026-05-ice-is-magic",
+      title: "",
+      subtitle: null,
+      imageUrl: "/hero/sk-may-campaign.jpg",
+      bgColor1: "#2C3A5C",
+      bgColor2: "#4A5878",
+      textColor: "#FFFFFF",
+      ctaLabel: null,
+      ctaHref: null,
+      endsAt: HQ_CAMPAIGN_ENDS,
+      layout: "image-bg",
+      spotlightProductCode: null,
+      spotlightProductImage: null,
+      stampText: null,
+      htmlContent: null,
+    });
+  }
+
   return {
     partner: {
       partnerCode: partner.partnerCode,

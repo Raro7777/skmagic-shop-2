@@ -176,25 +176,31 @@ function BannerSlideContent({ banner }: { banner: ActiveBanner }) {
     }
 
     if (banner.layout === "image-bg") {
+      // 이미지에 텍스트가 이미 들어있으면 title 을 빈 문자열로 두어 시스템 텍스트·그라데이션 안 그리기
+      const hasOverlay = (banner.title?.trim().length ?? 0) > 0;
       return (
         <div className="relative -mx-4 -mt-[22px] mb-[-56px] min-h-[200px]">
           {banner.imageUrl && (
             <img src={banner.imageUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/20 to-transparent" />
-          <div className="relative px-4 pt-[22px] pb-14" style={{ color: banner.textColor }}>
-            <h2 className="text-[22px] font-bold leading-[1.3] tracking-[-.03em] m-0 mb-1.5" style={{ textShadow: "0 2px 6px rgba(0,0,0,.4)", color: "inherit" }}>
-              {banner.title}
-            </h2>
-            {banner.subtitle && (
-              <p className="text-[13px] opacity-95 m-0 mb-3 leading-[1.4]">{banner.subtitle}</p>
-            )}
-            {banner.ctaLabel && (
-              <span className="inline-block px-3 py-1.5 rounded-full text-[14px] font-semibold bg-white text-rk-ink">
-                {banner.ctaLabel} →
-              </span>
-            )}
-          </div>
+          {hasOverlay && (
+            <>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/20 to-transparent" />
+              <div className="relative px-4 pt-[22px] pb-14" style={{ color: banner.textColor }}>
+                <h2 className="text-[22px] font-bold leading-[1.3] tracking-[-.03em] m-0 mb-1.5" style={{ textShadow: "0 2px 6px rgba(0,0,0,.4)", color: "inherit" }}>
+                  {banner.title}
+                </h2>
+                {banner.subtitle && (
+                  <p className="text-[13px] opacity-95 m-0 mb-3 leading-[1.4]">{banner.subtitle}</p>
+                )}
+                {banner.ctaLabel && (
+                  <span className="inline-block px-3 py-1.5 rounded-full text-[14px] font-semibold bg-white text-rk-ink">
+                    {banner.ctaLabel} →
+                  </span>
+                )}
+              </div>
+            </>
+          )}
         </div>
       );
     }
