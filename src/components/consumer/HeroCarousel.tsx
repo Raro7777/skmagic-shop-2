@@ -77,10 +77,10 @@ export default function HeroCarousel({
       className={sectionClass}
       style={sectionStyle}
     >
-      {/* SK magic 공식 인증 배지 — 슬라이드 우측 상단. 헤로 배경에 어울리는 반투명 다크 */}
-      <div className="absolute top-3 right-3 z-[5] flex items-center gap-1.5 bg-black/30 backdrop-blur-md px-2 py-1 rounded-md border border-white/20">
-        <img src="/sk-magic-logo.png" alt="SK magic 공식" className="h-[16px] w-auto brightness-0 invert" />
-        <span className="text-[10px] font-bold text-white leading-none">공식 인증</span>
+      {/* SK magic 공식 인증 배지 — 슬라이드 우측 상단. 흰 배경에 컬러 로고 그대로 */}
+      <div className="absolute top-3 right-3 z-[5] flex items-center gap-1.5 bg-white px-2 py-1 rounded-md shadow-sm">
+        <img src="/sk-magic-logo.png" alt="SK magic 공식" className="h-[18px] w-auto" />
+        <span className="text-[10px] font-bold text-rk-ink leading-none">공식 인증</span>
       </div>
       {/* 풀-블리드 레이아웃(image-bg / html)에선 라벨이 위쪽에 빈 공간을 만들어 다른 슬라이드의 잔상처럼 보임 → 숨김 */}
       {cur.kind === "product" && (
