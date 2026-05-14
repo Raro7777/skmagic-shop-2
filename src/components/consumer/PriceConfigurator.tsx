@@ -263,39 +263,39 @@ export default function PriceConfigurator({
         </div>
       )}
 
-      {/* 협력점 렌탈지원금 — 옵션의 baseCommission 한도 ≥ 협력점 설정값이면 노출, 부족 시 0 */}
-      {partnerRentalSupportEnabled && partnerRentalSupportAmount > 0 && (
-        <div className="mt-2 flex items-start justify-between gap-2 px-2.5 py-2 rounded border border-[#F4DCC9] bg-rk-tint-orange">
-          <div className="flex-1 text-[14px] leading-[1.4]">
-            <b className="text-rk-orange-deep">🎁 협력점 렌탈지원금</b>
-            <small className="block text-rk-orange-deep text-[12px] mt-0.5">
-              개통 후 1회 현금 캐시백 지급
-            </small>
-            <small className="block text-rk-muted text-[10px] mt-0.5">
-              ⓘ 가입 취소 시 전액 환수
-            </small>
+      {/* 협력점 렌탈지원금 — 강조 카드 (한도 부족 옵션은 박스 자체 미노출) */}
+      {partnerRentalSupportEnabled && partnerRentalSupportAmount > 0 && (() => {
+        const support = rentalSupportFor(
+          currentOption?.baseCommission,
+          partnerRentalSupportAmount,
+          partnerGiftAmount,
+          partnerInstallAmount,
+        );
+        if (support === 0) return null;
+        return (
+          <div className="relative overflow-hidden mt-3 px-3.5 py-3 rounded-lg border-2 border-rk-orange/60 bg-gradient-to-br from-[#FFF6EE] to-[#FFE6D1] shadow-[0_2px_8px_rgba(242,106,31,.15)]">
+            <span
+              className="absolute inset-0 opacity-25 pointer-events-none"
+              style={{ background: "repeating-linear-gradient(135deg, transparent 0 12px, rgba(242,106,31,.25) 12px 24px)" }}
+            />
+            <div className="relative flex items-center gap-3">
+              <span className="text-[34px] leading-none">🎁</span>
+              <div className="flex-1 leading-tight">
+                <div className="text-[10px] font-bold tracking-[.12em] text-rk-orange-deep">FLAGSHIP CASHBACK</div>
+                <div className="text-[14px] font-extrabold text-rk-ink mt-0.5">개통 즉시 현금 입금</div>
+                <small className="block text-[11px] text-rk-muted mt-0.5">ⓘ 가입 취소 시 전액 환수</small>
+              </div>
+              <div className="text-right">
+                <span className="text-[10px] font-bold text-rk-orange-deep block leading-none uppercase tracking-wider">고객 캐시백</span>
+                <div className="mt-0.5">
+                  <span className="text-[26px] font-extrabold tracking-[-.03em] text-rk-orange-deep rk-num">+{fmt(support)}</span>
+                  <small className="text-[14px] font-bold text-rk-orange-deep ml-0.5">원</small>
+                </div>
+              </div>
+            </div>
           </div>
-          <div className="text-right">
-            {(() => {
-              const support = rentalSupportFor(
-                currentOption?.baseCommission,
-                partnerRentalSupportAmount,
-                partnerGiftAmount,
-                partnerInstallAmount,
-              );
-              return (
-                <>
-                  <span className="text-[18px] font-bold tracking-[-.02em] text-rk-orange-deep rk-num">
-                    {support === 0 ? "0" : `+${fmt(support)}`}
-                  </span>
-                  <small className="text-[13px] font-medium text-rk-orange-deep">원</small>
-                  <small className="block text-[12px] text-rk-success font-medium">현금으로 지급</small>
-                </>
-              );
-            })()}
-          </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Rival compensation toggle */}
       {(useNewPolicy || rivalCompensation.enabled) && (

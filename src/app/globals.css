@@ -88,3 +88,12 @@ button {
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-thumb { background: #d6d8dd; border-radius: 999px; }
 ::-webkit-scrollbar-track { background: transparent; }
+
+/* 렌탈지원금 캐시백 배지 펄스 — 살짝 커졌다 작아지며 시선 끌기 */
+@keyframes pulse-cashback {
+  0%, 100% { transform: scale(1); box-shadow: 0 1px 3px rgba(31,107,57,.3); }
+  50%      { transform: scale(1.08); box-shadow: 0 4px 10px rgba(31,107,57,.5); }
+}
+.animate-pulse-cashback {
+  animation: pulse-cashback 2.2s ease-in-out infinite;
+}

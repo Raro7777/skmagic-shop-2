@@ -160,18 +160,32 @@ export default async function PartnerSiteShell({
           </div>
         )}
 
-        {/* 렌탈지원금 promo 띠 — 협력점이 ON 한 경우만 */}
+        {/* 렌탈지원금 promo 띠 — 협력점이 ON 한 경우만 (강조 버전) */}
         {heroSlides.some(p => p.maxRentalSupport > 0) && (
-          <div className="bg-gradient-to-r from-[#FFEFE0] to-[#FFE2CC] px-3.5 py-2.5 flex items-center gap-2 border-b border-[#F4DCC9]">
-            <span className="text-base">🎁</span>
-            <div className="flex-1 leading-tight">
-              <div className="text-[13px] font-semibold text-rk-orange-deep">
-                협력점 단독 · 개통 후 현금 캐시백
+          <div
+            className="relative overflow-hidden bg-gradient-to-r from-[#FF6B2C] via-[#F26A1F] to-[#E04B0B] text-white px-4 py-3.5 flex items-center gap-3"
+            style={{ boxShadow: "inset 0 -3px 0 rgba(0,0,0,0.12)" }}
+          >
+            {/* 반짝이 효과 */}
+            <span
+              className="absolute inset-0 opacity-30 pointer-events-none"
+              style={{
+                background: "repeating-linear-gradient(45deg, transparent 0 8px, rgba(255,255,255,.15) 8px 16px)",
+              }}
+            />
+            <span className="text-[28px] leading-none relative">🎁</span>
+            <div className="flex-1 leading-tight relative">
+              <div className="text-[11px] font-medium tracking-[.08em] opacity-90">FLAGSHIP CASHBACK</div>
+              <div className="text-[17px] font-extrabold tracking-[-.02em] mt-px">
+                개통 시 <span className="text-[22px] rk-num">+{fmt(Math.max(...heroSlides.map(p => p.maxRentalSupport)))}원</span> 현금 캐시백
               </div>
-              <div className="text-[11px] text-rk-orange-deep/85">
-                상품별 최대 +{fmt(Math.max(...heroSlides.map(p => p.maxRentalSupport)))}원 지급 · 가입 취소 시 전액 환수
+              <div className="text-[11.5px] opacity-90 mt-0.5">
+                협력점 단독 혜택 · 모든 상품 적용 · 가입 취소 시 전액 환수
               </div>
             </div>
+            <span className="hidden sm:inline-block bg-white text-rk-orange-deep px-2.5 py-1 rounded-full text-[12px] font-bold relative whitespace-nowrap">
+              혜택 보기 ↓
+            </span>
           </div>
         )}
 
@@ -386,10 +400,10 @@ function PickCard({ product, bg, href }: { product: ConsumerProduct; bg: string;
           {product.giftAmount > 0 && <span className="text-[9px] px-1 py-px rounded text-white font-semibold bg-rk-orange">사은품</span>}
           {product.isFeatured && <span className="text-[9px] px-1 py-px rounded text-white font-semibold bg-rk-navy">MD추천</span>}
         </div>
-        {/* 렌탈지원금 캐시백 배지 */}
+        {/* 렌탈지원금 캐시백 배지 — 강조 */}
         {product.maxRentalSupport > 0 && (
-          <div className="absolute top-1.5 right-1.5 bg-rk-success text-white text-[9px] px-1.5 py-0.5 rounded font-bold rk-num z-10 shadow">
-            💰 최대 +{fmt(product.maxRentalSupport)}
+          <div className="absolute top-1.5 right-1.5 bg-gradient-to-r from-rk-success to-[#0F7C3C] text-white text-[10px] px-2 py-1 rounded-md font-extrabold rk-num z-10 shadow-md animate-pulse-cashback">
+            💰 +{fmt(product.maxRentalSupport)}원
           </div>
         )}
         {savings > 0 && (

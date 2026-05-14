@@ -141,7 +141,7 @@ function ProductCard({ product, href }: { product: ConsumerProduct; href: string
         {product.isFeatured && <span className="text-[9px] px-1 py-px rounded text-white font-semibold bg-rk-navy">MD추천</span>}
         {product.installFreed && <span className="text-[9px] px-1 py-px rounded text-white font-semibold bg-rk-success">설치비 면제</span>}
         {product.maxRentalSupport > 0 && (
-          <span className="text-[9px] px-1 py-px rounded text-white font-semibold bg-rk-success">💰 +{fmt(product.maxRentalSupport)}</span>
+          <span className="text-[10px] px-1.5 py-0.5 rounded text-white font-extrabold rk-num shadow animate-pulse-cashback bg-gradient-to-r from-rk-success to-[#0F7C3C]">💰 +{fmt(product.maxRentalSupport)}원</span>
         )}
       </ProductThumb>
       <div className="text-[13px] text-rk-muted mt-2">SK매직</div>
