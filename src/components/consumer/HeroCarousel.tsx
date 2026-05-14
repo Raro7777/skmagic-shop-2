@@ -77,6 +77,11 @@ export default function HeroCarousel({
       className={sectionClass}
       style={sectionStyle}
     >
+      {/* SK magic 공식 인증 배지 — 슬라이드 우측 상단 고정 */}
+      <div className="absolute top-3 right-3 z-[5] flex items-center gap-1.5 bg-white/95 backdrop-blur-sm px-2 py-1 rounded-md shadow-sm">
+        <img src="/sk-magic-logo.png" alt="SK magic 공식" className="h-[18px] w-auto" />
+        <span className="text-[10px] font-bold text-rk-ink leading-none">공식 인증</span>
+      </div>
       {cur.kind === "product" && (
         <span className="inline-flex gap-1.5 items-center text-[13px] px-2 py-0.5 bg-white/10 rounded-full font-medium mb-2.5">
           {sellerName ?? partnerName} 단독 프로모션
