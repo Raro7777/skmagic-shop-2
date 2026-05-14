@@ -712,13 +712,13 @@ function BannerPreview({ draft }: { draft: Draft }) {
 
   if (draft.layout === "image-bg") {
     return (
-      <div className="rounded-[12px] overflow-hidden relative min-h-[160px] flex flex-col justify-end" style={bgStyle}>
+      <div className="rounded-[12px] overflow-hidden relative min-h-[180px] flex flex-col justify-end" style={bgStyle}>
         {draft.imageUrl && (
           <img src={draft.imageUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-        <div className="relative px-3 py-3 text-white">
-          <b className="block text-[14px] font-bold leading-tight" style={{ textShadow: "0 1px 4px rgba(0,0,0,.5)" }}>{title}</b>
+        <div className="relative px-3 py-3" style={{ color: draft.textColor }}>
+          <b className="block text-[14px] font-bold leading-tight" style={{ textShadow: "0 1px 4px rgba(0,0,0,.5)", color: "inherit" }}>{title}</b>
           {draft.subtitle && <div className="text-[12px] mt-0.5 opacity-90">{draft.subtitle}</div>}
           {draft.ctaLabel && (
             <span className="inline-block mt-2 px-3 py-1 rounded-full bg-white text-rk-ink text-[12px] font-semibold">

@@ -60,9 +60,10 @@ export default function HeroCarousel({
   const sectionStyle: React.CSSProperties = cur.kind === "banner"
     ? { background: `linear-gradient(135deg, ${cur.banner.bgColor1}, ${cur.banner.bgColor2})`, color: cur.banner.textColor }
     : { backgroundImage: "radial-gradient(ellipse at 110% 110%, rgba(242,106,31,.4), transparent 50%)" };
+  // 모든 슬라이드(상품/배너 5종 레이아웃)의 세로 사이즈 통일 — 사용자 보고 1a
   const sectionClass = cur.kind === "banner"
-    ? "relative pt-[22px] px-4 pb-14 overflow-hidden"
-    : "relative bg-rk-navy text-white pt-[22px] px-4 pb-14 overflow-hidden";
+    ? "relative pt-[22px] px-4 pb-14 overflow-hidden min-h-[220px]"
+    : "relative bg-rk-navy text-white pt-[22px] px-4 pb-14 overflow-hidden min-h-[220px]";
 
   // 슬라이드 콘텐츠
   const slideKey = cur.kind === "banner" ? `banner-${cur.banner.id}` : `product-${cur.product.productCode}`;
@@ -176,8 +177,8 @@ function BannerSlideContent({ banner }: { banner: ActiveBanner }) {
             <img src={banner.imageUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/20 to-transparent" />
-          <div className="relative px-4 pt-[22px] pb-14 text-white">
-            <h2 className="text-[22px] font-bold leading-[1.3] tracking-[-.03em] m-0 mb-1.5" style={{ textShadow: "0 2px 6px rgba(0,0,0,.4)" }}>
+          <div className="relative px-4 pt-[22px] pb-14" style={{ color: banner.textColor }}>
+            <h2 className="text-[22px] font-bold leading-[1.3] tracking-[-.03em] m-0 mb-1.5" style={{ textShadow: "0 2px 6px rgba(0,0,0,.4)", color: "inherit" }}>
               {banner.title}
             </h2>
             {banner.subtitle && (
