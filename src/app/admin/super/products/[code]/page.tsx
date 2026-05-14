@@ -48,6 +48,17 @@ export default async function ProductEditPage({
     specs: (product.specs as unknown as Record<string, string>) ?? {},
     isFeatured: product.isFeatured,
     status: product.status as "active" | "discontinued",
+    priceMatrix: (product.priceMatrix as unknown as Array<{
+      mode: "방문형" | "셀프형" | null;
+      contractPeriod: number;
+      ownershipPeriod: number | null;
+      visitInterval: string;
+      rentalPrice: number;
+      cardDiscountPrice: number | null;
+      baseCommission: number | null;
+      rivalCompensationPrice?: number | null;
+      rivalCompensationHalfPriceMonths?: number | null;
+    }> | null) ?? [],
   };
 
   return (

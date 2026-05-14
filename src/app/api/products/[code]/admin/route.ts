@@ -61,6 +61,17 @@ export async function PATCH(
     specs: Record<string, string>;
     isFeatured: boolean;
     status: "active" | "discontinued";
+    priceMatrix: Array<{
+      mode: "방문형" | "셀프형" | null;
+      contractPeriod: number;
+      ownershipPeriod: number | null;
+      visitInterval: string;
+      rentalPrice: number;
+      cardDiscountPrice: number | null;
+      baseCommission: number | null;
+      rivalCompensationPrice?: number | null;
+      rivalCompensationHalfPriceMonths?: number | null;
+    }>;
   }>;
 
   // Sanitize/validate
@@ -94,6 +105,23 @@ export async function PATCH(
   }
   if (b.isFeatured != null) data.isFeatured = !!b.isFeatured;
   if (b.status != null && ["active", "discontinued"].includes(b.status)) data.status = b.status;
+  if (Array.isArray(b.priceMatrix)) {
+    // 정규화 — 빈 행 / 잘못된 contractPeriod 제거. rentalPrice 0 도 허용 (TBD)
+    const cleaned = b.priceMatrix
+      .filter(r => r && typeof r === "object" && Number.isInteger(r.contractPeriod) && r.contractPeriod > 0)
+      .map(r => ({
+        mode: r.mode === "방문형" || r.mode === "셀프형" ? r.mode : null,
+        contractPeriod: Math.max(1, Math.floor(r.contractPeriod)),
+        ownershipPeriod: r.ownershipPeriod != null ? Math.max(0, Math.floor(r.ownershipPeriod)) : null,
+        visitInterval: typeof r.visitInterval === "string" ? r.visitInterval.trim().slice(0, 64) : "",
+        rentalPrice: Math.max(0, Math.floor(r.rentalPrice ?? 0)),
+        cardDiscountPrice: r.cardDiscountPrice != null ? Math.max(0, Math.floor(r.cardDiscountPrice)) : null,
+        baseCommission: r.baseCommission != null ? Math.max(0, Math.floor(r.baseCommission)) : null,
+        rivalCompensationPrice: r.rivalCompensationPrice != null ? Math.max(0, Math.floor(r.rivalCompensationPrice)) : null,
+        rivalCompensationHalfPriceMonths: r.rivalCompensationHalfPriceMonths != null ? Math.max(0, Math.floor(r.rivalCompensationHalfPriceMonths)) : null,
+      }));
+    data.priceMatrix = cleaned as never;
+  }
 
   try {
     const updated = await prisma.product.update({
