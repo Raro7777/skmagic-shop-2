@@ -243,9 +243,28 @@ export default function PriceConfigurator({
         </div>
       )}
 
-      {/* 최종 월 요금 — 강조 박스 (사용자 보고: 최종 월요금 기준 강조 필요) */}
+      {/* 최종 월 요금 — 단계별 시각화 (정상가 → 할인 적용 → 최종) */}
       <div className="bg-gradient-to-br from-rk-tint-orange to-[#FFE3CC] border-2 border-rk-orange rounded-lg px-3 py-2.5 mb-2.5 shadow-sm">
-        <div className="flex items-baseline justify-between">
+        {/* 1단: 정상가 */}
+        {finalCard != null && savings != null && savings > 0 && (
+          <div className="flex items-baseline justify-between text-rk-muted">
+            <small className="text-[12px]">정상가</small>
+            <small className="text-[13px] rk-num line-through">
+              ₩{fmt(finalRental)}/월
+            </small>
+          </div>
+        )}
+        {/* 2단: 카드할인 차감 */}
+        {finalCard != null && savings != null && savings > 0 && (
+          <div className="flex items-baseline justify-between text-rk-sale mt-0.5">
+            <small className="text-[12px]">💳 카드할인</small>
+            <small className="text-[13px] rk-num font-semibold">
+              −₩{fmt(savings)}/월
+            </small>
+          </div>
+        )}
+        {/* 3단: 최종 — 가장 크게 강조 */}
+        <div className={"flex items-baseline justify-between " + (finalCard != null ? "mt-1 pt-1.5 border-t border-rk-orange/40" : "")}>
           <span className="text-[13px] text-rk-orange-deep font-bold">💰 최종 월 요금</span>
           <div>
             <span className="text-[28px] font-extrabold tracking-[-.02em] text-rk-orange-deep rk-num">
@@ -254,14 +273,6 @@ export default function PriceConfigurator({
             <small className="text-[14px] font-bold text-rk-orange-deep">원/월</small>
           </div>
         </div>
-        {finalCard != null && savings != null && savings > 0 && (
-          <div className="flex items-baseline justify-between mt-1 pt-1.5 border-t border-rk-orange/30">
-            <small className="text-[12px] text-rk-muted">카드할인 없이</small>
-            <small className="text-[13px] text-rk-muted rk-num">
-              ₩{fmt(finalRental)}/월 (−₩{fmt(savings)} 절약)
-            </small>
-          </div>
-        )}
       </div>
 
       {/* 카드 혜택 — 카드사별 차등 + 5월 한정 추가 프로모션. 펼침 패널 */}
