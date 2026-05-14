@@ -1,4 +1,40 @@
+import { cache } from "react";
+import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
+
+// 협력점 정보 1회만 쿼리 (generateMetadata + layout 함수 둘 다 호출됨)
+const getPartner = cache(async (partnerCode: string) => {
+  return prisma.partner.findUnique({
+    where: { partnerCode },
+    select: { partnerName: true, brandLabel: true, theme: true },
+  });
+});
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ partnerCode: string }>;
+}): Promise<Metadata> {
+  const { partnerCode } = await params;
+  const partner = await getPartner(partnerCode);
+  if (!partner) return {};
+  const titleStr = `${partner.partnerName} — ${partner.brandLabel}`;
+  const desc = `${partner.partnerName} (${partner.brandLabel}) — 정수기·공기청정기·비데·매트리스 SK매직 렌탈 상담`;
+  return {
+    // default: 메인 분양 페이지에서 사용 (page.tsx 에 별도 title 없음)
+    // template: 하위 페이지(상품/카테고리/검색 등)가 plain string title 을 설정할 때 감싸는 룰
+    //   → "상품명 · 인터넷끝판왕" 식으로 협력점 이름이 사이트 이름처럼 노출됨 (렌트왕 노출 X)
+    title: { default: titleStr, template: `%s · ${partner.partnerName}` },
+    description: desc,
+    openGraph: {
+      type: "website",
+      locale: "ko_KR",
+      siteName: partner.partnerName,
+      title: titleStr,
+      description: desc,
+    },
+  };
+}
 
 // 협력점 사이트 외형 프리셋 적용 — data-theme 래퍼 한 곳에서 모든 하위 라우트에 자동 반영.
 // CSS 변수 override 정의: src/app/globals.css 의 [data-theme="<id>"] 블록.
@@ -11,10 +47,7 @@ export default async function PartnerConsumerLayout({
   children: React.ReactNode;
 }) {
   const { partnerCode } = await params;
-  const partner = await prisma.partner.findUnique({
-    where: { partnerCode },
-    select: { theme: true },
-  });
+  const partner = await getPartner(partnerCode);
   const theme = partner?.theme ?? "default";
   return <div data-theme={theme}>{children}</div>;
 }
