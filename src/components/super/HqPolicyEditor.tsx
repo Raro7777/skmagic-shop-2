@@ -177,36 +177,25 @@ export default function HqPolicyEditor() {
     }
   };
 
-  const addOption = async (code: string, mode: string, period: number) => {
+  // "+ 옵션 추가" 클릭 시 DB 에 자동 default 30000 으로 저장하지 않고,
+  // 그 셀을 즉시 편집 모드로 열어 정책서 값을 사용자가 직접 입력 + 저장 누를 때 INSERT 되도록.
+  // — "정책서 가격 우선" 룰: default 값이 잘못 정착되는 일을 막음.
+  const addOption = (code: string, mode: string, period: number) => {
     setMessage(null);
     const existing = items.find(p => p.productCode === code)?.options.find(o => o.mode === mode && o.contractPeriod === period);
     if (existing) {
       setMessage({ tone: "err", text: "이미 존재하는 옵션입니다.", code });
       return;
     }
-    setSaving(true);
-    try {
-      const res = await fetch(`/api/policies/hq/${code}`, {
-        method: "PATCH",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          mode, contractPeriod: period,
-          visitInterval: mode === "방문형" ? "4개월" : mode === "셀프형" ? "12개월" : null,
-          baseCommission: 30000,
-          monthIncentive: 0,
-          installSubsidy: 30000,
-        }),
-      });
-      if (!res.ok) {
-        const data = await res.json();
-        setMessage({ tone: "err", text: data.error ?? "옵션 추가 실패", code });
-        return;
-      }
-      setMessage({ tone: "ok", text: `${mode} ${period}개월 옵션 추가 완료 — 값 편집해주세요.`, code });
-      await fetchData();
-    } finally {
-      setSaving(false);
-    }
+    setEditing({ code, mode, period });
+    setDraft({
+      baseCommission: "",          // ← 정책서 값을 직접 입력 (default 자동 채움 X)
+      monthIncentive: "",
+      installSubsidy: "",
+      marginType: null,
+      marginAmount: "",
+      marginPercent: "",
+    });
   };
 
   if (loading) {
@@ -365,8 +354,15 @@ function OptionMatrix({
   for (const o of product.options) {
     matrix[`${o.mode}|${o.contractPeriod}`] = o;
   }
-  const usedModes = Array.from(new Set(product.options.map(o => o.mode)));
-  const usedPeriods = Array.from(new Set(product.options.map(o => o.contractPeriod))).sort((a, b) => a - b);
+  const usedModesSet = new Set(product.options.map(o => o.mode));
+  const usedPeriodsSet = new Set(product.options.map(o => o.contractPeriod));
+  // 신규 옵션 입력 중(editing) 이면 그 (mode, period) 칸도 매트릭스에 강제 노출 — 입력 셀이 화면에 나타나도록.
+  if (editing && editing.code === product.productCode) {
+    usedModesSet.add(editing.mode);
+    usedPeriodsSet.add(editing.period);
+  }
+  const usedModes = Array.from(usedModesSet);
+  const usedPeriods = Array.from(usedPeriodsSet).sort((a, b) => a - b);
   const displayModes = usedModes.length > 0 ? usedModes : ["방문형"];
   const displayPeriods = usedPeriods.length > 0 ? usedPeriods : [60];
 
@@ -390,6 +386,7 @@ function OptionMatrix({
                 <td className="px-2 py-1.5 font-medium text-rk-ink bg-rk-soft-2 border border-rk-line-2">{mode}</td>
                 {displayPeriods.map(period => {
                   const opt = matrix[`${mode}|${period}`];
+                  // editing 일치하면 opt 없어도 편집 UI 노출 (정책서 값 직접 입력 흐름)
                   const isEditing = editing?.code === product.productCode && editing.mode === mode && editing.period === period;
 
                   if (isEditing && draft) {
