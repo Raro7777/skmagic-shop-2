@@ -79,6 +79,8 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
     if (colorStr) colorOptions = colorStr.split(",").map(s => s.trim()).filter(Boolean);
   }
 
+  // 현재 lead status 도 prefill 에 포함 — 모달이 verify_failed/verify_revise 상태일 때 재제출 안내 표시.
+  const currentLead = leadFull ? await prisma.lead.findUnique({ where: { id }, select: { status: true } }) : null;
   const prefill = leadFull ? {
     customerName: leadFull.customerName,
     phone: leadFull.phoneRaw,
@@ -93,6 +95,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
     giftLabel,
     selectedColor: leadFull.selectedColor ?? null,
     colorOptions,
+    currentLeadStatus: currentLead?.status ?? null,
   } : null;
 
   return NextResponse.json({
@@ -123,9 +126,24 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   });
   if ("error" in result) return NextResponse.json({ error: result.error }, { status: 400 });
 
-  // autoAdvance=true 면 consult_active/revise_resubmit → form_ready 자동 전이
   let advanced: { from: string; to: string } | null = null;
-  if (b.autoAdvance && (g.lead.status === "consult_active" || g.lead.status === "revise_resubmit")) {
+
+  // ── 자동 재제출 전이 ──
+  // 본사가 verify_failed / verify_revise 로 회송했으면, 협력점이 신청서 수정/저장하는 순간
+  // → revise_resubmit 으로 자동 전이. 별도 "재제출" 버튼 누를 필요 없음.
+  if (g.lead.status === "verify_failed" || g.lead.status === "verify_revise") {
+    const adv = await updateLeadStatus({
+      leadId: id,
+      newStatus: "revise_resubmit",
+      actorRole: g.actorRole,
+      changedById: g.actorId,
+      memo: "[신청서 수정 후 재제출]",
+      bypassStateMachine: g.actorRole === "hq",
+    });
+    if (!("error" in adv)) advanced = { from: g.lead.status, to: adv.lead.status };
+  }
+  // ── autoAdvance=true → consult_active/revise_resubmit → form_ready ──
+  else if (b.autoAdvance && (g.lead.status === "consult_active" || g.lead.status === "revise_resubmit")) {
     const adv = await updateLeadStatus({
       leadId: id,
       newStatus: "form_ready",
@@ -140,7 +158,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   return NextResponse.json({ ok: true, id: result.id, isNew: result.isNew, advanced });
 }
 
-/** PUT — 신청서 수정만 (status 전이 안 함) */
+/** PUT — 신청서 수정. verify_failed/verify_revise 상태면 자동 revise_resubmit 전이. */
 export async function PUT(req: Request, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params;
   const g = await gate(id);
@@ -155,5 +173,19 @@ export async function PUT(req: Request, ctx: { params: Promise<{ id: string }> }
     leadId: id, data: b.data, actorId: g.actorId, actorRole: g.actorRole,
   });
   if ("error" in result) return NextResponse.json({ error: result.error }, { status: 400 });
-  return NextResponse.json({ ok: true, id: result.id, isNew: result.isNew });
+
+  let advanced: { from: string; to: string } | null = null;
+  if (g.lead.status === "verify_failed" || g.lead.status === "verify_revise") {
+    const adv = await updateLeadStatus({
+      leadId: id,
+      newStatus: "revise_resubmit",
+      actorRole: g.actorRole,
+      changedById: g.actorId,
+      memo: "[신청서 수정 후 재제출]",
+      bypassStateMachine: g.actorRole === "hq",
+    });
+    if (!("error" in adv)) advanced = { from: g.lead.status, to: adv.lead.status };
+  }
+
+  return NextResponse.json({ ok: true, id: result.id, isNew: result.isNew, advanced });
 }

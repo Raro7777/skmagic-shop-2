@@ -294,10 +294,24 @@ export default async function PartnerSiteShell({
           </p>
         </footer>
 
-        <div className="sticky bottom-0 px-3.5 py-2.5 bg-white border-t border-rk-line flex gap-2 items-center z-10">
-          <a className="flex-1 bg-[#FEE500] text-[#1A1D24] py-3 rounded-lg font-semibold text-[13px] text-center flex gap-1.5 items-center justify-center no-underline cursor-pointer">
-            💬 카톡
-          </a>
+        <div id="consult-form" className="sticky bottom-0 px-3.5 py-2.5 bg-white border-t border-rk-line flex gap-2 items-center z-10">
+          {partner.kakaoChannelUrl ? (
+            <a
+              href={partner.kakaoChannelUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="flex-1 bg-[#FEE500] hover:bg-[#F4DC00] text-[#1A1D24] py-3 rounded-lg font-semibold text-[13px] text-center flex gap-1.5 items-center justify-center no-underline cursor-pointer"
+            >
+              💬 카톡상담
+            </a>
+          ) : (
+            <a
+              href={`tel:${partner.hotlineNumber.replace(/[^\d+]/g, "")}`}
+              className="flex-1 bg-[#FEE500] hover:bg-[#F4DC00] text-[#1A1D24] py-3 rounded-lg font-semibold text-[13px] text-center flex gap-1.5 items-center justify-center no-underline cursor-pointer"
+            >
+              📞 전화상담
+            </a>
+          )}
           <ConsultForm
             partnerCode={partner.partnerCode}
             partnerName={partner.partnerName}

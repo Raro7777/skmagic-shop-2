@@ -161,12 +161,16 @@ export default async function ProductDetailPage({
 
         {/* 월 렌탈가 하단 — 상담신청 버튼 (항목 7) */}
         <section className="bg-white px-4 py-3 border-b-8 border-rk-soft">
-          <a
-            href="#consult-form"
-            className="block w-full text-center py-3 rounded-md bg-rk-orange hover:bg-rk-orange-deep text-white font-bold text-[15px] no-underline transition-colors"
-          >
-            ✍ 상담 신청하기
-          </a>
+          <ConsultForm
+            partnerCode={partner.partnerCode}
+            partnerName={partner.partnerName}
+            sellerCode={sellerInfo?.sellerCode}
+            sellerName={sellerInfo?.name}
+            defaultProductCode={detail.productCode}
+            defaultProductLabel={detail.name}
+            buttonLabel="✍ 상담 신청하기"
+            buttonClassName="block w-full text-center py-3 rounded-md bg-rk-orange hover:bg-rk-orange-deep text-white font-bold text-[15px] border-0 cursor-pointer transition-colors"
+          />
         </section>
 
         {/* Differentiation banner — partner-specific */}

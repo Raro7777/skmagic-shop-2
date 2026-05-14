@@ -69,6 +69,8 @@ export type EnrollmentFormModalProps = {
     giftLabel?: string | null;
     selectedColor?: string | null;
     colorOptions?: string[];
+    /** 모달 안에서 verify_failed/verify_revise 안내 + 재제출 메시지 표시용 */
+    currentLeadStatus?: string | null;
   };
   /** 기존 신청서 (수정 모드) */
   existing?: ExistingFormData | null;
@@ -97,6 +99,13 @@ export type ExistingFormData = {
   memo: string | null;
   lockedAt: string | null;
   selectedColor?: string | null;
+  // 상품/약정 스냅샷 (Lead 와 분리되어 EnrollmentForm 에 저장된 값)
+  productCode?: string | null;
+  productName?: string | null;
+  managementMode?: "방문형" | "셀프형" | null;
+  contractPeriod?: number | null;
+  monthlyPrice?: number | null;
+  isRivalCompensation?: boolean | null;
 };
 
 export default function EnrollmentFormModal({
@@ -130,11 +139,12 @@ export default function EnrollmentFormModal({
 
   const [memo, setMemo] = useState(existing?.memo ?? "");
 
-  // 상품 선택 — lead에서 prefill 된 productCode가 빈 값일 수 있어서 폼 안에서 직접 고를 수 있음.
-  const [productCode, setProductCode] = useState(prefill.productCode ?? "");
-  const [productName, setProductName] = useState(prefill.productName ?? "");
-  const [contractPeriod, setContractPeriod] = useState<number>(prefill.contractPeriod ?? 60);
-  const [monthlyPrice, setMonthlyPrice] = useState<number>(prefill.monthlyPrice ?? 0);
+  // 상품 선택 — existing(저장된 신청서) 우선, 없으면 prefill(Lead) fallback.
+  // 협력점이 모달에서 상품/약정/모드/가격을 변경 후 저장하면 그 값이 다시 열 때 그대로 노출.
+  const [productCode, setProductCode] = useState(existing?.productCode ?? prefill.productCode ?? "");
+  const [productName, setProductName] = useState(existing?.productName ?? prefill.productName ?? "");
+  const [contractPeriod, setContractPeriod] = useState<number>(existing?.contractPeriod ?? prefill.contractPeriod ?? 60);
+  const [monthlyPrice, setMonthlyPrice] = useState<number>(existing?.monthlyPrice ?? prefill.monthlyPrice ?? 0);
   const [productSearch, setProductSearch] = useState("");
   const [productList, setProductList] = useState<ProductOption[]>([]);
   const [productLoading, setProductLoading] = useState(false);
@@ -144,9 +154,9 @@ export default function EnrollmentFormModal({
   const [productDetail, setProductDetail] = useState<ProductDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [selectedMode, setSelectedMode] = useState<"방문형" | "셀프형" | null>(
-    prefill.managementMode ?? null,
+    existing?.managementMode ?? prefill.managementMode ?? null,
   );
-  const [rivalApplied, setRivalApplied] = useState(prefill.isRivalCompensation ?? false);
+  const [rivalApplied, setRivalApplied] = useState(existing?.isRivalCompensation ?? prefill.isRivalCompensation ?? false);
 
   // 색상/사이즈 변형 — 가격에는 영향 없음
   const [selectedColor, setSelectedColor] = useState<string | null>(
@@ -360,6 +370,16 @@ export default function EnrollmentFormModal({
           </div>
           <button type="button" onClick={onClose} className="text-rk-muted hover:text-rk-ink text-[20px] bg-transparent border-0 cursor-pointer leading-none">×</button>
         </div>
+
+        {(prefill.currentLeadStatus === "verify_failed" || prefill.currentLeadStatus === "verify_revise") && (
+          <div className="bg-rk-tint-red text-rk-sale px-5 py-2 text-[13px] flex items-start gap-1.5 leading-[1.5]">
+            <span>📩</span>
+            <div>
+              <b>본사가 수정요청을 보냈습니다 ({prefill.currentLeadStatus === "verify_failed" ? "인증실패" : "수정요청"}).</b>
+              <br />아래 내용을 수정 후 <b>저장하면 자동으로 재제출</b>됩니다. (회신상태 → 본사 인증 재진행)
+            </div>
+          </div>
+        )}
 
         {isLocked && (
           <div className="bg-rk-tint-orange text-rk-orange-deep px-5 py-2 text-[13px]">

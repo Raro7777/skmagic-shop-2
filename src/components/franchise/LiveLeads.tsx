@@ -47,10 +47,12 @@ const ACTIONS: Partial<Record<LeadStatus, ActionDef[]>> = {
     { label: "✎ 수정",           to: "form_ready",      tone: "ghost", openEnrollment: true },
   ],
   verify_failed:   [
-    { label: "↩ 회신 작성",     to: "revise_resubmit", tone: "sale", needsReason: true },
+    { label: "📝 수정 후 재제출", to: "revise_resubmit", tone: "orange", openEnrollment: true },
+    { label: "↩ 회신만 작성",     to: "revise_resubmit", tone: "ghost", needsReason: true },
   ],
   verify_revise:   [
-    { label: "↩ 보완 회신",     to: "revise_resubmit", tone: "sale", needsReason: true },
+    { label: "📝 수정 후 재제출", to: "revise_resubmit", tone: "orange", openEnrollment: true },
+    { label: "↩ 회신만 작성",     to: "revise_resubmit", tone: "ghost", needsReason: true },
   ],
   revise_resubmit: [
     { label: "📝 신청서 보완",  to: "form_ready",      tone: "navy", openEnrollment: true },

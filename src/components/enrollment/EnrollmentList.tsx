@@ -41,6 +41,8 @@ export type EnrollmentItem = {
   paymentDayType: string;
   paymentDayValue: string | null;
   installSchedule: string | null;
+  installPreferredDate: string | null;
+  memo: string | null;
   autoDebitBank: string;
   autoDebitAccount: string;
   autoDebitHolder: string;
@@ -283,9 +285,26 @@ function DetailPanel({ item }: { item: EnrollmentItem }) {
           <p className="text-rk-muted">자동이체 계좌와 동일</p>
         )}
       </div>
-      {item.installSchedule && (
-        <div className="col-span-3 pt-2 border-t border-rk-line-2 text-[13px]">
-          <b className="text-rk-muted">설치 일정:</b> <span className="text-rk-ink">{item.installSchedule}</span>
+      {(item.installSchedule || item.installPreferredDate || item.memo) && (
+        <div className="col-span-3 pt-2 border-t border-rk-line-2 text-[13px] flex flex-col gap-1.5">
+          {item.installPreferredDate && (
+            <div>
+              <b className="text-rk-muted">설치 희망일:</b>{" "}
+              <span className="text-rk-ink">{item.installPreferredDate}</span>
+            </div>
+          )}
+          {item.installSchedule && (
+            <div>
+              <b className="text-rk-muted">설치 일정 메모:</b>{" "}
+              <span className="text-rk-ink">{item.installSchedule}</span>
+            </div>
+          )}
+          {item.memo && (
+            <div>
+              <b className="text-rk-muted">기타 비고:</b>{" "}
+              <span className="text-rk-ink whitespace-pre-wrap">{item.memo}</span>
+            </div>
+          )}
         </div>
       )}
     </div>

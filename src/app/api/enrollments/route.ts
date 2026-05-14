@@ -117,6 +117,8 @@ export async function GET(req: Request) {
       paymentDayType: f.paymentDayType,
       paymentDayValue: f.paymentDayValue,
       installSchedule: f.installSchedule,
+      installPreferredDate: f.installPreferredDate ? f.installPreferredDate.toISOString().slice(0, 10) : null,
+      memo: f.memo,
       autoDebitBank: f.autoDebitBank,
       autoDebitAccount: masked!.autoDebitAccount,
       autoDebitHolder: f.autoDebitHolder,

@@ -134,6 +134,22 @@ export async function upsertEnrollmentForm(input: {
     memo: d.memo?.trim() || null,
   };
 
+  // Lead 동기화 — 신청서에서 상품/약정/모드 등이 바뀐 경우 Lead 의 selected* 필드도 함께 update.
+  // 이를 통해 인증처리 등 다른 화면에서도 변경값이 즉시 반영됨.
+  await prisma.lead.update({
+    where: { id: input.leadId },
+    data: {
+      customerName: payload.customerName,
+      productCode: payload.productCode,
+      productInterest: payload.productName,
+      selectedMode: payload.managementMode,
+      selectedContractPeriod: payload.contractPeriod,
+      selectedRentalPrice: payload.monthlyPrice,
+      rivalCompensationRequested: payload.isRivalCompensation,
+      selectedColor: payload.selectedColor,
+    },
+  }).catch(() => { /* lead 미발견 시 무시 */ });
+
   if (existing) {
     await prisma.enrollmentForm.update({ where: { id: existing.id }, data: payload });
     return { ok: true, id: existing.id, isNew: false };
