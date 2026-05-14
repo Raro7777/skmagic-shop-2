@@ -52,12 +52,12 @@ export default function PartnerHeader({
             <div className="ml-auto flex gap-1 shrink-0">
               {partner.kakaoChannelUrl ? (
                 <a href={partner.kakaoChannelUrl} target="_blank" rel="noreferrer"
-                  className="bg-white/15 hover:bg-white/25 px-2 py-1 rounded text-[12.5px] font-medium no-underline text-white cursor-pointer whitespace-nowrap">
+                  className="bg-white/15 hover:bg-white/25 px-2 py-1 rounded text-[12px] font-medium no-underline text-white cursor-pointer whitespace-nowrap">
                   카톡상담
                 </a>
               ) : (
                 <a href={`tel:${partner.hotlineNumber.replace(/[^\d+]/g, "")}`}
-                  className="bg-white/15 hover:bg-white/25 px-2 py-1 rounded text-[12.5px] font-medium no-underline text-white cursor-pointer whitespace-nowrap">
+                  className="bg-white/15 hover:bg-white/25 px-2 py-1 rounded text-[12px] font-medium no-underline text-white cursor-pointer whitespace-nowrap">
                   카톡상담
                 </a>
               )}

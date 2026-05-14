@@ -191,9 +191,9 @@ export default function ReviewEditorClient() {
                     <span className="text-[12px] text-rk-faint ml-auto rk-num">{it.createdAt.slice(0, 10)}</span>
                   </div>
                   {it.title && <b className="block text-[13px] text-rk-ink mb-0.5">{it.title}</b>}
-                  <p className="text-[12.5px] text-rk-text m-0 line-clamp-3 whitespace-pre-wrap">{it.body}</p>
+                  <p className="text-[12px] text-rk-text m-0 line-clamp-3 whitespace-pre-wrap">{it.body}</p>
                   {it.rejectReason && (
-                    <div className="mt-1 text-[11.5px] bg-rk-tint-red text-rk-sale px-2 py-1 rounded">
+                    <div className="mt-1 text-[12px] bg-rk-tint-red text-rk-sale px-2 py-1 rounded">
                       거절 사유: {it.rejectReason}
                     </div>
                   )}

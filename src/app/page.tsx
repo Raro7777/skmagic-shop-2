@@ -246,7 +246,7 @@ function Step({ num, title, desc }: { num: string; title: string; desc: string }
         <div className="w-7 h-7 rounded-full bg-rk-orange text-white grid place-items-center font-bold text-[13px]">{num}</div>
         <b className="text-white text-[14px]">{title}</b>
       </div>
-      <p className="text-[12.5px] text-white/65 leading-[1.6] m-0">{desc}</p>
+      <p className="text-[12px] text-white/65 leading-[1.6] m-0">{desc}</p>
     </div>
   );
 }
@@ -272,7 +272,7 @@ function Package({
         <b className={"text-[15px] " + (highlight ? "text-rk-orange" : "text-white")}>{tier}</b>
         <small className={"text-[11px] " + (highlight ? "text-rk-orange/80" : "text-white/55")}>{priceNote}</small>
       </div>
-      <ul className="space-y-1 text-[12.5px] text-white/70 leading-[1.6]">
+      <ul className="space-y-1 text-[12px] text-white/70 leading-[1.6]">
         {features.map((f, i) => (
           <li key={i} className="flex gap-1.5"><span className={highlight ? "text-rk-orange" : "text-white/40"}>✓</span><span>{f}</span></li>
         ))}

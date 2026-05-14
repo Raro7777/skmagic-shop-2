@@ -238,10 +238,10 @@ export default function BannerTemplateManager() {
               </div>
               <div className="px-3 py-2">
                 <div className="flex items-baseline justify-between gap-2">
-                  <b className="text-[13.5px] text-rk-ink truncate">{t.name}</b>
+                  <b className="text-[13px] text-rk-ink truncate">{t.name}</b>
                   <span className={"text-[11px] px-1.5 py-px rounded font-medium " + (t.status === "active" ? "bg-rk-tint-green text-rk-success" : "bg-rk-soft text-rk-muted")}>{t.status}</span>
                 </div>
-                <small className="text-[11.5px] text-rk-muted block">{t.category ?? "—"} · {LAYOUTS.find(l => l.id === t.layout)?.label ?? t.layout}</small>
+                <small className="text-[12px] text-rk-muted block">{t.category ?? "—"} · {LAYOUTS.find(l => l.id === t.layout)?.label ?? t.layout}</small>
                 {t.description && <p className="text-[11px] text-rk-text mt-1 m-0 leading-[1.4] line-clamp-2">{t.description}</p>}
                 <div className="flex gap-2 mt-2">
                   <button type="button" onClick={() => startEdit(t)} disabled={editing !== null}

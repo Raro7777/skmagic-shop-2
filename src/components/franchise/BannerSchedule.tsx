@@ -347,7 +347,7 @@ export default function BannerSchedule() {
                       {t.title}
                     </div>
                     <div className="px-2.5 py-1.5">
-                      <b className="text-[12.5px] text-rk-ink block">{t.name}</b>
+                      <b className="text-[12px] text-rk-ink block">{t.name}</b>
                       <small className="text-[11px] text-rk-muted block">{t.category ?? "—"} · {LAYOUTS.find(l => l.id === t.layout)?.label}</small>
                     </div>
                   </button>
@@ -393,7 +393,7 @@ export default function BannerSchedule() {
                       type="button"
                       onClick={() => setDraft({ ...draft, layout: l.id })}
                       className={
-                        "text-left px-2 py-1.5 rounded border cursor-pointer text-[12.5px] transition-colors " +
+                        "text-left px-2 py-1.5 rounded border cursor-pointer text-[12px] transition-colors " +
                         (draft.layout === l.id
                           ? "bg-rk-navy text-white border-rk-navy"
                           : "bg-white border-rk-line text-rk-text hover:border-rk-navy")
@@ -735,7 +735,7 @@ function BannerPreview({ draft }: { draft: Draft }) {
       <div className="rounded-[12px] px-3 py-3 grid grid-cols-[1fr_70px] gap-2 items-center min-h-[140px]" style={bgStyle}>
         <div>
           <b className="block text-[14px] font-bold leading-tight">{title}</b>
-          {draft.subtitle && <div className="text-[11.5px] mt-1 opacity-85">{draft.subtitle}</div>}
+          {draft.subtitle && <div className="text-[12px] mt-1 opacity-85">{draft.subtitle}</div>}
           {draft.ctaLabel && (
             <span className="inline-block mt-1.5 px-2 py-0.5 rounded bg-white/20 text-[11px] font-medium">
               {draft.ctaLabel}

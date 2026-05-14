@@ -58,7 +58,7 @@ export default function PasswordChangeForm({ forceChange = false }: { forceChang
       <h3 className="text-[14px] font-semibold text-rk-ink mb-1.5">
         🔐 비밀번호 {forceChange ? "변경 (필수)" : "변경"}
       </h3>
-      <div className="mb-3 bg-rk-tint-blue text-rk-info px-3 py-2 rounded text-[11.5px] leading-[1.6]">
+      <div className="mb-3 bg-rk-tint-blue text-rk-info px-3 py-2 rounded text-[12px] leading-[1.6]">
         <b className="block mb-1">비밀번호 정책</b>
         <ul className="list-disc pl-5 m-0">
           {PASSWORD_POLICY_TEXT.map(t => <li key={t}>{t}</li>)}

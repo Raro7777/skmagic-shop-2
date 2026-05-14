@@ -21,7 +21,7 @@ export default function PartnerCta({
       {/* 전화 상담 */}
       <a
         href={telHref}
-        className="flex-1 bg-rk-navy hover:bg-rk-navy-deep text-white py-3 rounded-lg font-semibold text-[13.5px] no-underline cursor-pointer flex items-center justify-center gap-1.5 transition-colors"
+        className="flex-1 bg-rk-navy hover:bg-rk-navy-deep text-white py-3 rounded-lg font-semibold text-[13px] no-underline cursor-pointer flex items-center justify-center gap-1.5 transition-colors"
         title={`전화 ${partner.hotlineNumber}`}
       >
         📞 전화상담
@@ -32,7 +32,7 @@ export default function PartnerCta({
           href={kakaoUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex-1 bg-[#FEE500] hover:bg-[#F4DC00] text-[#1A1D24] py-3 rounded-lg font-semibold text-[13.5px] no-underline cursor-pointer flex items-center justify-center gap-1.5 transition-colors"
+          className="flex-1 bg-[#FEE500] hover:bg-[#F4DC00] text-[#1A1D24] py-3 rounded-lg font-semibold text-[13px] no-underline cursor-pointer flex items-center justify-center gap-1.5 transition-colors"
           title={`${partner.partnerName} 카톡채널`}
         >
           💬 카톡상담
@@ -40,7 +40,7 @@ export default function PartnerCta({
       ) : (
         <a
           href={telHref}
-          className="flex-1 bg-[#FEE500] text-[#1A1D24] py-3 rounded-lg font-semibold text-[13.5px] no-underline cursor-pointer flex items-center justify-center gap-1.5"
+          className="flex-1 bg-[#FEE500] text-[#1A1D24] py-3 rounded-lg font-semibold text-[13px] no-underline cursor-pointer flex items-center justify-center gap-1.5"
           title="카톡 채널 미설정 — 전화로 연결"
         >
           💬 카톡상담
@@ -55,7 +55,7 @@ export default function PartnerCta({
         defaultProductCode={defaultProductCode}
         defaultProductLabel={defaultProductLabel}
         buttonLabel="✍ 상담신청"
-        buttonClassName="flex-1 bg-rk-orange hover:bg-rk-orange-deep text-white py-3 rounded-lg font-semibold text-[13.5px] cursor-pointer border-0 transition-colors flex items-center justify-center gap-1.5"
+        buttonClassName="flex-1 bg-rk-orange hover:bg-rk-orange-deep text-white py-3 rounded-lg font-semibold text-[13px] cursor-pointer border-0 transition-colors flex items-center justify-center gap-1.5"
       />
     </div>
   );

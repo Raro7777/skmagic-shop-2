@@ -153,7 +153,7 @@ export default function SettlementSummary() {
               <h4 className="text-[15px] font-semibold">📊 정산 마진 흐름</h4>
               <button onClick={() => setFlowModal(null)} className="text-rk-muted hover:text-rk-ink text-[18px] leading-none bg-transparent border-0 cursor-pointer">✕</button>
             </div>
-            <div className="text-[12.5px] text-rk-muted mb-3 leading-[1.5]">
+            <div className="text-[12px] text-rk-muted mb-3 leading-[1.5]">
               <b className="text-rk-ink">{flowModal.productName}</b>
               {flowModal.productCode && <span className="ml-1 font-mono text-rk-faint">({flowModal.productCode})</span>}
             </div>

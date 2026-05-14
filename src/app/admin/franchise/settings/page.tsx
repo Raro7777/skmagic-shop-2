@@ -55,7 +55,7 @@ export default async function SettingsPage() {
           {partner.customDomain && (
             <div>
               <span className="text-rk-muted mr-1.5">도메인</span>
-              <code className="text-rk-info text-[12.5px] font-mono">{partner.customDomain}</code>
+              <code className="text-rk-info text-[12px] font-mono">{partner.customDomain}</code>
               <span
                 className={
                   "ml-1.5 text-[11px] px-1.5 py-px rounded font-medium " +

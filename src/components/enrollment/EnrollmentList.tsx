@@ -328,7 +328,7 @@ function HistoryTimeline({ leadId }: { leadId: string }) {
               {h.reason && <span className="text-rk-text">— {h.reason}</span>}
             </div>
             {!isCreate && changedFields.length > 0 && (
-              <ul className="m-0 mt-1 pl-3 list-disc text-[11.5px] text-rk-text leading-[1.55]">
+              <ul className="m-0 mt-1 pl-3 list-disc text-[12px] text-rk-text leading-[1.55]">
                 {changedFields.map(f => {
                   const c = h.changes[f];
                   const from = c.from == null || c.from === "" ? "—" : String(c.from);

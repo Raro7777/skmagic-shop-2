@@ -497,7 +497,7 @@ function PriceMatrixEditor({
       >
         + 옵션 행 추가
       </button>
-      <small className="text-[11.5px] text-rk-faint leading-[1.55]">
+      <small className="text-[12px] text-rk-faint leading-[1.55]">
         이 매트릭스는 분양 페이지(PriceConfigurator)의 옵션 선택 가격 소스입니다.
         본사 수수료(HqPolicy) 와는 별도이며 정산은 HqPolicy 를 따릅니다 — 별도로 <a className="text-rk-info underline" href="/admin/super/policies">본사 정책</a> 에서 관리.
       </small>

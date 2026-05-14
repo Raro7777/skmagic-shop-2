@@ -26,7 +26,7 @@ export default async function FranchiseLayout({
         {/* 본사 임시 진입 배지 */}
         {eff?.isHqImpersonating && (
           <div className="mb-3 bg-rk-tint-orange text-rk-orange-deep px-3 py-2 rounded-md text-[13px] flex items-center gap-2">
-            <span className="bg-rk-orange text-white text-[11.5px] font-semibold px-1.5 py-0.5 rounded">본사 임시 진입</span>
+            <span className="bg-rk-orange text-white text-[12px] font-semibold px-1.5 py-0.5 rounded">본사 임시 진입</span>
             <span>현재 <b>{partner?.partnerName ?? eff.partnerId}</b> 콘솔을 보고 있습니다.</span>
             <LeaveHqImpersonation />
           </div>

@@ -166,18 +166,18 @@ export default function AuditLogViewer() {
                   onClick={() => setExpandedId(expandedId === r.id ? null : r.id)}
                   className="border-t border-rk-line-2 hover:bg-rk-soft-2 cursor-pointer"
                 >
-                  <td className="px-2 py-1.5 rk-num text-rk-muted text-[12.5px] whitespace-nowrap">
+                  <td className="px-2 py-1.5 rk-num text-rk-muted text-[12px] whitespace-nowrap">
                     {r.createdAt.replace("T", " ").slice(0, 19)}
                   </td>
                   <td className="px-2 py-1.5">
-                    <span className={"text-[11.5px] px-1.5 py-px rounded font-medium " + (ACTION_TONE[r.action] ?? "bg-rk-soft text-rk-muted")}>
+                    <span className={"text-[12px] px-1.5 py-px rounded font-medium " + (ACTION_TONE[r.action] ?? "bg-rk-soft text-rk-muted")}>
                       {ACTION_LABEL[r.action] ?? r.action}
                     </span>
                   </td>
-                  <td className="px-2 py-1.5 text-[12.5px] text-rk-text">{r.actorEmail ?? "—"}</td>
-                  <td className="px-2 py-1.5 text-[12.5px] text-rk-text">{r.targetEmail ?? "—"}</td>
+                  <td className="px-2 py-1.5 text-[12px] text-rk-text">{r.actorEmail ?? "—"}</td>
+                  <td className="px-2 py-1.5 text-[12px] text-rk-text">{r.targetEmail ?? "—"}</td>
                   <td className="px-2 py-1.5 rk-num text-[12px] text-rk-muted">{r.ip ?? "—"}</td>
-                  <td className="px-2 py-1.5 text-[11.5px] text-rk-muted max-w-[260px] truncate">{r.userAgent ?? "—"}</td>
+                  <td className="px-2 py-1.5 text-[12px] text-rk-muted max-w-[260px] truncate">{r.userAgent ?? "—"}</td>
                 </tr>
                 {expandedId === r.id && r.metadata && Object.keys(r.metadata).length > 0 && (
                   <tr key={r.id + "-meta"} className="bg-rk-soft-2">

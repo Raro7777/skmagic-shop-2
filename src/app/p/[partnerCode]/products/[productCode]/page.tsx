@@ -254,7 +254,7 @@ export default async function ProductDetailPage({
         {/* 본문 중간 상담 유도 CTA — 사용자 보고: 상담 유도 영역 강화 */}
         <section className="bg-rk-tint-blue border-y border-[#D8E4F4] px-4 py-4 text-center">
           <b className="text-[15px] text-rk-info block mb-1">🚀 지금 상담 신청 시 30분내 답변</b>
-          <div className="text-[12.5px] text-rk-muted mb-2.5">설치 일정 · 카드할인 · 사은품 혜택 즉시 확인</div>
+          <div className="text-[12px] text-rk-muted mb-2.5">설치 일정 · 카드할인 · 사은품 혜택 즉시 확인</div>
           <a
             href="#consult-form"
             className="inline-block bg-rk-orange hover:bg-rk-orange-deep text-white py-2.5 px-6 rounded-md font-bold text-[14px] no-underline shadow-sm"

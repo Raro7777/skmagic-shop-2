@@ -22,7 +22,7 @@ export default function LeaveHqImpersonation() {
     <a
       href="/admin/super/partners"
       onClick={onClick}
-      className="ml-auto text-rk-orange-deep underline text-[12.5px]"
+      className="ml-auto text-rk-orange-deep underline text-[12px]"
     >
       {loading ? "나가는 중…" : "← 본사 콘솔로"}
     </a>

@@ -143,12 +143,12 @@ export default async function PartnerSiteShell({
             <div className="ml-auto flex gap-1 shrink-0">
               {partner.kakaoChannelUrl ? (
                 <a href={partner.kakaoChannelUrl} target="_blank" rel="noreferrer"
-                  className="bg-white/15 hover:bg-white/25 px-2 py-1 rounded text-[12.5px] font-medium no-underline text-white cursor-pointer whitespace-nowrap">
+                  className="bg-white/15 hover:bg-white/25 px-2 py-1 rounded text-[12px] font-medium no-underline text-white cursor-pointer whitespace-nowrap">
                   카톡상담
                 </a>
               ) : (
                 <a href={`tel:${partner.hotlineNumber.replace(/[^\d+]/g, "")}`}
-                  className="bg-white/15 hover:bg-white/25 px-2 py-1 rounded text-[12.5px] font-medium no-underline text-white cursor-pointer whitespace-nowrap">
+                  className="bg-white/15 hover:bg-white/25 px-2 py-1 rounded text-[12px] font-medium no-underline text-white cursor-pointer whitespace-nowrap">
                   카톡상담
                 </a>
               )}
@@ -188,7 +188,7 @@ export default async function PartnerSiteShell({
               <div className="text-[17px] font-extrabold tracking-[-.02em] mt-px">
                 개통 시 <span className="text-[22px] rk-num">+{fmt(Math.max(...heroSlides.map(p => p.maxRentalSupport)))}원</span> 현금 캐시백
               </div>
-              <div className="text-[11.5px] opacity-90 mt-0.5">
+              <div className="text-[12px] opacity-90 mt-0.5">
                 협력점 단독 혜택 · 모든 상품 적용 · 가입 취소 시 전액 환수
               </div>
             </div>

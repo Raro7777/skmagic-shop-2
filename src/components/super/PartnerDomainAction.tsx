@@ -187,12 +187,12 @@ export default function PartnerDomainAction({
                   )}
 
                   {state.status === "pending" && (
-                    <div className="bg-rk-tint-blue text-rk-info px-2 py-1.5 rounded text-[11.5px] leading-[1.5]">
+                    <div className="bg-rk-tint-blue text-rk-info px-2 py-1.5 rounded text-[12px] leading-[1.5]">
                       ⓘ 도메인 등록업체에서 위 DNS 레코드 설정 → 전파 후 (5분 ~ 24시간) <b>재검증</b> 클릭. SSL 은 검증 완료 시 Vercel 자동 발급.
                     </div>
                   )}
                   {state.status === "misconfigured" && (
-                    <div className="bg-rk-tint-orange text-rk-orange-deep px-2 py-1.5 rounded text-[11.5px] leading-[1.5]">
+                    <div className="bg-rk-tint-orange text-rk-orange-deep px-2 py-1.5 rounded text-[12px] leading-[1.5]">
                       ⚠ DNS 설정이 올바르지 않습니다. 위 안내된 레코드 다시 확인 후 재검증해주세요.
                     </div>
                   )}

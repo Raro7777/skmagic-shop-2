@@ -177,10 +177,10 @@ export default function UserManager() {
             <p className="text-[14px] text-rk-muted mb-3">
               <b>{tempReveal.email}</b>의 임시 비밀번호입니다.
               {tempReveal.mailDelivered === true && (
-                <span className="block mt-1 text-rk-success text-[12.5px]">📧 사용자 이메일로 자동 발송 완료</span>
+                <span className="block mt-1 text-rk-success text-[12px]">📧 사용자 이메일로 자동 발송 완료</span>
               )}
               {tempReveal.mailDelivered === false && (
-                <span className="block mt-1 text-rk-orange-deep text-[12.5px]">⚠ 이메일 발송 실패 — 본사가 직접 전달해주세요</span>
+                <span className="block mt-1 text-rk-orange-deep text-[12px]">⚠ 이메일 발송 실패 — 본사가 직접 전달해주세요</span>
               )}
               사용자에게 즉시 전달하시고 첫 로그인 후 본인이 변경하도록 안내해주세요.
             </p>
@@ -280,7 +280,7 @@ export default function UserManager() {
                 </label>
               )}
             </div>
-            <div className="bg-rk-tint-blue text-rk-info px-2.5 py-2 rounded text-[11.5px] mt-3 leading-[1.5]">
+            <div className="bg-rk-tint-blue text-rk-info px-2.5 py-2 rounded text-[12px] mt-3 leading-[1.5]">
               ⓘ 임시 비밀번호가 자동 생성되어 사용자 이메일로 발송됩니다. 본사 콘솔에도 1회 노출됩니다.
             </div>
             <div className="flex gap-2 mt-3 justify-end">

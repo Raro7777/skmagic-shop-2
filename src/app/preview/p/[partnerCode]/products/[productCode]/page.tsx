@@ -110,7 +110,7 @@ export default async function ProductDetailPCPreview({ params }: { params: Promi
             {detail.description && (
               <div className="mt-5">
                 <h3 className="text-[14px] font-semibold text-rk-ink mb-2">상품 소개</h3>
-                <div className="text-[12.5px] text-rk-text leading-[1.75]">
+                <div className="text-[12px] text-rk-text leading-[1.75]">
                   {detail.description.split(/\n\n+/).filter(Boolean).map((para, i) => (
                     <p key={i} className="m-0 mb-2 last:mb-0 whitespace-pre-line">{para}</p>
                   ))}
@@ -122,7 +122,7 @@ export default async function ProductDetailPCPreview({ params }: { params: Promi
           {/* 스펙 표 */}
           <div>
             <h2 className="text-[18px] font-bold tracking-[-.02em] text-rk-ink mb-3">📋 사양 정보</h2>
-            <dl className="bg-rk-soft-2 rounded-lg p-4 grid grid-cols-[100px_1fr] gap-y-1.5 text-[12.5px]">
+            <dl className="bg-rk-soft-2 rounded-lg p-4 grid grid-cols-[100px_1fr] gap-y-1.5 text-[12px]">
               <dt className="text-rk-muted">모델명</dt><dd className="text-rk-ink font-mono">{detail.modelName}</dd>
               <dt className="text-rk-muted">카테고리</dt><dd className="text-rk-ink">{site.categories.find(c => c.slug === detail.category)?.label ?? detail.category}</dd>
               <dt className="text-rk-muted">관리방식</dt><dd className="text-rk-ink">{detail.managementType}</dd>
