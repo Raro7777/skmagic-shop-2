@@ -222,47 +222,57 @@ function BannerSlideContent({ banner }: { banner: ActiveBanner }) {
 
     if (banner.layout === "promo-stamp") {
       return (
-        <div className="text-center">
-          {banner.subtitle && (
-            <b className="block text-[14px] uppercase tracking-[.1em] opacity-75 mb-1">{banner.subtitle}</b>
+        <div className="flex items-center gap-3">
+          {banner.imageUrl && (
+            <img src={banner.imageUrl} alt="" className="w-[72px] h-[72px] rounded-md object-cover shrink-0 border border-white/20" />
           )}
-          <h2 className="text-[22px] font-bold leading-[1.2] tracking-[-.03em] m-0 mb-2">
-            {banner.title}
-          </h2>
-          {banner.stampText && (
-            <div
-              className="inline-block px-4 py-2 rounded-md text-[20px] font-bold tracking-[-.02em] mb-2"
-              style={{ background: banner.textColor, color: banner.bgColor2 }}
-            >
-              {banner.stampText}
-            </div>
-          )}
-          {banner.ctaLabel && (
-            <div>
-              <span className="inline-block px-3 py-1.5 rounded-full bg-white text-rk-ink text-[14px] font-semibold">
-                {banner.ctaLabel} →
-              </span>
-            </div>
-          )}
+          <div className="flex-1 text-center">
+            {banner.subtitle && (
+              <b className="block text-[14px] uppercase tracking-[.1em] opacity-75 mb-1">{banner.subtitle}</b>
+            )}
+            <h2 className="text-[22px] font-bold leading-[1.2] tracking-[-.03em] m-0 mb-2">
+              {banner.title}
+            </h2>
+            {banner.stampText && (
+              <div
+                className="inline-block px-4 py-2 rounded-md text-[20px] font-bold tracking-[-.02em] mb-2"
+                style={{ background: banner.textColor, color: banner.bgColor2 }}
+              >
+                {banner.stampText}
+              </div>
+            )}
+            {banner.ctaLabel && (
+              <div>
+                <span className="inline-block px-3 py-1.5 rounded-full bg-white text-rk-ink text-[14px] font-semibold">
+                  {banner.ctaLabel} →
+                </span>
+              </div>
+            )}
+          </div>
         </div>
       );
     }
 
-    // classic
+    // classic — 이미지 있으면 좌측 썸네일
     return (
-      <>
-        <h2 className="text-[22px] font-bold leading-[1.3] tracking-[-.03em] m-0 mb-1.5">
-          {banner.title}
-        </h2>
-        {banner.subtitle && (
-          <p className="text-[13px] opacity-90 m-0 mb-3 leading-[1.4]">{banner.subtitle}</p>
+      <div className={banner.imageUrl ? "flex items-center gap-3" : ""}>
+        {banner.imageUrl && (
+          <img src={banner.imageUrl} alt="" className="w-[80px] h-[80px] rounded-md object-cover shrink-0 border border-white/20" />
         )}
-        {banner.ctaLabel && (
-          <span className="inline-block px-3 py-1.5 rounded text-[14px] font-semibold bg-white/20">
-            {banner.ctaLabel} →
-          </span>
-        )}
-      </>
+        <div className="flex-1">
+          <h2 className="text-[22px] font-bold leading-[1.3] tracking-[-.03em] m-0 mb-1.5">
+            {banner.title}
+          </h2>
+          {banner.subtitle && (
+            <p className="text-[13px] opacity-90 m-0 mb-3 leading-[1.4]">{banner.subtitle}</p>
+          )}
+          {banner.ctaLabel && (
+            <span className="inline-block px-3 py-1.5 rounded text-[14px] font-semibold bg-white/20">
+              {banner.ctaLabel} →
+            </span>
+          )}
+        </div>
+      </div>
     );
   })();
 

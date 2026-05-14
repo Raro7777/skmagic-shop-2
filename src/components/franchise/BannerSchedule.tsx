@@ -414,12 +414,22 @@ export default function BannerSchedule() {
                   <input value={draft.subtitle} onChange={e => setDraft({ ...draft, subtitle: e.target.value })} className="border border-rk-line rounded px-2 py-1 text-[14px]" />
                 </Field>
 
-                {(draft.layout === "image-bg" || draft.layout === "product-spotlight") && (
-                  <Field label="이미지 업로드 (≤ 8MB, WebP 자동 변환)">
+                {draft.layout !== "html" && (
+                  <Field label="이미지 업로드 (≤ 8MB, WebP 자동 변환 · 선택)">
                     <ImageUploadField
                       value={draft.imageUrl}
                       onChange={url => setDraft({ ...draft, imageUrl: url })}
                     />
+                    {draft.imageUrl && draft.layout === "classic" && (
+                      <small className="text-[11px] text-rk-orange-deep mt-1 block">
+                        ⓘ &apos;클래식&apos; 레이아웃은 이미지를 좌측 썸네일로 노출. 풀폭 배경으로 쓰려면 &apos;이미지 배경&apos; 레이아웃 추천.
+                      </small>
+                    )}
+                    {draft.imageUrl && draft.layout === "promo-stamp" && (
+                      <small className="text-[11px] text-rk-orange-deep mt-1 block">
+                        ⓘ &apos;프로모 스탬프&apos; 는 이미지 영역이 작아 좌측 작은 컷으로 노출됩니다.
+                      </small>
+                    )}
                   </Field>
                 )}
 
