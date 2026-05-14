@@ -40,9 +40,10 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     endsAt: string;
     priority: number;
     status: "draft" | "active";
-    layout: "classic" | "image-bg" | "product-spotlight" | "promo-stamp";
+    layout: "classic" | "image-bg" | "product-spotlight" | "promo-stamp" | "html";
     spotlightProductCode: string | null;
     stampText: string | null;
+    htmlContent: string | null;
   }>;
 
   const data: Parameters<typeof prisma.banner.update>[0]["data"] = {};
@@ -54,7 +55,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   if (b.textColor) data.textColor = b.textColor.slice(0, 16);
   if (b.ctaLabel !== undefined) data.ctaLabel = b.ctaLabel == null ? null : b.ctaLabel.slice(0, 40);
   if (b.ctaHref !== undefined) data.ctaHref = b.ctaHref == null ? null : b.ctaHref.slice(0, 256);
-  if (b.layout && ["classic", "image-bg", "product-spotlight", "promo-stamp"].includes(b.layout)) {
+  if (b.layout && ["classic", "image-bg", "product-spotlight", "promo-stamp", "html"].includes(b.layout)) {
     data.layout = b.layout;
   }
   if (b.spotlightProductCode !== undefined) {
@@ -62,6 +63,9 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   }
   if (b.stampText !== undefined) {
     data.stampText = b.stampText?.trim().slice(0, 60) || null;
+  }
+  if (b.htmlContent !== undefined) {
+    data.htmlContent = b.htmlContent == null ? null : b.htmlContent.slice(0, 10000);
   }
   if (b.startsAt) {
     const d = new Date(b.startsAt);

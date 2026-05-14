@@ -159,6 +159,16 @@ export default function HeroCarousel({
 
 function BannerSlideContent({ banner }: { banner: ActiveBanner }) {
   const inner = (() => {
+    // layout=html — 협력점이 직접 작성한 마크업 (이미 partnerSite에서 sanitize 됨)
+    if (banner.layout === "html" && banner.htmlContent) {
+      return (
+        <div
+          className="banner-html relative -mx-4 -mt-[22px] mb-[-56px] min-h-[200px]"
+          dangerouslySetInnerHTML={{ __html: banner.htmlContent }}
+        />
+      );
+    }
+
     if (banner.layout === "image-bg") {
       return (
         <div className="relative -mx-4 -mt-[22px] mb-[-56px] min-h-[200px]">

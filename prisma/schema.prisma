@@ -264,9 +264,12 @@ model Banner {
   //   image-bg           : 풀폭 이미지 백그라운드 + 텍스트 오버레이
   //   product-spotlight  : 좌측 텍스트 + 우측 상품 컷
   //   promo-stamp        : 가격·할인 강조 스탬프
+  //   html               : 협력점이 직접 작성한 HTML 마크업 (sanitize 후 렌더)
   layout              String   @default("classic")
   spotlightProductCode String?
   stampText           String?
+  // layout=html 일 때 사용. HeroCarousel 이 sanitize-html 로 위험 태그 제거 후 렌더.
+  htmlContent         String?
   // 본사 표준 템플릿에서 가져온 경우 추적 (Phase 2)
   sourceTemplateId    String?
 

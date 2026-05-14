@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { pickRepresentativeHqPolicy } from "@/lib/hqPolicy";
 import { computeHqMargin } from "@/lib/marginFlow";
 import { rentalSupportFor } from "@/lib/rentalSupport";
+import { sanitizeBannerHtml } from "@/lib/sanitizeBannerHtml";
 
 /** 상품의 옵션별 렌탈지원금 중 최대값 계산. enabled=false면 0. */
 function computeMaxRentalSupport(args: {
@@ -66,10 +67,11 @@ export type ActiveBanner = {
   ctaLabel: string | null;
   ctaHref: string | null;
   endsAt: string; // ISO — 클라이언트에서 카운트다운 표시 가능
-  layout: "classic" | "image-bg" | "product-spotlight" | "promo-stamp";
+  layout: "classic" | "image-bg" | "product-spotlight" | "promo-stamp" | "html";
   spotlightProductCode: string | null;
   spotlightProductImage: string | null;
   stampText: string | null;
+  htmlContent: string | null; // layout=html 일 때 sanitize 된 마크업
 };
 
 export type CategoryEntry = {
@@ -268,6 +270,7 @@ export async function getPartnerSite(partnerCode: string): Promise<PartnerSiteDa
     spotlightProductCode: b.spotlightProductCode,
     spotlightProductImage: b.spotlightProductCode ? (spotlightImageMap.get(b.spotlightProductCode) ?? null) : null,
     stampText: b.stampText,
+    htmlContent: b.htmlContent ? sanitizeBannerHtml(b.htmlContent) : null,
   }));
 
   return {

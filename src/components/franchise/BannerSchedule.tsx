@@ -19,10 +19,11 @@ type Banner = {
   layout?: Layout;
   spotlightProductCode?: string | null;
   stampText?: string | null;
+  htmlContent?: string | null;
   sourceTemplateId?: string | null;
 };
 
-type Layout = "classic" | "image-bg" | "product-spotlight" | "promo-stamp";
+type Layout = "classic" | "image-bg" | "product-spotlight" | "promo-stamp" | "html";
 
 type Draft = {
   title: string;
@@ -40,6 +41,7 @@ type Draft = {
   layout: Layout;
   spotlightProductCode: string;
   stampText: string;
+  htmlContent: string;
 };
 
 const LAYOUTS: Array<{ id: Layout; label: string; desc: string }> = [
@@ -47,6 +49,7 @@ const LAYOUTS: Array<{ id: Layout; label: string; desc: string }> = [
   { id: "image-bg",          label: "이미지 배경",   desc: "풀폭 이미지 + 텍스트 오버레이" },
   { id: "product-spotlight", label: "상품 스포트라이트", desc: "좌측 텍스트 + 우측 상품 컷" },
   { id: "promo-stamp",       label: "프로모 스탬프",  desc: "가격·할인 강조" },
+  { id: "html",              label: "HTML 직접 입력",  desc: "자유 마크업 (sanitize 후 노출)" },
 ];
 
 const PRESETS = [
@@ -106,6 +109,7 @@ const emptyDraft = (): Draft => {
     layout: "classic",
     spotlightProductCode: "",
     stampText: "",
+    htmlContent: "",
   };
 };
 
@@ -204,6 +208,7 @@ export default function BannerSchedule() {
       layout: t.layout,
       spotlightProductCode: t.spotlightProductCode ?? "",
       stampText: t.stampText ?? "",
+      htmlContent: "",
     });
     setTemplateModalOpen(false);
     setFlash(`템플릿 "${t.name}" 을 가져왔어요. 색상·텍스트·기간을 조정 후 저장하세요.`);
@@ -227,6 +232,7 @@ export default function BannerSchedule() {
       layout: (b.layout as Layout) ?? "classic",
       spotlightProductCode: b.spotlightProductCode ?? "",
       stampText: b.stampText ?? "",
+      htmlContent: b.htmlContent ?? "",
     });
   };
   const cancel = () => { setEditing(null); setDraft(null); };
@@ -252,6 +258,7 @@ export default function BannerSchedule() {
         layout: draft.layout,
         spotlightProductCode: draft.spotlightProductCode.trim() || null,
         stampText: draft.stampText.trim() || null,
+        htmlContent: draft.layout === "html" ? draft.htmlContent : null,
       };
       const res = editing === "new"
         ? await fetch("/api/franchise/banners", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) })
@@ -436,6 +443,26 @@ export default function BannerSchedule() {
                       className="border border-rk-line rounded px-2 py-1 text-[14px]"
                     />
                   </Field>
+                )}
+
+                {draft.layout === "html" && (
+                  <div className="col-span-2">
+                    <Field label="HTML 마크업 (저장 시 sanitize 적용)">
+                      <textarea
+                        value={draft.htmlContent}
+                        onChange={e => setDraft({ ...draft, htmlContent: e.target.value })}
+                        placeholder={`<div style="padding:24px;background:linear-gradient(135deg,#F26A1F,#1A2B4D);color:#fff;border-radius:12px">\n  <h2 style="font-size:22px;margin:0 0 6px">우리 매장 단독 5월 프로모션</h2>\n  <p style="margin:0;font-size:13px">정수기·공청 동시 가입 시 10만원 추가 캐시백</p>\n  <a href="/p/partner-7714c0/products" style="display:inline-block;margin-top:10px;padding:6px 12px;background:#fff;color:#1A2B4D;border-radius:6px;text-decoration:none;font-weight:600">지금 보기 →</a>\n</div>`}
+                        rows={10}
+                        className="border border-rk-line rounded px-2 py-1.5 text-[12px] font-mono w-full"
+                        style={{ minHeight: 180 }}
+                      />
+                    </Field>
+                    <p className="text-[11px] text-rk-muted mt-1 leading-[1.5]">
+                      ⚠ <code>&lt;script&gt;</code>·<code>&lt;iframe&gt;</code>·<code>on*</code> 이벤트는 자동 제거됩니다.
+                      외부 링크는 새 탭 + nofollow 로 변환. 최대 10,000자.
+                      이미지·CSS·flex/grid 레이아웃은 그대로 동작.
+                    </p>
+                  </div>
                 )}
 
                 <Field label="시작일 *">
