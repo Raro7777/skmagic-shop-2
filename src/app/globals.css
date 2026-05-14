@@ -97,3 +97,58 @@ button {
 .animate-pulse-cashback {
   animation: pulse-cashback 2.2s ease-in-out infinite;
 }
+
+/* ============================================================
+   협력점 사이트 테마 프리셋 — Phase 1 (컬러만)
+   카탈로그: src/lib/themes.ts
+   적용: PartnerSiteShell 최외곽에 data-theme="<id>"
+   ============================================================ */
+
+[data-theme="navyTrust"] {
+  /* 골드 포인트 + 진한 네이비. 금융사 톤 */
+  --color-rk-orange: #C9A24D;
+  --color-rk-orange-deep: #A6822F;
+  --color-rk-tint-orange: #F5EDD9;
+}
+
+[data-theme="warmth"] {
+  /* 테라코타 + 다크브라운. 가정·주부 */
+  --color-rk-orange: #B85C3E;
+  --color-rk-orange-deep: #94462E;
+  --color-rk-tint-orange: #F2E4D7;
+  --color-rk-navy: #4A3729;
+  --color-rk-navy-deep: #2E2118;
+  --color-rk-navy-soft: #6B523F;
+  --color-rk-soft-2: #F8F5F0;
+}
+
+[data-theme="premiumMono"] {
+  /* 차콜 + 골드 포인트. 프리미엄 라인 */
+  --color-rk-orange: #B8893C;
+  --color-rk-orange-deep: #946B26;
+  --color-rk-tint-orange: #ECE3CC;
+  --color-rk-navy: #2A2D33;
+  --color-rk-navy-deep: #16181C;
+  --color-rk-navy-soft: #3F434B;
+}
+
+[data-theme="vibrantCoral"] {
+  /* 코랄 + 딥틸. 신혼·2030 */
+  --color-rk-orange: #F87060;
+  --color-rk-orange-deep: #DB5746;
+  --color-rk-tint-orange: #FCE5E1;
+  --color-rk-navy: #1E4E5F;
+  --color-rk-navy-deep: #0E3340;
+  --color-rk-navy-soft: #356A7C;
+}
+
+[data-theme="naturalGreen"] {
+  /* 머스타드 + 딥세이지. 친환경 */
+  --color-rk-orange: #C9A23E;
+  --color-rk-orange-deep: #A0801F;
+  --color-rk-tint-orange: #F0E8D0;
+  --color-rk-navy: #2F4D3A;
+  --color-rk-navy-deep: #1B3326;
+  --color-rk-navy-soft: #4A6B55;
+  --color-rk-soft-2: #F2F5F0;
+}
