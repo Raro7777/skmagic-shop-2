@@ -22,6 +22,7 @@ const NAV_OPS: NavItem[] = [
   { href: "/admin/franchise/analytics",   ico: "📈", label: "마케팅 분석" },
 ];
 const NAV_SITE: NavItem[] = [
+  { href: "/admin/franchise/design",   ico: "🎨", label: "사이트 디자인" },
   { href: "/admin/franchise/settings", ico: "⚙️", label: "사이트 설정" },
 ];
 

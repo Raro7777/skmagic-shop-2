@@ -49,6 +49,11 @@ model Partner {
   sellerMarginType     String    @default("fixed") // "fixed" | "percent"
   sellerMarginAmount   Int       @default(0)
   sellerMarginPercent  Float     @default(0)
+  // 분양 사이트 외형 프리셋 — src/lib/themes.ts 카탈로그 참조
+  theme           String    @default("default")
+  // 24h 내 1클릭 롤백용 — 적용 직전 테마와 적용 시각 백업
+  previousTheme   String?
+  themeChangedAt  DateTime?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
