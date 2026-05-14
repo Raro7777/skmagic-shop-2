@@ -83,11 +83,47 @@ function normalizeRRN(s: string): string {
   return s;
 }
 
+export type ChangeSource = "initial_create" | "customer_request" | "internal_correction" | "hq_revision_response" | "system";
+
+// 신청서 변경 이력에 기록할 핵심 필드 화이트리스트. PII 변경도 추적 (계좌·주민번호 변경은 분쟁 핵심).
+const TRACKED_FIELDS = [
+  "customerName", "residentRegNumber", "email", "phone", "address", "addressDetail",
+  "productCode", "productName", "managementMode", "contractPeriod", "visitInterval",
+  "monthlyPrice", "isRivalCompensation", "isHalfPriceMonths", "selectedColor",
+  "giftAmount", "giftLabel",
+  "paymentDayType", "paymentDayValue",
+  "installSchedule", "installPreferredDate",
+  "autoDebitBank", "autoDebitAccount", "autoDebitHolder",
+  "giftBank", "giftAccount", "giftHolder",
+  "memo",
+] as const;
+
+function diffPayload(
+  before: Record<string, unknown> | null,
+  after: Record<string, unknown>,
+): Record<string, { from: unknown; to: unknown }> {
+  if (!before) return {};
+  const changes: Record<string, { from: unknown; to: unknown }> = {};
+  for (const k of TRACKED_FIELDS) {
+    const a = before[k];
+    const b = after[k];
+    // Date 비교는 ISO 문자열로
+    const aNorm = a instanceof Date ? a.toISOString() : a;
+    const bNorm = b instanceof Date ? b.toISOString() : b;
+    if (aNorm !== bNorm) changes[k] = { from: a ?? null, to: b ?? null };
+  }
+  return changes;
+}
+
 export async function upsertEnrollmentForm(input: {
   leadId: string;
   data: EnrollmentFormInput;
   actorId: string | null;
   actorRole: ActorRole;
+  /** 변경 사유 (수정 시 필수 권장) */
+  changeReason?: string | null;
+  /** 변경 출처 — UI 가 명시. 신규 생성 시 자동 "initial_create" */
+  changeSource?: ChangeSource;
 }): Promise<{ ok: true; id: string; isNew: boolean } | { error: string }> {
   const err = validateInput(input.data);
   if (err) return { error: err };
@@ -134,35 +170,70 @@ export async function upsertEnrollmentForm(input: {
     memo: d.memo?.trim() || null,
   };
 
-  // Lead 동기화 — 신청서에서 상품/약정/모드 등이 바뀐 경우 Lead 의 selected* 필드도 함께 update.
-  // 이를 통해 인증처리 등 다른 화면에서도 변경값이 즉시 반영됨.
-  await prisma.lead.update({
-    where: { id: input.leadId },
-    data: {
-      customerName: payload.customerName,
-      productCode: payload.productCode,
-      productInterest: payload.productName,
-      selectedMode: payload.managementMode,
-      selectedContractPeriod: payload.contractPeriod,
-      selectedRentalPrice: payload.monthlyPrice,
-      rivalCompensationRequested: payload.isRivalCompensation,
-      selectedColor: payload.selectedColor,
-    },
-  }).catch(() => { /* lead 미발견 시 무시 */ });
-
-  if (existing) {
-    await prisma.enrollmentForm.update({ where: { id: existing.id }, data: payload });
-    return { ok: true, id: existing.id, isNew: false };
+  // Lead 동기화 — 신청서가 본사·정산 화면과 일관성 유지하려면 반드시 성공해야 함.
+  // 실패 시 explicit error 반환 (silently 무시하지 않음).
+  try {
+    await prisma.lead.update({
+      where: { id: input.leadId },
+      data: {
+        customerName: payload.customerName,
+        productCode: payload.productCode,
+        productInterest: payload.productName,
+        selectedMode: payload.managementMode,
+        selectedContractPeriod: payload.contractPeriod,
+        selectedRentalPrice: payload.monthlyPrice,
+        rivalCompensationRequested: payload.isRivalCompensation,
+        selectedColor: payload.selectedColor,
+      },
+    });
+  } catch (e) {
+    return { error: `Lead 동기화 실패: ${e instanceof Error ? e.message : String(e)}` };
   }
-  const created = await prisma.enrollmentForm.create({
-    data: {
-      ...payload,
-      leadId: input.leadId,
-      createdById: input.actorId,
-      createdByRole: input.actorRole,
-    },
+
+  const isNew = !existing;
+  const source: ChangeSource = input.changeSource ?? (isNew ? "initial_create" : "internal_correction");
+
+  // 트랜잭션: form upsert + history 기록 (분쟁 근거)
+  const result = await prisma.$transaction(async tx => {
+    let formId: string;
+    if (existing) {
+      await tx.enrollmentForm.update({ where: { id: existing.id }, data: payload });
+      formId = existing.id;
+    } else {
+      const created = await tx.enrollmentForm.create({
+        data: {
+          ...payload,
+          leadId: input.leadId,
+          createdById: input.actorId,
+          createdByRole: input.actorRole,
+        },
+      });
+      formId = created.id;
+    }
+
+    // diff 계산 — 신규는 빈 diff (snapshotAfter 만 의미)
+    const changes = isNew ? {} : diffPayload(existing as unknown as Record<string, unknown>, payload as unknown as Record<string, unknown>);
+
+    // 변경 사항이 있을 때만 history 기록 (단, 신규는 항상 기록)
+    if (isNew || Object.keys(changes).length > 0) {
+      await tx.enrollmentFormHistory.create({
+        data: {
+          formId,
+          leadId: input.leadId,
+          changedById: input.actorId,
+          changedByRole: input.actorRole,
+          reason: input.changeReason?.trim() || null,
+          changeSource: source,
+          changes: changes as never,
+          snapshotAfter: payload as never,
+        },
+      });
+    }
+
+    return { id: formId, isNew };
   });
-  return { ok: true, id: created.id, isNew: true };
+
+  return { ok: true, ...result };
 }
 
 /** install_pending 진입 시 자동 호출 — lockedAt 설정 */

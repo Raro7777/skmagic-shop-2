@@ -166,6 +166,13 @@ export default function EnrollmentFormModal({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // 변경 사유 — 수정 모드에서만 노출, 저장 시 history 에 기록
+  const isReturned = prefill.currentLeadStatus === "verify_failed" || prefill.currentLeadStatus === "verify_revise";
+  const [changeSource, setChangeSource] = useState<"customer_request" | "internal_correction" | "hq_revision_response">(
+    isReturned ? "hq_revision_response" : "internal_correction"
+  );
+  const [changeReason, setChangeReason] = useState("");
+
   // body 스크롤 잠금
   useEffect(() => {
     document.body.style.overflow = "hidden";
@@ -316,6 +323,8 @@ export default function EnrollmentFormModal({
     try {
       const payload = {
         autoAdvance: !isEdit && !!autoAdvance,
+        changeReason: isEdit ? (changeReason.trim() || null) : null,
+        changeSource: isEdit ? changeSource : "initial_create",
         data: {
           customerName: customerName.trim(),
           residentRegNumber: residentRegNumber.trim(),
@@ -402,6 +411,39 @@ export default function EnrollmentFormModal({
               <b>본사가 수정요청을 보냈습니다 ({prefill.currentLeadStatus === "verify_failed" ? "인증실패" : "수정요청"}).</b>
               <br />아래 내용을 수정 후 <b>저장하면 자동으로 재제출</b>됩니다. (회신상태 → 본사 인증 재진행)
             </div>
+          </div>
+        )}
+
+        {isEdit && (
+          <div className="bg-rk-tint-blue px-5 py-2.5 border-b border-rk-line text-[13px]">
+            <div className="font-semibold text-rk-info mb-1.5">📋 변경 사유 (감사 로그 기록)</div>
+            <div className="flex gap-3 flex-wrap mb-1.5">
+              <label className="flex items-center gap-1 cursor-pointer">
+                <input type="radio" name="changeSource"
+                  checked={changeSource === "customer_request"}
+                  onChange={() => setChangeSource("customer_request")}
+                /> <span>고객 요청</span>
+              </label>
+              <label className="flex items-center gap-1 cursor-pointer">
+                <input type="radio" name="changeSource"
+                  checked={changeSource === "internal_correction"}
+                  onChange={() => setChangeSource("internal_correction")}
+                /> <span>내부 보완</span>
+              </label>
+              <label className="flex items-center gap-1 cursor-pointer">
+                <input type="radio" name="changeSource"
+                  checked={changeSource === "hq_revision_response"}
+                  onChange={() => setChangeSource("hq_revision_response")}
+                /> <span>본사 수정요청 회신</span>
+              </label>
+            </div>
+            <input
+              type="text"
+              value={changeReason}
+              onChange={e => setChangeReason(e.target.value)}
+              placeholder="구체적 사유 (선택, 예: 고객이 계좌번호 정정 요청)"
+              className="w-full px-2 py-1 border border-rk-line rounded text-[13px] bg-white"
+            />
           </div>
         )}
 

@@ -259,6 +259,98 @@ export default function EnrollmentList({ scope }: { scope: Scope }) {
   );
 }
 
+type HistoryItem = {
+  id: string;
+  changedAt: string;
+  changedById: string | null;
+  changedByRole: string;
+  reason: string | null;
+  changeSource: string;
+  changes: Record<string, { from: unknown; to: unknown }>;
+};
+
+const SOURCE_LABEL: Record<string, string> = {
+  initial_create: "최초 작성",
+  customer_request: "고객 요청",
+  internal_correction: "내부 보완",
+  hq_revision_response: "본사 수정요청 회신",
+  system: "시스템 자동",
+};
+
+const FIELD_LABEL: Record<string, string> = {
+  customerName: "고객명", residentRegNumber: "주민번호", email: "이메일", phone: "연락처",
+  address: "주소", addressDetail: "상세주소",
+  productCode: "상품코드", productName: "상품명", managementMode: "관리방식",
+  contractPeriod: "약정개월", visitInterval: "방문주기",
+  monthlyPrice: "월요금", isRivalCompensation: "타사보상", isHalfPriceMonths: "반값할인개월",
+  selectedColor: "색상", giftAmount: "사은품금액", giftLabel: "사은품라벨",
+  paymentDayType: "결제일타입", paymentDayValue: "결제일값",
+  installSchedule: "설치일정메모", installPreferredDate: "설치희망일",
+  autoDebitBank: "자동이체은행", autoDebitAccount: "자동이체계좌", autoDebitHolder: "자동이체예금주",
+  giftBank: "사은은행", giftAccount: "사은계좌", giftHolder: "사은예금주",
+  memo: "기타비고",
+};
+
+function HistoryTimeline({ leadId }: { leadId: string }) {
+  const [items, setItems] = useState<HistoryItem[] | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`/api/leads/${leadId}/enrollment/history`)
+      .then(r => r.json())
+      .then(j => { if (!cancelled) setItems(j.items ?? []); })
+      .catch(() => { if (!cancelled) setItems([]); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [leadId]);
+
+  if (loading) return <div className="text-rk-muted text-[12px]">변경 이력 로드 중…</div>;
+  if (!items || items.length === 0) return <div className="text-rk-faint text-[12px]">변경 이력 없음</div>;
+
+  return (
+    <ul className="m-0 p-0 list-none flex flex-col gap-2">
+      {items.map(h => {
+        const changedFields = Object.keys(h.changes ?? {});
+        const isCreate = h.changeSource === "initial_create";
+        return (
+          <li key={h.id} className="bg-white border border-rk-line rounded px-2.5 py-1.5 text-[12px]">
+            <div className="flex items-baseline gap-1.5 flex-wrap">
+              <span className="text-rk-muted rk-num">{h.changedAt.slice(0, 16).replace("T", " ")}</span>
+              <span className={
+                "px-1.5 py-px rounded text-[11px] font-medium " +
+                (h.changeSource === "customer_request" ? "bg-rk-tint-orange text-rk-orange-deep" :
+                 h.changeSource === "hq_revision_response" ? "bg-rk-tint-blue text-rk-info" :
+                 isCreate ? "bg-rk-tint-green text-rk-success" :
+                 "bg-rk-soft-2 text-rk-muted")
+              }>{SOURCE_LABEL[h.changeSource] ?? h.changeSource}</span>
+              <span className="text-rk-faint">· {h.changedByRole}</span>
+              {h.reason && <span className="text-rk-text">— {h.reason}</span>}
+            </div>
+            {!isCreate && changedFields.length > 0 && (
+              <ul className="m-0 mt-1 pl-3 list-disc text-[11.5px] text-rk-text leading-[1.55]">
+                {changedFields.map(f => {
+                  const c = h.changes[f];
+                  const from = c.from == null || c.from === "" ? "—" : String(c.from);
+                  const to = c.to == null || c.to === "" ? "—" : String(c.to);
+                  return (
+                    <li key={f}>
+                      <b className="text-rk-muted">{FIELD_LABEL[f] ?? f}</b>:{" "}
+                      <span className="text-rk-faint line-through">{from}</span>
+                      {" → "}
+                      <span className="text-rk-ink font-medium">{to}</span>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
 function DetailPanel({ item }: { item: EnrollmentItem }) {
   return (
     <div className="grid grid-cols-3 gap-4 text-[13px]">
@@ -312,6 +404,11 @@ function DetailPanel({ item }: { item: EnrollmentItem }) {
           )}
         </div>
       )}
+
+      <div className="col-span-3 pt-2 mt-1 border-t border-rk-line-2">
+        <h4 className="text-[12px] uppercase tracking-[.06em] text-rk-muted font-semibold mb-1.5">변경 이력 (감사 로그)</h4>
+        <HistoryTimeline leadId={item.leadId} />
+      </div>
     </div>
   );
 }

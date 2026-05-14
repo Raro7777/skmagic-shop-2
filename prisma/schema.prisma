@@ -479,6 +479,30 @@ model EnrollmentForm {
 
   @@index([productCode])
   @@index([lockedAt])
+
+  histories            EnrollmentFormHistory[]
+}
+
+// ----------------------------------------------------------------
+// EnrollmentFormHistory — 신청서 변경 이력 (감사 로그)
+// 분쟁/정산 근거 보존. 변경 시점의 diff + 전체 스냅샷.
+// ----------------------------------------------------------------
+model EnrollmentFormHistory {
+  id            String   @id @default(cuid())
+  formId        String
+  form          EnrollmentForm @relation(fields: [formId], references: [id], onDelete: Cascade)
+  leadId        String
+  changedAt     DateTime @default(now())
+  changedById   String?  // User.id
+  changedByRole String   // seller | partner_admin | hq | system
+  reason        String?
+  // changeSource: "initial_create" | "customer_request" | "internal_correction" | "hq_revision_response" | "system"
+  changeSource  String
+  changes       Json     // { fieldName: { from, to } } — 변경된 필드만
+  snapshotAfter Json     // 변경 직후 전체 신청서 스냅샷
+
+  @@index([leadId, changedAt])
+  @@index([formId])
 }
 
 // ----------------------------------------------------------------
@@ -664,6 +688,15 @@ model Settlement {
   refundReason       String?
   refundStartedAt    DateTime?
   refundCompletedAt  DateTime?
+
+  // 정산 시점의 EnrollmentForm 핵심 스냅샷 (분쟁/검증 근거). 신청서가 이후 변경돼도 변하지 않음.
+  enrollmentMonthlyPrice    Int?
+  enrollmentContractPeriod  Int?
+  enrollmentManagementMode  String?
+  enrollmentIsRival         Boolean   @default(false)
+  enrollmentHalfMonths      Int?
+  enrollmentGiftLabel       String?
+  enrollmentSnapshotJson    Json?
 
   @@index([partnerId, periodMonth])
   @@index([status])

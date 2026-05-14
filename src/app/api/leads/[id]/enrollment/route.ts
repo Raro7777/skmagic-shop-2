@@ -115,7 +115,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
 
   let body: unknown;
   try { body = await req.json(); } catch { return NextResponse.json({ error: "Invalid JSON" }, { status: 400 }); }
-  const b = body as { data?: EnrollmentFormInput; autoAdvance?: boolean };
+  const b = body as { data?: EnrollmentFormInput; autoAdvance?: boolean; changeReason?: string; changeSource?: string };
   if (!b.data) return NextResponse.json({ error: "data 필수" }, { status: 400 });
 
   const result = await upsertEnrollmentForm({
@@ -123,6 +123,8 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     data: b.data,
     actorId: g.actorId,
     actorRole: g.actorRole,
+    changeReason: b.changeReason ?? null,
+    changeSource: b.changeSource as never,
   });
   if ("error" in result) return NextResponse.json({ error: result.error }, { status: 400 });
 
@@ -166,11 +168,13 @@ export async function PUT(req: Request, ctx: { params: Promise<{ id: string }> }
 
   let body: unknown;
   try { body = await req.json(); } catch { return NextResponse.json({ error: "Invalid JSON" }, { status: 400 }); }
-  const b = body as { data?: EnrollmentFormInput };
+  const b = body as { data?: EnrollmentFormInput; changeReason?: string; changeSource?: string };
   if (!b.data) return NextResponse.json({ error: "data 필수" }, { status: 400 });
 
   const result = await upsertEnrollmentForm({
     leadId: id, data: b.data, actorId: g.actorId, actorRole: g.actorRole,
+    changeReason: b.changeReason ?? null,
+    changeSource: b.changeSource as never,
   });
   if ("error" in result) return NextResponse.json({ error: result.error }, { status: 400 });
 

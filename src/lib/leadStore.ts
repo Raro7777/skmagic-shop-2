@@ -348,6 +348,14 @@ export async function updateLeadStatus(input: {
           status: "pending",
           cancelledAt: null,
           paidAt: null,
+          // 신청서 스냅샷도 재진입 시 최신화
+          enrollmentMonthlyPrice:   settlementPayload.enrollmentMonthlyPrice,
+          enrollmentContractPeriod: settlementPayload.enrollmentContractPeriod,
+          enrollmentManagementMode: settlementPayload.enrollmentManagementMode,
+          enrollmentIsRival:        settlementPayload.enrollmentIsRival,
+          enrollmentHalfMonths:     settlementPayload.enrollmentHalfMonths,
+          enrollmentGiftLabel:      settlementPayload.enrollmentGiftLabel,
+          enrollmentSnapshotJson:   settlementPayload.enrollmentSnapshotJson,
         },
       });
     }
@@ -506,6 +514,9 @@ async function buildSettlementPayload(
 
   const periodMonth = new Date().toISOString().slice(0, 7); // "2026-05"
 
+  // EnrollmentForm 스냅샷 — 정산 시점의 신청서 핵심 필드 영구 보존 (분쟁 근거)
+  const form = await prisma.enrollmentForm.findUnique({ where: { leadId } });
+
   return {
     leadId,
     partnerId,
@@ -522,6 +533,14 @@ async function buildSettlementPayload(
     netPayout: flow.netPayout,
     periodMonth,
     status: "pending",
+    // Phase C: 신청서 스냅샷 — 이후 form 이 변경돼도 정산 row 는 변하지 않음
+    enrollmentMonthlyPrice:   form?.monthlyPrice ?? null,
+    enrollmentContractPeriod: form?.contractPeriod ?? null,
+    enrollmentManagementMode: form?.managementMode ?? null,
+    enrollmentIsRival:        !!form?.isRivalCompensation,
+    enrollmentHalfMonths:     form?.isHalfPriceMonths ?? null,
+    enrollmentGiftLabel:      form?.giftLabel ?? null,
+    enrollmentSnapshotJson:   (form ? (form as unknown as object) : null) as never,
   };
 }
 
