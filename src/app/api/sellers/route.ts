@@ -117,6 +117,7 @@ export async function POST(req: Request) {
           id: created.id,
           sellerCode: created.sellerCode,
           name: created.name,
+          phone: created.phone,
         },
       });
     } catch (e) {

@@ -25,6 +25,22 @@ type LinkRow = {
 const QR_API = (url: string, size = 240) =>
   `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(url)}&size=${size}x${size}&margin=0`;
 
+// 영업자 카톡 공유 문구 — 영업자 추가 직후 자동 복사에도 재사용
+function makeSellerShareText(opts: {
+  partnerName: string;
+  sellerName: string;
+  sellerUrl: string;
+  contactPhone: string;
+}): string {
+  return (
+    `[${opts.partnerName} · 담당 ${opts.sellerName}]\n\n` +
+    `안녕하세요 ${opts.partnerName}의 ${opts.sellerName}입니다.\n` +
+    `혜택 끝판왕의 렌탈상담을 진행해보세요. 원하시는 조건에 지원받으실 수 있는 렌탈지원금(현금, 설치 후 당일 송금)도 드립니다.\n\n` +
+    `상담 신청: ${opts.sellerUrl}\n` +
+    `전화: ${opts.contactPhone}`
+  );
+}
+
 export default function LinksManager({
   partnerCode,
   partnerName,
@@ -53,6 +69,9 @@ export default function LinksManager({
   const [editPhone, setEditPhone] = useState("");
   const [editSaving, setEditSaving] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
+
+  // 영업자 추가 직후 토스트 (자동 클립보드 복사 알림)
+  const [addedToast, setAddedToast] = useState<{ name: string; copied: boolean } | null>(null);
 
   useEffect(() => {
     setOrigin(window.location.origin);
@@ -101,12 +120,12 @@ export default function LinksManager({
       label: `👤 ${s.name}`,
       description: `${s.phone ?? s.sellerCode} · 누적 lead ${s.leadCount}건 · 본인 영업용 단독 링크`,
       url,
-      shareText:
-        `[${partnerName} · 담당 ${s.name}]\n\n` +
-        `안녕하세요 ${partnerName}의 ${s.name}입니다.\n` +
-        `혜택 끝판왕의 렌탈상담을 진행해보세요. 원하시는 조건에 지원받으실 수 있는 렌탈지원금(현금, 설치 후 당일 송금)도 드립니다.\n\n` +
-        `상담 신청: ${url}\n` +
-        `전화: ${sellerPhone}`,
+      shareText: makeSellerShareText({
+        partnerName,
+        sellerName: s.name,
+        sellerUrl: url,
+        contactPhone: sellerPhone,
+      }),
       type: "seller",
       seller: s,
     });
@@ -140,6 +159,23 @@ export default function LinksManager({
         setAddError(data.error ?? "생성 실패");
         return;
       }
+      // 자동 카톡 문구 생성 + 클립보드 복사 — 협력점은 바로 카톡에 붙여넣기 가능
+      const s = data.seller as { sellerCode: string; name: string; phone: string | null };
+      const sellerUrl = `${origin}/p/${partnerCode}/s/${s.sellerCode}`;
+      const text = makeSellerShareText({
+        partnerName,
+        sellerName: s.name,
+        sellerUrl,
+        contactPhone: s.phone?.trim() || hotline,
+      });
+      let copied = false;
+      try {
+        await navigator.clipboard.writeText(text);
+        copied = true;
+      } catch { /* 클립보드 접근 실패해도 추가 자체는 성공 처리 */ }
+      setAddedToast({ name: s.name, copied });
+      setTimeout(() => setAddedToast(null), 5000);
+
       setShowAdd(false);
       setNewName("");
       setNewPhone("");
@@ -204,6 +240,28 @@ export default function LinksManager({
       </div>
 
       {error && <div className="bg-rk-tint-red text-rk-sale text-[14px] px-3 py-2 rounded mb-2">⚠ {error}</div>}
+
+      {addedToast && (
+        <div className="bg-rk-tint-green text-rk-success text-[13px] px-3 py-2.5 rounded mb-2 flex items-start gap-2">
+          <span className="text-[15px] leading-none mt-0.5">✓</span>
+          <div className="flex-1 leading-[1.5]">
+            <b>{addedToast.name}</b> 영업자가 추가되었습니다.{" "}
+            {addedToast.copied ? (
+              <>
+                카톡 공유 문구가 <b>자동으로 복사</b>되어 있어요 — 그대로 카톡에 붙여넣으면 됩니다.
+              </>
+            ) : (
+              <>아래 영업자 목록에서 <b>💬 카톡 문구</b> 버튼으로 복사할 수 있어요.</>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={() => setAddedToast(null)}
+            className="text-rk-success bg-transparent border-0 cursor-pointer text-[14px] leading-none opacity-70 hover:opacity-100"
+            aria-label="닫기"
+          >×</button>
+        </div>
+      )}
 
       {loading ? (
         <div className="text-[14px] text-rk-muted py-4 text-center">로딩 중…</div>
