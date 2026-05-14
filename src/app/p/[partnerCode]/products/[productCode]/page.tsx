@@ -79,7 +79,7 @@ export default async function ProductDetailPage({
     <div className="bg-rk-soft-2 min-h-screen flex justify-center items-start gap-6 max-md:p-0 md:py-8">
       <UtmTracker />
       {/* Left dev sidebar */}
-      <aside className="hidden xl:block w-[220px] sticky top-8 text-[14px] text-rk-muted leading-[1.65]">
+      <aside className="hidden w-[220px] sticky top-8 text-[14px] text-rk-muted leading-[1.65]">
         <h6 className="text-[13px] text-rk-faint tracking-[.12em] uppercase mb-2">분양 사이트</h6>
         <b className="text-rk-ink block">{partner.partnerName}</b>
         <small className="block text-rk-muted">{partner.brandLabel}</small>
@@ -458,7 +458,7 @@ export default async function ProductDetailPage({
       </div>
 
       {/* Right side — partner-specific upsell */}
-      <aside className="hidden xl:block w-[220px] sticky top-8 text-[14px] text-rk-muted leading-[1.65]">
+      <aside className="hidden w-[220px] sticky top-8 text-[14px] text-rk-muted leading-[1.65]">
         <h6 className="text-[13px] text-rk-faint tracking-[.12em] uppercase mb-2">이 협력점의 차별화</h6>
         {detail.giftAmount > 0 && detail.giftLabel ? (
           <div className="bg-rk-tint-orange border border-[#F4DCC9] rounded-md p-2.5">
