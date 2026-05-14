@@ -370,13 +370,30 @@ export default async function ProductDetailPage({
         <div className="sticky bottom-0 px-3.5 py-2.5 bg-white border-t border-rk-line flex gap-2 items-center z-10">
           <a
             href={`tel:${partner.hotlineNumber.replace(/\D/g, "")}`}
-            className="bg-rk-soft text-rk-ink px-3 py-3 rounded-lg font-semibold text-[14px] no-underline cursor-pointer flex items-center justify-center"
+            className="bg-rk-soft hover:bg-rk-line text-rk-ink px-3 py-3 rounded-lg font-semibold text-[14px] no-underline cursor-pointer flex items-center justify-center"
+            title={`전화 ${partner.hotlineNumber}`}
           >
             📞
           </a>
-          <a className="bg-[#FEE500] text-[#1A1D24] px-3 py-3 rounded-lg font-semibold text-[14px] no-underline cursor-pointer flex items-center justify-center">
-            💬
-          </a>
+          {partner.kakaoChannelUrl ? (
+            <a
+              href={partner.kakaoChannelUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="bg-[#FEE500] hover:bg-[#F4DC00] text-[#1A1D24] px-3 py-3 rounded-lg font-semibold text-[14px] no-underline cursor-pointer flex items-center justify-center"
+              title={`${partner.partnerName} 카톡채널`}
+            >
+              💬
+            </a>
+          ) : (
+            <a
+              href={`tel:${partner.hotlineNumber.replace(/\D/g, "")}`}
+              className="bg-[#FEE500] hover:bg-[#F4DC00] text-[#1A1D24] px-3 py-3 rounded-lg font-semibold text-[14px] no-underline cursor-pointer flex items-center justify-center"
+              title="카톡 채널 미설정 — 전화로 연결"
+            >
+              💬
+            </a>
+          )}
           <ConsultForm
             partnerCode={partner.partnerCode}
             partnerName={partner.partnerName}
