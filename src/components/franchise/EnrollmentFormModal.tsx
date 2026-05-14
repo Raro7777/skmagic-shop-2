@@ -71,6 +71,9 @@ export type EnrollmentFormModalProps = {
     colorOptions?: string[];
     /** 모달 안에서 verify_failed/verify_revise 안내 + 재제출 메시지 표시용 */
     currentLeadStatus?: string | null;
+    /** 본사가 회송 시 적은 사유 (lead.verifyLastReason) */
+    verifyLastReason?: string | null;
+    verifyAttempts?: number;
   };
   /** 기존 신청서 (수정 모드) */
   existing?: ExistingFormData | null;
@@ -372,7 +375,7 @@ export default function EnrollmentFormModal({
           await fetch(`/api/leads/${leadId}/status`, {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ status: "revise_resubmit", memo: "[신청서 수정 후 재제출 — fallback]" }),
+            body: JSON.stringify({ status: "apply_submitted", memo: "[신청서 수정 후 재제출 — fallback]" }),
           });
         } catch (e) {
           // fallback 자체 실패 — 사용자 흐름은 유지하되 운영자가 알 수 있게 로그
@@ -408,11 +411,21 @@ export default function EnrollmentFormModal({
         </div>
 
         {(prefill.currentLeadStatus === "verify_failed" || prefill.currentLeadStatus === "verify_revise") && (
-          <div className="bg-rk-tint-red text-rk-sale px-5 py-2 text-[13px] flex items-start gap-1.5 leading-[1.5]">
-            <span>📩</span>
-            <div>
-              <b>본사가 수정요청을 보냈습니다 ({prefill.currentLeadStatus === "verify_failed" ? "인증실패" : "수정요청"}).</b>
-              <br />아래 내용을 수정 후 <b>저장하면 자동으로 재제출</b>됩니다. (회신상태 → 본사 인증 재진행)
+          <div className="bg-rk-tint-red text-rk-sale px-5 py-2.5 text-[13px] flex items-start gap-2 leading-[1.5]">
+            <span className="text-[16px] leading-none mt-0.5">📩</span>
+            <div className="flex-1">
+              <b>본사 {prefill.currentLeadStatus === "verify_failed" ? "인증 실패" : "수정 요청"} — 회신 답변</b>
+              {typeof prefill.verifyAttempts === "number" && prefill.verifyAttempts > 0 && (
+                <span className="ml-1.5 text-[12px] opacity-70">(재시도 {prefill.verifyAttempts}회)</span>
+              )}
+              {prefill.verifyLastReason ? (
+                <blockquote className="mt-1.5 mb-1.5 pl-3 border-l-2 border-rk-sale bg-white/60 py-1.5 px-2 rounded-r text-rk-ink whitespace-pre-wrap font-normal">
+                  {prefill.verifyLastReason}
+                </blockquote>
+              ) : (
+                <div className="mt-1 mb-1 text-rk-faint">본사가 사유를 적지 않았습니다.</div>
+              )}
+              <div className="mt-1">아래 내용을 수정 후 <b>저장하면 본사 인증 큐에 자동 재투입</b>됩니다.</div>
             </div>
           </div>
         )}
@@ -644,11 +657,21 @@ export default function EnrollmentFormModal({
                         ₩{monthlyPrice.toLocaleString("ko-KR")}<small className="text-[12px] font-medium ml-0.5">/월</small>
                       </b>
                     </div>
-                    {currentMatrixOption?.cardDiscountPrice != null && currentMatrixOption.cardDiscountPrice < currentMatrixOption.rentalPrice && !rivalApplied && (
-                      <div className="text-rk-orange-deep">
-                        카드할인 적용 (정가 ₩{currentMatrixOption.rentalPrice.toLocaleString("ko-KR")} → ₩{currentMatrixOption.cardDiscountPrice.toLocaleString("ko-KR")})
-                      </div>
-                    )}
+                    {/* 카드할인 효과 표시 — 타사보상 적용/미적용 무관하게 항상 보여야 함 */}
+                    {currentMatrixOption?.cardDiscountPrice != null && currentMatrixOption.cardDiscountPrice < currentMatrixOption.rentalPrice && (() => {
+                      const cardDiscountEffect = currentMatrixOption.rentalPrice - currentMatrixOption.cardDiscountPrice;
+                      // 타사보상이면 타사보상가에서 카드할인 차감, 아니면 정상 cardDiscountPrice
+                      const baseForCard = rivalApplied && currentMatrixOption.rivalCompensationPrice
+                        ? currentMatrixOption.rivalCompensationPrice
+                        : currentMatrixOption.rentalPrice;
+                      const cardPrice = Math.max(0, baseForCard - cardDiscountEffect);
+                      return (
+                        <div className="text-rk-sale">
+                          💳 신용카드 할인가: 월 ₩{cardPrice.toLocaleString("ko-KR")}
+                          <small className="text-rk-muted ml-1">(−₩{cardDiscountEffect.toLocaleString("ko-KR")}/월)</small>
+                        </div>
+                      );
+                    })()}
                     {rivalApplied && (
                       <div className="text-rk-orange-deep">
                         🔄 타사보상가 적용 (정가 ₩{(currentMatrixOption?.rentalPrice ?? 0).toLocaleString("ko-KR")} → ₩{(currentMatrixOption?.rivalCompensationPrice ?? 0).toLocaleString("ko-KR")})

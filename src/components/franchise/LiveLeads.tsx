@@ -16,6 +16,9 @@ type EnrollmentPrefill = {
   isRivalCompensation: boolean;
   giftAmount: number;
   giftLabel: string | null;
+  currentLeadStatus?: string | null;
+  verifyLastReason?: string | null;
+  verifyAttempts?: number;
 };
 
 type LeadView = {

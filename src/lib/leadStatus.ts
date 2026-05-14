@@ -134,6 +134,10 @@ export const TRANSITIONS: readonly Transition[] = [
   // ── 회송 (영업/협력이 회신 작성) ──
   { from: "verify_failed",   to: "revise_resubmit",  actors: ["seller", "partner_admin", "hq"] },
   { from: "verify_revise",   to: "revise_resubmit",  actors: ["seller", "partner_admin", "hq"] },
+  // ↓ 수정 후 곧바로 본사 인증 큐 재투입 (협력점이 신청서 수정 + 저장 → 본사가 다시 검토)
+  //   chain: apply_submitted → (auto) verify_pending
+  { from: "verify_failed",   to: "apply_submitted",  actors: ["seller", "partner_admin", "hq"] },
+  { from: "verify_revise",   to: "apply_submitted",  actors: ["seller", "partner_admin", "hq"] },
   // 회신 후 신청서 보완 → form_ready 거쳐 재제출 (form_ready 같은 단계 재사용)
   { from: "revise_resubmit", to: "form_ready",       actors: ["seller", "partner_admin", "hq"] },
   // (호환) 본사가 빠르게 통과시키고 싶을 때 form_ready 안 거치고 직접 제출도 허용

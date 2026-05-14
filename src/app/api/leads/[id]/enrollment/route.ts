@@ -79,8 +79,11 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
     if (colorStr) colorOptions = colorStr.split(",").map(s => s.trim()).filter(Boolean);
   }
 
-  // 현재 lead status 도 prefill 에 포함 — 모달이 verify_failed/verify_revise 상태일 때 재제출 안내 표시.
-  const currentLead = leadFull ? await prisma.lead.findUnique({ where: { id }, select: { status: true } }) : null;
+  // 현재 lead status + 본사 회신 사유 — 모달이 verify_failed/verify_revise 상태일 때 안내 표시.
+  const currentLead = leadFull ? await prisma.lead.findUnique({
+    where: { id },
+    select: { status: true, verifyLastReason: true, verifyAttempts: true },
+  }) : null;
   const prefill = leadFull ? {
     customerName: leadFull.customerName,
     phone: leadFull.phoneRaw,
@@ -96,6 +99,8 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
     selectedColor: leadFull.selectedColor ?? null,
     colorOptions,
     currentLeadStatus: currentLead?.status ?? null,
+    verifyLastReason: currentLead?.verifyLastReason ?? null,
+    verifyAttempts: currentLead?.verifyAttempts ?? 0,
   } : null;
 
   return NextResponse.json({
@@ -132,14 +137,14 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
 
   // ── 자동 재제출 전이 ──
   // 본사가 verify_failed / verify_revise 로 회송했으면, 협력점이 신청서 수정/저장하는 순간
-  // → revise_resubmit 으로 자동 전이. 별도 "재제출" 버튼 누를 필요 없음.
+  // → apply_submitted 로 직접 전이 → chain auto → verify_pending. 본사 인증 큐에 즉시 재투입.
   if (g.lead.status === "verify_failed" || g.lead.status === "verify_revise") {
     const adv = await updateLeadStatus({
       leadId: id,
-      newStatus: "revise_resubmit",
+      newStatus: "apply_submitted",
       actorRole: g.actorRole,
       changedById: g.actorId,
-      memo: "[신청서 수정 후 재제출]",
+      memo: "[신청서 수정 후 재제출 → 본사 인증 큐 자동 재투입]",
       bypassStateMachine: g.actorRole === "hq",
     });
     if (!("error" in adv)) advanced = { from: g.lead.status, to: adv.lead.status };
@@ -182,10 +187,10 @@ export async function PUT(req: Request, ctx: { params: Promise<{ id: string }> }
   if (g.lead.status === "verify_failed" || g.lead.status === "verify_revise") {
     const adv = await updateLeadStatus({
       leadId: id,
-      newStatus: "revise_resubmit",
+      newStatus: "apply_submitted",
       actorRole: g.actorRole,
       changedById: g.actorId,
-      memo: "[신청서 수정 후 재제출]",
+      memo: "[신청서 수정 후 재제출 → 본사 인증 큐 자동 재투입]",
       bypassStateMachine: g.actorRole === "hq",
     });
     if (!("error" in adv)) advanced = { from: g.lead.status, to: adv.lead.status };
