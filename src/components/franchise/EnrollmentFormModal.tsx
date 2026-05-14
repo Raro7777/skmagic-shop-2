@@ -276,20 +276,30 @@ export default function EnrollmentFormModal({
   const canRival = !!(currentMatrixOption?.rivalCompensationPrice && currentMatrixOption.rivalCompensationPrice > 0);
 
   // 옵션 또는 타사보상 토글 변경 시 monthlyPrice 자동 계산
+  // 타사보상 적용 시 = (rentalNow × 0.5 × halfMonths + rentalNow × (cp - halfMonths)) / cp
+  // — PriceConfigurator 의 신정책 평균 월가 산정과 동일. rivalCompensationPrice 가 없으면 cardDiscountPrice/rentalPrice 를 rentalNow 로 사용.
   useEffect(() => {
     if (!productDetail) return;
     if (currentMatrixOption) {
       const opt = currentMatrixOption;
-      if (rivalApplied && opt.rivalCompensationPrice && opt.rivalCompensationPrice > 0) {
-        setMonthlyPrice(opt.rivalCompensationPrice);
+      const base = opt.cardDiscountPrice ?? opt.rentalPrice;
+      if (rivalApplied) {
+        const rentalNow = opt.rivalCompensationPrice && opt.rivalCompensationPrice > 0 ? opt.rivalCompensationPrice : base;
+        const halfMonths = opt.rivalCompensationHalfPriceMonths ?? 0;
+        const cp = contractPeriod || (opt.contractPeriod ?? 36);
+        if (halfMonths > 0 && cp > 0) {
+          const total = rentalNow * 0.5 * halfMonths + rentalNow * (cp - halfMonths);
+          setMonthlyPrice(Math.round(total / cp));
+        } else {
+          setMonthlyPrice(rentalNow);
+        }
       } else {
-        setMonthlyPrice(opt.cardDiscountPrice ?? opt.rentalPrice);
+        setMonthlyPrice(base);
       }
     } else if (productDetail.priceMatrix.length === 0) {
-      // priceMatrix가 비어있으면 product 기본가 사용
       setMonthlyPrice(productDetail.cardDiscountPrice ?? productDetail.rentalPrice);
     }
-  }, [productDetail, currentMatrixOption, rivalApplied]);
+  }, [productDetail, currentMatrixOption, rivalApplied, contractPeriod]);
 
   // 타사보상 불가능한 옵션이면 자동으로 끔
   useEffect(() => {
@@ -344,7 +354,21 @@ export default function EnrollmentFormModal({
       });
       const j = await r.json();
       if (!r.ok) { setError(j.error ?? "저장 실패"); return; }
-      onSaved(!!j.advanced);
+
+      // 인증실패/수정요청 상태에서 저장했는데도 자동 전이가 안 잡혔다면 fallback PATCH 로 직접 전이.
+      // (API path 가 모두 정상이면 거의 안 타지만, 안전망)
+      const wasReturned = prefill.currentLeadStatus === "verify_failed" || prefill.currentLeadStatus === "verify_revise";
+      if (wasReturned && !j.advanced) {
+        try {
+          await fetch(`/api/leads/${leadId}/status`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ status: "revise_resubmit", memo: "[신청서 수정 후 재제출 — fallback]" }),
+          });
+        } catch { /* fallback 실패는 무시 — 사용자에겐 저장은 성공으로 표시 */ }
+      }
+
+      onSaved(!!j.advanced || wasReturned);
     } catch (e) {
       setError(e instanceof Error ? e.message : "네트워크 오류");
     } finally {

@@ -121,7 +121,7 @@ export default async function PartnerSiteShell({
               <Link href="/admin/franchise" className="text-rk-ink no-underline cursor-pointer" aria-label="관리자">⚙</Link>
             </div>
           </div>
-          {/* 전화 / 카톡 / 방문상담 — 한 줄에 들어가도록 (항목 4) */}
+          {/* 전화 / 카톡 — 한 줄에 들어가도록 */}
           <div className="bg-rk-navy text-white px-3 py-2 flex items-center gap-1.5 text-[13px]">
             <a href={`tel:${partner.hotlineNumber.replace(/[^\d+]/g, "")}`}
                className="flex items-center gap-1 no-underline text-white cursor-pointer whitespace-nowrap shrink-0">
@@ -141,10 +141,6 @@ export default async function PartnerSiteShell({
                   카톡상담
                 </a>
               )}
-              <Link href="#consult-form"
-                className="bg-white/15 hover:bg-white/25 px-2 py-1 rounded text-[12.5px] font-medium no-underline text-white cursor-pointer whitespace-nowrap">
-                방문상담
-              </Link>
             </div>
           </div>
           <NavTabs partnerCode={partner.partnerCode} />

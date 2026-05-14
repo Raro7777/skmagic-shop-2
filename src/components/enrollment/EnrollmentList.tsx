@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import Link from "next/link";
 import { STATUS_PILL, STATUS_LABEL, type LeadStatus } from "@/lib/leadStatus";
 
@@ -168,13 +168,17 @@ export default function EnrollmentList({ scope }: { scope: Scope }) {
             {items.map(it => {
               const isOpen = expanded.has(it.id);
               return (
-                <>
-                  <tr key={it.id} className={"hover:bg-rk-soft-2 " + (it.lockedAt ? "bg-rk-tint-orange/40" : "")}>
-                    <td className="px-1.5 py-2.5 border-b border-rk-line-2 w-6">
+                <Fragment key={it.id}>
+                  <tr
+                    onClick={() => toggleExpand(it.id)}
+                    className={"hover:bg-rk-soft-2 cursor-pointer " + (it.lockedAt ? "bg-rk-tint-orange/40" : "")}
+                  >
+                    <td className="px-1.5 py-2.5 border-b border-rk-line-2 w-7">
                       <button
                         type="button"
-                        onClick={() => toggleExpand(it.id)}
-                        className="bg-transparent border-0 cursor-pointer text-[14px] text-rk-muted"
+                        onClick={e => { e.stopPropagation(); toggleExpand(it.id); }}
+                        aria-label={isOpen ? "접기" : "펼치기"}
+                        className="bg-transparent border-0 cursor-pointer text-[16px] text-rk-info hover:text-rk-navy font-bold"
                       >
                         {isOpen ? "▾" : "▸"}
                       </button>
@@ -231,6 +235,7 @@ export default function EnrollmentList({ scope }: { scope: Scope }) {
                               ? `/admin/franchise/leads?focus=${it.leadId}`
                               : `/admin/seller/leads?focus=${it.leadId}`
                         }
+                        onClick={e => e.stopPropagation()}
                         className="text-rk-info text-[13px] no-underline hover:underline"
                       >
                         진입 →
@@ -238,13 +243,13 @@ export default function EnrollmentList({ scope }: { scope: Scope }) {
                     </td>
                   </tr>
                   {isOpen && (
-                    <tr key={it.id + "-detail"}>
-                      <td colSpan={scope === "seller" ? 8 : 9} className="bg-rk-soft-2/40 border-b border-rk-line-2 px-4 py-3">
+                    <tr>
+                      <td colSpan={scope === "seller" ? 8 : 9} className="bg-rk-soft-2 border-b border-rk-line-2 px-4 py-3">
                         <DetailPanel item={it} />
                       </td>
                     </tr>
                   )}
-                </>
+                </Fragment>
               );
             })}
           </tbody>

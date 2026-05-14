@@ -64,10 +64,6 @@ export default function PartnerHeader({
                   카톡상담
                 </a>
               )}
-              <Link href={`/p/${partner.partnerCode}#consult-form`}
-                className="bg-white/15 hover:bg-white/25 px-2 py-1 rounded text-[12.5px] font-medium no-underline text-white cursor-pointer whitespace-nowrap">
-                방문상담
-              </Link>
             </div>
           </div>
           <NavTabs partnerCode={partner.partnerCode} />
