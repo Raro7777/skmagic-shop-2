@@ -230,7 +230,7 @@ export default async function PartnerSiteShell({
 
         <div className="bg-rk-tint-orange px-3.5 py-2 text-[14px] text-rk-orange-deep flex items-center gap-1.5 border-b border-[#F4DCC9]">
           <span className="text-sm">🚚</span>
-          <span><b className="font-semibold">오늘 신청 시 {nextInstallLabel()} 부터 설치 가능</b> · {partner.region} 한정</span>
+          <span><b className="font-semibold">오늘 신청 → 최단 {nextInstallLabel()} 설치 가능</b> · {partner.region} 한정</span>
         </div>
 
         {/* 카테고리 랭킹 — 탭 클릭 시 즉시 변경 (RankingTabs가 내부에서 처리) */}
