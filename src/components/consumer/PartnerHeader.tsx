@@ -33,7 +33,8 @@ export default function PartnerHeader({
           <div className="px-4 py-3 flex items-center gap-2.5">
             <Link href={`/p/${partner.partnerCode}`} className="text-[24px] text-rk-ink no-underline">≡</Link>
             <Link href={`/p/${partner.partnerCode}`} className="flex items-center gap-2 no-underline text-inherit">
-              <div className="w-[28px] h-[28px] bg-rk-orange text-white rounded-[5px] grid place-items-center font-bold text-[14px]">SK</div>
+              <img src="/sk-magic-logo.png" alt="SK인텔릭스" className="h-[24px] w-auto" />
+
               <div>
                 <div className="font-bold text-[16px] text-rk-ink tracking-[-.02em] leading-tight">{partner.partnerName}</div>
                 <div className="text-[13px] text-rk-muted">{partner.brandLabel}</div>

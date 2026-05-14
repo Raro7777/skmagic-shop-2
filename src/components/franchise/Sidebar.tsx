@@ -65,7 +65,8 @@ export default function Sidebar({ user, partnerName }: SidebarProps) {
   return (
     <aside className="bg-rk-navy text-white/[.85] p-3.5 sticky top-0 h-screen overflow-y-auto flex flex-col gap-2.5">
       <div className="flex items-center gap-2.5 p-1.5">
-        <div className="w-[30px] h-[30px] bg-rk-orange text-white rounded grid place-items-center font-bold text-[13px]">SK</div>
+        <img src="/sk-magic-logo.png" alt="SK인텔릭스" className="h-[24px] w-auto" />
+
         <div>
           <div className="font-semibold text-sm text-white leading-tight">{partnerName ?? "협력점 콘솔"}</div>
           <small className="text-[12px] text-white/50 block mt-0.5">협력점 운영 관리자</small>

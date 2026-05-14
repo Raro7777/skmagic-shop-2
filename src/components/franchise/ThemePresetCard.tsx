@@ -50,7 +50,8 @@ export default function ThemePresetCard({
       {/* 미니 모바일 프레임 — 실제 컨슈머 UI 추출 */}
       <div data-theme={preset.id} className="bg-white border border-rk-line rounded-[16px] overflow-hidden shadow-sm">
         <header className="bg-white border-b border-rk-line px-3 py-2.5 flex items-center gap-2">
-          <span className="w-6 h-6 rounded grid place-items-center text-white text-[10px] font-bold shrink-0" style={{ background: "#F26A1F" }}>SK</span>
+          <img src="/sk-magic-logo.png" alt="SK인텔릭스" className="h-[18px] w-auto shrink-0" />
+
           <div className="min-w-0 flex-1">
             <div className="text-[12px] font-bold text-rk-ink leading-tight truncate">홍길동렌탈</div>
             <div className="text-[10px] text-rk-muted truncate">SK매직 인증판매점</div>

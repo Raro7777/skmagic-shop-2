@@ -107,7 +107,8 @@ export default async function ProductDetailPage({
           <div className="flex items-center px-3 py-3 gap-2">
             <Link href={`/p/${partner.partnerCode}`} className="text-[20px] text-rk-ink no-underline">←</Link>
             <div className="flex items-center gap-2 flex-1 min-w-0">
-              <div className="w-[24px] h-[24px] bg-rk-orange text-white rounded-[4px] grid place-items-center font-bold text-[13px] shrink-0">SK</div>
+              <img src="/sk-magic-logo.png" alt="SK인텔릭스" className="h-[20px] w-auto shrink-0" />
+
               <div className="min-w-0">
                 <div className="font-bold text-[13px] text-rk-ink leading-tight truncate">{partner.partnerName}</div>
                 <div className="text-[12px] text-rk-muted truncate">{partner.brandLabel}</div>
