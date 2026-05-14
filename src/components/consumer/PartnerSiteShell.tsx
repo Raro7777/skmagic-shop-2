@@ -112,9 +112,6 @@ export default async function PartnerSiteShell({
         </div>
 
         <header className="bg-white border-b border-rk-line">
-          <div className="flex items-center justify-end px-4 py-2 text-[14px] text-rk-muted border-b border-rk-line-2">
-            <Link href={`/p/${partner.partnerCode}/help`} className="text-rk-muted no-underline cursor-pointer">고객센터</Link>
-          </div>
           {/* 로고/브랜드 — 클릭 시 메인으로 이동. 햄버거 메뉴 제거, 로고를 좌측 첫 위치로 */}
           <div className="px-4 py-3 flex items-center gap-2.5">
             <Link

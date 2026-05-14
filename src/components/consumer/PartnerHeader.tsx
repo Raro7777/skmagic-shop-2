@@ -27,14 +27,6 @@ export default function PartnerHeader({
     <header className="bg-white border-b border-rk-line">
       {showFullNav ? (
         <>
-          <div className="flex items-center justify-between px-4 py-2 text-[13px] text-rk-muted border-b border-rk-line-2">
-            <div className="truncate pr-2">
-              {seller && <>담당 <b className="text-rk-orange-deep">{seller.name}</b></>}
-            </div>
-            <div className="flex gap-2.5 shrink-0">
-              <Link href={`/p/${partner.partnerCode}/help`} className="text-rk-text no-underline cursor-pointer">고객센터</Link>
-            </div>
-          </div>
           <div className="px-4 py-3 flex items-center gap-2.5">
             <Link href={`/p/${partner.partnerCode}`} className="flex items-center gap-2 no-underline text-inherit">
               <img src="/sk-magic-logo.png" alt="SK magic" className="h-[36px] w-auto" />
