@@ -758,33 +758,45 @@ function BannerPreview({ draft }: { draft: Draft }) {
 
   if (draft.layout === "promo-stamp") {
     return (
-      <div className="rounded-[12px] px-3 py-4 text-center relative min-h-[140px] flex flex-col justify-center" style={bgStyle}>
-        <b className="block text-[12px] uppercase tracking-[.1em] opacity-75">{draft.subtitle || "이벤트"}</b>
-        <div className="text-[20px] font-bold mt-1 leading-tight">{title}</div>
-        {draft.stampText && (
-          <div className="inline-block mt-2 mx-auto px-3 py-1.5 rounded-md text-[16px] font-bold tracking-[-.02em]" style={{ background: draft.textColor, color: draft.bgColor2 }}>
-            {draft.stampText}
-          </div>
+      <div className="rounded-[12px] px-3 py-4 relative min-h-[140px] flex items-center gap-3" style={bgStyle}>
+        {draft.imageUrl && (
+          <img src={draft.imageUrl} alt="" className="w-[72px] h-[72px] rounded-md object-cover shrink-0 border border-white/20" />
         )}
-        {draft.ctaLabel && (
-          <span className="inline-block mt-2 mx-auto px-3 py-1 rounded-full bg-white text-rk-ink text-[12px] font-semibold">
-            {draft.ctaLabel}
-          </span>
-        )}
+        <div className="flex-1 text-center">
+          <b className="block text-[12px] uppercase tracking-[.1em] opacity-75">{draft.subtitle || "이벤트"}</b>
+          <div className="text-[20px] font-bold mt-1 leading-tight">{title}</div>
+          {draft.stampText && (
+            <div className="inline-block mt-2 px-3 py-1.5 rounded-md text-[16px] font-bold tracking-[-.02em]" style={{ background: draft.textColor, color: draft.bgColor2 }}>
+              {draft.stampText}
+            </div>
+          )}
+          {draft.ctaLabel && (
+            <div>
+              <span className="inline-block mt-2 px-3 py-1 rounded-full bg-white text-rk-ink text-[12px] font-semibold">
+                {draft.ctaLabel}
+              </span>
+            </div>
+          )}
+        </div>
       </div>
     );
   }
 
   // classic
   return (
-    <div className="rounded-[12px] px-3 py-3 text-center min-h-[120px] flex flex-col justify-center" style={bgStyle}>
-      <b className="block text-[14px] font-bold leading-tight">{title}</b>
-      {draft.subtitle && <div className="text-[12px] opacity-85 mt-1">{draft.subtitle}</div>}
-      {draft.ctaLabel && (
-        <span className="inline-block mt-2 mx-auto px-3 py-1 rounded-full bg-white/20 text-[12px] font-medium">
-          {draft.ctaLabel}
-        </span>
+    <div className={"rounded-[12px] px-3 py-3 min-h-[120px] " + (draft.imageUrl ? "flex items-center gap-3 text-left" : "text-center flex flex-col justify-center")} style={bgStyle}>
+      {draft.imageUrl && (
+        <img src={draft.imageUrl} alt="" className="w-[80px] h-[80px] rounded-md object-cover shrink-0 border border-white/20" />
       )}
+      <div className={draft.imageUrl ? "flex-1" : ""}>
+        <b className="block text-[14px] font-bold leading-tight">{title}</b>
+        {draft.subtitle && <div className="text-[12px] opacity-85 mt-1">{draft.subtitle}</div>}
+        {draft.ctaLabel && (
+          <span className={"inline-block mt-2 px-3 py-1 rounded-full bg-white/20 text-[12px] font-medium " + (draft.imageUrl ? "" : "mx-auto")}>
+            {draft.ctaLabel}
+          </span>
+        )}
+      </div>
     </div>
   );
 }

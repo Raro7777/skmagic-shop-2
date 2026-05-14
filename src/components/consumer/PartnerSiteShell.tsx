@@ -8,6 +8,17 @@ import { listActivePartners, type ConsumerProduct, type PartnerSiteData } from "
 
 const fmt = (n: number) => n.toLocaleString("ko-KR");
 
+// 설치 가능일 — 오늘 + 1일. 한국 시간대 기준 "M/D(요일)" 라벨.
+const DOW = ["일", "월", "화", "수", "목", "금", "토"];
+function nextInstallLabel(): string {
+  const KR_OFFSET = 9 * 60; // minutes
+  const now = new Date();
+  // UTC + 9h 로 KST 변환
+  const kst = new Date(now.getTime() + (KR_OFFSET - now.getTimezoneOffset()) * 60 * 1000);
+  kst.setDate(kst.getDate() + 1);
+  return `${kst.getMonth() + 1}/${kst.getDate()}(${DOW[kst.getDay()]})`;
+}
+
 // QUICK nav는 PartnerSiteData.categories 기반 자동 생성 — 별도 정적 배열 제거됨
 
 const RANK_BG = [
@@ -219,7 +230,7 @@ export default async function PartnerSiteShell({
 
         <div className="bg-rk-tint-orange px-3.5 py-2 text-[14px] text-rk-orange-deep flex items-center gap-1.5 border-b border-[#F4DCC9]">
           <span className="text-sm">🚚</span>
-          <span><b className="font-semibold">오늘 신청 시 5/12(월)부터 설치 가능</b> · {partner.region} 한정</span>
+          <span><b className="font-semibold">오늘 신청 시 {nextInstallLabel()} 부터 설치 가능</b> · {partner.region} 한정</span>
         </div>
 
         {/* 카테고리 랭킹 — 탭 클릭 시 즉시 변경 (RankingTabs가 내부에서 처리) */}

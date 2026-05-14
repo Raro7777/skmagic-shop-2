@@ -247,7 +247,13 @@ export default function ConsultForm({
                   </div>
                   <div className="flex justify-between text-rk-muted mt-1">
                     <span>담당</span>
-                    <span className="text-rk-ink">{done.assignedPartnerId ?? "본사 풀 (배정 대기)"}</span>
+                    <span className="text-rk-ink">
+                      {sellerName
+                        ? `${sellerName} (${partnerName ?? "협력점"})`
+                        : done.assignedPartnerId
+                          ? (partnerName ?? "협력점 배정 완료")
+                          : "본사 풀 (배정 대기)"}
+                    </span>
                   </div>
                 </div>
                 <button
