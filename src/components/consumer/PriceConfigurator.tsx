@@ -269,7 +269,10 @@ export default function PriceConfigurator({
           <div className="flex-1 text-[14px] leading-[1.4]">
             <b className="text-rk-orange-deep">🎁 협력점 렌탈지원금</b>
             <small className="block text-rk-orange-deep text-[12px] mt-0.5">
-              개통 후 1회 현금 캐시백 지급 · 가입 취소 시 전체 환수
+              개통 후 1회 현금 캐시백 지급
+            </small>
+            <small className="block text-rk-muted text-[10px] mt-0.5">
+              ⓘ 가입 취소 시 전액 환수
             </small>
           </div>
           <div className="text-right">
