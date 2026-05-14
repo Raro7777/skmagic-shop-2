@@ -107,7 +107,7 @@ export default async function PartnerSiteShell({
 
         <header className="bg-white border-b border-rk-line">
           <div className="flex items-center justify-between px-4 py-2 text-[14px] text-rk-muted border-b border-rk-line-2">
-            <div className="truncate pr-2">{partner.partnerName}</div>
+            <div className="truncate pr-2">SK매직 공식 인증점</div>
             <div className="flex gap-2.5 shrink-0">
               <Link href={`/p/${partner.partnerCode}/help`} className="text-rk-muted no-underline cursor-pointer">고객센터</Link>
             </div>
