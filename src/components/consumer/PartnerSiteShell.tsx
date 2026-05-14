@@ -158,18 +158,6 @@ export default async function PartnerSiteShell({
           <NavTabs partnerCode={partner.partnerCode} />
         </header>
 
-        {/* 신뢰도 배지 띠 — SK매직 공식 인증 협력점 강조 */}
-        <div className="bg-white border-b border-rk-line px-3.5 py-1.5 flex items-center justify-center gap-2.5 text-[12px] text-rk-muted">
-          <span className="flex items-center gap-1">
-            <span className="text-rk-success">✓</span>
-            <b className="text-rk-ink">SK매직 공식 인증 협력점</b>
-          </span>
-          <span className="text-rk-line">·</span>
-          <span>통신판매업 등록 완료</span>
-          <span className="text-rk-line">·</span>
-          <span>30분내 카톡 답변</span>
-        </div>
-
         {/* Seller-specific banner */}
         {seller && (
           <div className="bg-rk-tint-orange px-4 py-2.5 border-b border-[#F4DCC9] flex items-center gap-2 text-[14px]">
