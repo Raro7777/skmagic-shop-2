@@ -85,8 +85,8 @@ export default function LinksManager({
       url: partnerUrl,
       shareText:
         `[${partnerName} 렌탈 상담]\n\n` +
-        `정수기·비데·공기청정기 렌탈 혜택을 비교해드립니다.\n` +
-        `월 렌탈료, 제휴카드 할인, 사은품 혜택까지 한 번에 상담받아보세요.\n\n` +
+        `안녕하세요 ${partnerName}입니다.\n` +
+        `혜택 끝판왕의 렌탈상담을 진행해보세요. 원하시는 조건에 지원받으실 수 있는 렌탈지원금(현금, 설치 후 당일 송금)도 드립니다.\n\n` +
         `상담 신청: ${partnerUrl}\n` +
         `전화: ${hotline}`,
       type: "partner",
@@ -103,8 +103,8 @@ export default function LinksManager({
       url,
       shareText:
         `[${partnerName} · 담당 ${s.name}]\n\n` +
-        `안녕하세요, ${partnerName}의 ${s.name}입니다.\n` +
-        `렌탈 상담 도와드릴게요. 아래 링크에서 신청해주시면 30분 내 연락드립니다.\n\n` +
+        `안녕하세요 ${partnerName}의 ${s.name}입니다.\n` +
+        `혜택 끝판왕의 렌탈상담을 진행해보세요. 원하시는 조건에 지원받으실 수 있는 렌탈지원금(현금, 설치 후 당일 송금)도 드립니다.\n\n` +
         `상담 신청: ${url}\n` +
         `전화: ${sellerPhone}`,
       type: "seller",
