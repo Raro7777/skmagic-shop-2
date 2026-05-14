@@ -161,10 +161,11 @@ export default async function PartnerSiteShell({
           </div>
         )}
 
-        {/* 렌탈지원금 promo 띠 — 협력점이 ON 한 경우만 (강조 버전) */}
+        {/* 렌탈지원금 promo 띠 — 협력점이 ON 한 경우만 (강조 버전). 클릭 → 추천 상품 영역 스크롤 */}
         {heroSlides.some(p => p.maxRentalSupport > 0) && (
-          <div
-            className="relative overflow-hidden bg-gradient-to-r from-[#FF6B2C] via-[#F26A1F] to-[#E04B0B] text-white px-4 py-3.5 flex items-center gap-3"
+          <a
+            href="#picks"
+            className="relative overflow-hidden bg-gradient-to-r from-[#FF6B2C] via-[#F26A1F] to-[#E04B0B] text-white px-4 py-3.5 flex items-center gap-3 no-underline cursor-pointer hover:brightness-105 active:brightness-95 transition-[filter] duration-150"
             style={{ boxShadow: "inset 0 -3px 0 rgba(0,0,0,0.12)" }}
           >
             {/* 반짝이 효과 */}
@@ -184,10 +185,10 @@ export default async function PartnerSiteShell({
                 협력점 단독 혜택 · 모든 상품 적용 · 가입 취소 시 전액 환수
               </div>
             </div>
-            <span className="hidden sm:inline-block bg-white text-rk-orange-deep px-2.5 py-1 rounded-full text-[12px] font-bold relative whitespace-nowrap">
+            <span className="inline-block bg-white text-rk-orange-deep px-2.5 py-1 rounded-full text-[12px] font-bold relative whitespace-nowrap shrink-0">
               혜택 보기 ↓
             </span>
-          </div>
+          </a>
         )}
 
         {/* Hero 슬라이더 — 활성 이벤트 배너(앞쪽) + 상품 슬라이드(뒤쪽) 통합 회전 */}
@@ -234,7 +235,7 @@ export default async function PartnerSiteShell({
 
         {/* 이벤트 단축 박스 비활성 — 추후 다시 켤 때 주석 풀면 됨 */}
 
-        <section className="bg-white px-4 pt-4.5 pb-4 border-b-8 border-rk-soft">
+        <section id="picks" className="bg-white px-4 pt-4.5 pb-4 border-b-8 border-rk-soft scroll-mt-4">
           <div className="flex justify-between items-baseline mb-3">
             <div>
               <h2 className="text-[17px] font-bold tracking-[-.02em] m-0 text-rk-ink">매니저 추천 상품</h2>

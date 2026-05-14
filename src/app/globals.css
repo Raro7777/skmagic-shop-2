@@ -52,6 +52,10 @@
   --shadow-rk-lg: 0 8px 24px rgba(20,25,40,.08);
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 html, body {
   margin: 0;
   padding: 0;
