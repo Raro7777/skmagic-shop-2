@@ -4,6 +4,12 @@ import type { PartnerSiteData } from "@/lib/partnerSite";
 
 export type SellerInfo = { sellerCode: string; name: string };
 
+// 협력점 brandLabel 표시 정규화 — 'SK매직 인증판매점' → 'SK매직 공식 인증판매점'
+function formatBrandLabel(raw: string): string {
+  if (raw === "SK매직 인증판매점") return "SK매직 공식 인증판매점";
+  return raw;
+}
+
 export default function PartnerHeader({
   partner,
   seller,
@@ -23,21 +29,19 @@ export default function PartnerHeader({
         <>
           <div className="flex items-center justify-between px-4 py-2 text-[13px] text-rk-muted border-b border-rk-line-2">
             <div className="truncate pr-2">
-              SK매직 공식 인증점
-              {seller && <> · 담당 <b className="text-rk-orange-deep">{seller.name}</b></>}
+              {seller && <>담당 <b className="text-rk-orange-deep">{seller.name}</b></>}
             </div>
             <div className="flex gap-2.5 shrink-0">
               <Link href={`/p/${partner.partnerCode}/help`} className="text-rk-text no-underline cursor-pointer">고객센터</Link>
             </div>
           </div>
           <div className="px-4 py-3 flex items-center gap-2.5">
-            <Link href={`/p/${partner.partnerCode}`} className="text-[24px] text-rk-ink no-underline">≡</Link>
             <Link href={`/p/${partner.partnerCode}`} className="flex items-center gap-2 no-underline text-inherit">
-              <img src="/sk-magic-logo.png" alt="SK인텔릭스" className="h-[36px] w-auto" />
+              <img src="/sk-magic-logo.png" alt="SK magic" className="h-[36px] w-auto" />
 
               <div>
                 <div className="font-bold text-[16px] text-rk-ink tracking-[-.02em] leading-tight">{partner.partnerName}</div>
-                <div className="text-[13px] text-rk-muted">{partner.brandLabel}</div>
+                <div className="text-[13px] text-rk-muted">{formatBrandLabel(partner.brandLabel)}</div>
               </div>
             </Link>
             <div className="ml-auto flex gap-3.5 text-[20px] text-rk-ink">
@@ -87,7 +91,7 @@ export default function PartnerHeader({
               <div className="font-bold text-[13px] text-rk-ink leading-tight truncate">
                 {partner.partnerName}
               </div>
-              <div className="text-[12px] text-rk-muted truncate">{partner.brandLabel}</div>
+              <div className="text-[12px] text-rk-muted truncate">{formatBrandLabel(partner.brandLabel)}</div>
             </div>
           </Link>
           <div className="flex gap-3 text-[18px] text-rk-ink shrink-0">
