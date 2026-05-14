@@ -23,7 +23,7 @@ export default function PartnerHeader({
         <>
           <div className="flex items-center justify-between px-4 py-2 text-[13px] text-rk-muted border-b border-rk-line-2">
             <div className="truncate pr-2">
-              {partner.partnerName}
+              SK매직 공식 인증점
               {seller && <> · 담당 <b className="text-rk-orange-deep">{seller.name}</b></>}
             </div>
             <div className="flex gap-2.5 shrink-0">
