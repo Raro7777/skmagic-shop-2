@@ -146,6 +146,9 @@ export default function BannerSchedule() {
   // 메인 페이지 캐시백 띠 (코드 hardcoded "FLAGSHIP CASHBACK" 영역) 노출 토글
   const [flagshipEnabled, setFlagshipEnabled] = useState<boolean>(true);
   const [flagshipSaving, setFlagshipSaving] = useState(false);
+  // hero 캐러셀의 자동 상품 슬라이드 (협력점 등록 배너와 함께 도는 5장) 노출 토글
+  const [heroAutoEnabled, setHeroAutoEnabled] = useState<boolean>(true);
+  const [heroAutoSaving, setHeroAutoSaving] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -164,6 +167,7 @@ export default function BannerSchedule() {
       if (resConfig.ok) {
         const c = await resConfig.json();
         setFlagshipEnabled(c.config?.flagshipBannerEnabled !== false);
+        setHeroAutoEnabled(c.config?.heroAutoSlidesEnabled !== false);
       }
     } catch {
       setError("배너 로드 실패");
@@ -188,6 +192,23 @@ export default function BannerSchedule() {
       setFlash(next ? "캐시백 띠 노출 켜짐" : "캐시백 띠 노출 끔");
     } catch { setFlash("네트워크 오류"); }
     finally { setFlagshipSaving(false); }
+  };
+
+  const toggleHeroAuto = async (next: boolean) => {
+    setHeroAutoSaving(true);
+    setFlash(null);
+    try {
+      const res = await fetch("/api/franchise/display-config", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ heroAutoSlidesEnabled: next }),
+      });
+      const j = await res.json();
+      if (!res.ok) { setFlash(j.error ?? "토글 실패"); return; }
+      setHeroAutoEnabled(next);
+      setFlash(next ? "자동 hero 슬라이드 노출 켜짐" : "자동 hero 슬라이드 노출 끔");
+    } catch { setFlash("네트워크 오류"); }
+    finally { setHeroAutoSaving(false); }
   };
 
   // 통계 로드 (배너 변경 시)
@@ -350,7 +371,7 @@ export default function BannerSchedule() {
 
       {/* 캐시백 띠 (자동) 토글 — 메인 페이지 상단의 "+N만원 현금 캐시백" hardcoded 띠 노출 여부.
           렌탈지원금 0 인 상품만 있으면 어차피 자동으로 숨겨지지만, 협력점이 직접 가리고 싶을 때 사용. */}
-      <div className="mb-3 bg-rk-soft border border-rk-line rounded px-3 py-2 flex items-center gap-2 flex-wrap">
+      <div className="mb-2 bg-rk-soft border border-rk-line rounded px-3 py-2 flex items-center gap-2 flex-wrap">
         <span className="text-[18px]">🎁</span>
         <div className="flex-1 min-w-0">
           <b className="text-[13px] text-rk-ink block">메인 캐시백 띠 (자동 노출)</b>
@@ -368,6 +389,30 @@ export default function BannerSchedule() {
           />
           <span className={"text-[13px] font-medium " + (flagshipEnabled ? "text-rk-orange-deep" : "text-rk-muted")}>
             {flagshipSaving ? "저장 중…" : flagshipEnabled ? "노출" : "숨김"}
+          </span>
+        </label>
+      </div>
+
+      {/* hero 자동 슬라이드 토글 — 협력점 hero 캐러셀에 자동으로 끼워지는 5개 상품 슬라이드.
+          끄면 협력점이 직접 등록한 DB 배너만 노출됨. */}
+      <div className="mb-3 bg-rk-soft border border-rk-line rounded px-3 py-2 flex items-center gap-2 flex-wrap">
+        <span className="text-[18px]">🎞️</span>
+        <div className="flex-1 min-w-0">
+          <b className="text-[13px] text-rk-ink block">자동 hero 슬라이드 (5장)</b>
+          <small className="text-[12px] text-rk-muted">
+            메인 hero 캐러셀에 자동으로 추가되는 hero/추천/랭킹 상품 슬라이드. 끄면 협력점이 직접 등록한 배너만 회전합니다.
+          </small>
+        </div>
+        <label className="inline-flex items-center gap-1.5 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={heroAutoEnabled}
+            disabled={heroAutoSaving}
+            onChange={e => toggleHeroAuto(e.target.checked)}
+            className="w-4 h-4 accent-rk-orange cursor-pointer"
+          />
+          <span className={"text-[13px] font-medium " + (heroAutoEnabled ? "text-rk-orange-deep" : "text-rk-muted")}>
+            {heroAutoSaving ? "저장 중…" : heroAutoEnabled ? "노출" : "숨김"}
           </span>
         </label>
       </div>

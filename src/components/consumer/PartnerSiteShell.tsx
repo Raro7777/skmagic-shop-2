@@ -66,17 +66,20 @@ export default async function PartnerSiteShell({
   const { partner, hero, ranking, picks } = data;
   const others = (await listActivePartners()).filter(p => p.partnerCode !== partner.partnerCode);
 
-  // Hero 슬라이더 — hero + 사은품 차별화 우선 + 랭킹 상위 4-5개 (중복 제거)
+  // Hero 슬라이더 — hero + 사은품 차별화 우선 + 랭킹 상위 4-5개 (중복 제거).
+  // displayConfig.heroAutoSlidesEnabled === false 면 자동 슬라이드 끔 (DB 배너만 노출).
   const heroSlides: ConsumerProduct[] = [];
-  const seen = new Set<string>();
-  const tryAdd = (p: ConsumerProduct | null | undefined) => {
-    if (!p || seen.has(p.productCode) || heroSlides.length >= 5) return;
-    seen.add(p.productCode);
-    heroSlides.push(p);
-  };
-  tryAdd(hero);
-  for (const p of picks) tryAdd(p);
-  for (const p of ranking) tryAdd(p);
+  if (data.heroAutoSlidesEnabled) {
+    const seen = new Set<string>();
+    const tryAdd = (p: ConsumerProduct | null | undefined) => {
+      if (!p || seen.has(p.productCode) || heroSlides.length >= 5) return;
+      seen.add(p.productCode);
+      heroSlides.push(p);
+    };
+    tryAdd(hero);
+    for (const p of picks) tryAdd(p);
+    for (const p of ranking) tryAdd(p);
+  }
 
   // For seller-tagged links, we want product detail to also pass seller (via query for now)
   const productHref = (productCode: string) =>

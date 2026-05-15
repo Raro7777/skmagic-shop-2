@@ -241,6 +241,9 @@ export type PartnerSiteData = {
   categories: CategoryEntry[];          // QUICK nav + RankingTabs 재료
   // 메인 페이지 캐시백 띠 자동 노출 — displayConfig.flagshipBannerEnabled (default true).
   flagshipBannerEnabled: boolean;
+  // hero 캐러셀의 자동 상품 슬라이드 — displayConfig.heroAutoSlidesEnabled (default true).
+  // false 면 협력점이 등록한 DB 배너만 노출.
+  heroAutoSlidesEnabled: boolean;
 };
 
 // 안마의자(massage)/건조기(dryer)는 일시 비활성 — 컨슈머 노출 안 함.
@@ -492,6 +495,10 @@ export async function getPartnerSite(partnerCode: string): Promise<PartnerSiteDa
     flagshipBannerEnabled: (() => {
       const cfg = partner.displayConfig as { flagshipBannerEnabled?: boolean } | null;
       return cfg?.flagshipBannerEnabled !== false; // 명시적 false 일 때만 끔
+    })(),
+    heroAutoSlidesEnabled: (() => {
+      const cfg = partner.displayConfig as { heroAutoSlidesEnabled?: boolean } | null;
+      return cfg?.heroAutoSlidesEnabled !== false; // 명시적 false 일 때만 끔
     })(),
   };
 }

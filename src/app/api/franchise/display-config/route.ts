@@ -10,6 +10,7 @@ export type DisplayConfig = {
   picks: string[];                   // productCode 배열 (점장 추천)
   ranking: Record<string, string[]>; // category → productCode[]
   flagshipBannerEnabled?: boolean;   // 메인 페이지 캐시백 띠 자동 노출 여부 (default true)
+  heroAutoSlidesEnabled?: boolean;   // hero 캐러셀의 자동 상품 슬라이드 노출 여부 (default true)
 };
 
 const VALID_CATEGORIES = ["water", "air", "bidet", "mattress", "dryer", "kitchen", "massage"];
@@ -34,6 +35,9 @@ function sanitize(input: unknown): DisplayConfig {
   }
   if (typeof i.flagshipBannerEnabled === "boolean") {
     result.flagshipBannerEnabled = i.flagshipBannerEnabled;
+  }
+  if (typeof (i as { heroAutoSlidesEnabled?: unknown }).heroAutoSlidesEnabled === "boolean") {
+    result.heroAutoSlidesEnabled = (i as { heroAutoSlidesEnabled: boolean }).heroAutoSlidesEnabled;
   }
   return result;
 }
