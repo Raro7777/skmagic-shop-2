@@ -17,7 +17,7 @@
  *   1) productCode 별 옵션 그룹화 (mode × contractPeriod)
  *   2) 각 옵션의 basePrice/rentalPrice/promoPrice 추출
  *   3) DB.priceMatrix 옵션과 (mode, contractPeriod) 매칭하여 가격 3종 업데이트
- *      cardDiscountPrice 는 effective − 15,000 으로 재계산 (effective = promo ?? rental)
+ *      cardDiscountPrice 는 effective − 23,000 으로 재계산 (effective = promo ?? rental)
  *      rivalCompensationPrice / HalfMonths 는 유지 (별도 PDF 출처)
  *   4) Product top-level: 60개월 옵션 또는 contractPeriod 일치하는 옵션 기준으로
  *      baseRentalPrice / rentalPrice / promoRentalPrice / cardDiscountPrice 미러
@@ -37,7 +37,7 @@ const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: url 
 
 const PATH = "/Users/woozoo/.cokacdir/workspace/obnqnoho/SK매직_인증점_2026년_5월_제품_수수료표_0429_수정_v4_복호화(1).xlsx";
 const SHEET_NAME = "판매수수료_5월";
-const CARD_DISCOUNT = 15000;
+const CARD_DISCOUNT = 23000; // 본사 매직몰 카드할인 최대 금액 (2026-05)
 const APPLY = process.argv.includes("--apply");
 
 type PolicyRow = {

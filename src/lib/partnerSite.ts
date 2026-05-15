@@ -616,7 +616,7 @@ export type PriceOption = {
   basePrice: number | null;
   rentalPrice: number;       // 운영가
   promoPrice: number | null; // 5월 판촉가 (전사할인)
-  cardDiscountPrice: number | null; // (promo ?? rental) − 15,000
+  cardDiscountPrice: number | null; // (promo ?? rental) − 23,000 (매직몰 카드할인 최대)
   baseCommission: number | null;
   // 타사보상 (rival compensation) 가격 — 본사 정책 PDF 별첨 (신규 단품에만 적용)
   // 카드할인은 이 값과 별개로 들어감.

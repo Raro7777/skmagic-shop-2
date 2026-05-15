@@ -3,7 +3,7 @@
  *   baseRentalPrice  (Int?) — 기준가
  *   promoRentalPrice (Int?) — 5월 판촉가 (전사 할인)
  * rentalPrice 는 운영가로 의미 그대로 유지.
- * cardDiscountPrice 는 매직몰 카드할인 (-15k) 으로 의미 유지.
+ * cardDiscountPrice 는 매직몰 카드할인 (-23k 최대) 으로 의미 유지.
  *
  * 이미 컬럼이 있으면 noop (IF NOT EXISTS).
  */

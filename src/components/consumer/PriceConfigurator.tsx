@@ -276,10 +276,10 @@ export default function PriceConfigurator({
             </small>
           </div>
         )}
-        {/* 2단: 카드할인 차감 */}
+        {/* 2단: 카드할인 차감 — 본사 매직몰 카드할인 최대 23,000원 (카드사·실적별 차등) */}
         {finalCard != null && savings != null && savings > 0 && (
           <div className="flex items-baseline justify-between text-rk-sale mt-0.5">
-            <small className="text-[12px]">💳 카드할인</small>
+            <small className="text-[12px]">💳 카드할인 (최대)</small>
             <small className="text-[13px] rk-num font-semibold">
               −₩{fmt(savings)}/월
             </small>

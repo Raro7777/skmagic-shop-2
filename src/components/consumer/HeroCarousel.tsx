@@ -115,7 +115,7 @@ export default function HeroCarousel({
             <div className="flex gap-1 mt-2.5 flex-wrap">
               {cur.product.cardDiscountPrice && (
                 <span className="text-[12px] px-1.5 py-0.5 bg-white/10 rounded">
-                  카드할인가 월 {fmt(cur.product.cardDiscountPrice)}원
+                  카드할인 최대 월 {fmt(cur.product.cardDiscountPrice)}원
                 </span>
               )}
               <span className="text-[12px] px-1.5 py-0.5 bg-white/10 rounded">의무사용 {cur.product.contractPeriod}개월</span>
