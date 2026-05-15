@@ -177,8 +177,9 @@ export default async function PartnerSiteShell({
           </div>
         )}
 
-        {/* 렌탈지원금 promo 띠 — 협력점이 ON 한 경우만 (강조 버전). 클릭 → 추천 상품 영역 스크롤 */}
-        {heroSlides.some(p => p.maxRentalSupport > 0) && (
+        {/* 렌탈지원금 promo 띠 — 협력점이 ON 한 경우만 (강조 버전). 클릭 → 추천 상품 영역 스크롤.
+            displayConfig.flagshipBannerEnabled === false 면 노출 안 함. */}
+        {data.flagshipBannerEnabled && heroSlides.some(p => p.maxRentalSupport > 0) && (
           <a
             href="#picks"
             className="relative overflow-hidden bg-gradient-to-r from-[#FF6B2C] via-[#F26A1F] to-[#E04B0B] text-white px-4 py-3.5 flex items-center gap-3 no-underline cursor-pointer hover:brightness-105 active:brightness-95 transition-[filter] duration-150"

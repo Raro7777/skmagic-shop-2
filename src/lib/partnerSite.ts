@@ -239,6 +239,8 @@ export type PartnerSiteData = {
   picks: ConsumerProduct[];
   banners: ActiveBanner[];
   categories: CategoryEntry[];          // QUICK nav + RankingTabs 재료
+  // 메인 페이지 캐시백 띠 자동 노출 — displayConfig.flagshipBannerEnabled (default true).
+  flagshipBannerEnabled: boolean;
 };
 
 // 안마의자(massage)/건조기(dryer)는 일시 비활성 — 컨슈머 노출 안 함.
@@ -487,6 +489,10 @@ export async function getPartnerSite(partnerCode: string): Promise<PartnerSiteDa
     picks,
     banners,
     categories,
+    flagshipBannerEnabled: (() => {
+      const cfg = partner.displayConfig as { flagshipBannerEnabled?: boolean } | null;
+      return cfg?.flagshipBannerEnabled !== false; // 명시적 false 일 때만 끔
+    })(),
   };
 }
 

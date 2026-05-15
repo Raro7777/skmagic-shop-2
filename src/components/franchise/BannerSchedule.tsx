@@ -143,18 +143,28 @@ export default function BannerSchedule() {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [templatesLoading, setTemplatesLoading] = useState(false);
   const [stats, setStats] = useState<Record<string, { impressions: number; clicks: number }>>({});
+  // 메인 페이지 캐시백 띠 (코드 hardcoded "FLAGSHIP CASHBACK" 영역) 노출 토글
+  const [flagshipEnabled, setFlagshipEnabled] = useState<boolean>(true);
+  const [flagshipSaving, setFlagshipSaving] = useState(false);
 
   const load = useCallback(async () => {
     try {
-      const res = await fetch("/api/franchise/banners", { cache: "no-store" });
-      if (!res.ok) {
-        if (res.status === 401 || res.status === 403) setError("협력점 권한 필요");
+      const [resBanners, resConfig] = await Promise.all([
+        fetch("/api/franchise/banners", { cache: "no-store" }),
+        fetch("/api/franchise/display-config", { cache: "no-store" }),
+      ]);
+      if (!resBanners.ok) {
+        if (resBanners.status === 401 || resBanners.status === 403) setError("협력점 권한 필요");
         else throw new Error();
         return;
       }
-      const j = await res.json();
+      const j = await resBanners.json();
       setBanners(j.banners);
       setError(null);
+      if (resConfig.ok) {
+        const c = await resConfig.json();
+        setFlagshipEnabled(c.config?.flagshipBannerEnabled !== false);
+      }
     } catch {
       setError("배너 로드 실패");
     } finally {
@@ -162,6 +172,23 @@ export default function BannerSchedule() {
     }
   }, []);
   useEffect(() => { load(); }, [load]);
+
+  const toggleFlagship = async (next: boolean) => {
+    setFlagshipSaving(true);
+    setFlash(null);
+    try {
+      const res = await fetch("/api/franchise/display-config", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ flagshipBannerEnabled: next }),
+      });
+      const j = await res.json();
+      if (!res.ok) { setFlash(j.error ?? "토글 실패"); return; }
+      setFlagshipEnabled(next);
+      setFlash(next ? "캐시백 띠 노출 켜짐" : "캐시백 띠 노출 끔");
+    } catch { setFlash("네트워크 오류"); }
+    finally { setFlagshipSaving(false); }
+  };
 
   // 통계 로드 (배너 변경 시)
   useEffect(() => {
@@ -319,6 +346,30 @@ export default function BannerSchedule() {
         >
           + 새 배너 (직접)
         </button>
+      </div>
+
+      {/* 캐시백 띠 (자동) 토글 — 메인 페이지 상단의 "+N만원 현금 캐시백" hardcoded 띠 노출 여부.
+          렌탈지원금 0 인 상품만 있으면 어차피 자동으로 숨겨지지만, 협력점이 직접 가리고 싶을 때 사용. */}
+      <div className="mb-3 bg-rk-soft border border-rk-line rounded px-3 py-2 flex items-center gap-2 flex-wrap">
+        <span className="text-[18px]">🎁</span>
+        <div className="flex-1 min-w-0">
+          <b className="text-[13px] text-rk-ink block">메인 캐시백 띠 (자동 노출)</b>
+          <small className="text-[12px] text-rk-muted">
+            상품에 렌탈지원금이 설정된 경우 메인 페이지 상단에 "개통 시 +N만원 캐시백" 띠가 자동 노출됩니다. 끄면 노출되지 않음.
+          </small>
+        </div>
+        <label className="inline-flex items-center gap-1.5 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={flagshipEnabled}
+            disabled={flagshipSaving}
+            onChange={e => toggleFlagship(e.target.checked)}
+            className="w-4 h-4 accent-rk-orange cursor-pointer"
+          />
+          <span className={"text-[13px] font-medium " + (flagshipEnabled ? "text-rk-orange-deep" : "text-rk-muted")}>
+            {flagshipSaving ? "저장 중…" : flagshipEnabled ? "노출" : "숨김"}
+          </span>
+        </label>
       </div>
 
       {/* 본사 템플릿 가져오기 모달 */}

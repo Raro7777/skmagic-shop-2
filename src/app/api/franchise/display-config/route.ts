@@ -9,6 +9,7 @@ export const dynamic = "force-dynamic";
 export type DisplayConfig = {
   picks: string[];                   // productCode 배열 (점장 추천)
   ranking: Record<string, string[]>; // category → productCode[]
+  flagshipBannerEnabled?: boolean;   // 메인 페이지 캐시백 띠 자동 노출 여부 (default true)
 };
 
 const VALID_CATEGORIES = ["water", "air", "bidet", "mattress", "dryer", "kitchen", "massage"];
@@ -16,7 +17,7 @@ const VALID_CATEGORIES = ["water", "air", "bidet", "mattress", "dryer", "kitchen
 function sanitize(input: unknown): DisplayConfig {
   const result: DisplayConfig = { picks: [], ranking: {} };
   if (!input || typeof input !== "object") return result;
-  const i = input as { picks?: unknown; ranking?: unknown };
+  const i = input as { picks?: unknown; ranking?: unknown; flagshipBannerEnabled?: unknown };
   if (Array.isArray(i.picks)) {
     result.picks = i.picks
       .filter((x): x is string => typeof x === "string" && /^[A-Z][A-Z0-9-]{6,}$/.test(x))
@@ -30,6 +31,9 @@ function sanitize(input: unknown): DisplayConfig {
         .filter((x): x is string => typeof x === "string" && /^[A-Z][A-Z0-9-]{6,}$/.test(x))
         .slice(0, 8);
     }
+  }
+  if (typeof i.flagshipBannerEnabled === "boolean") {
+    result.flagshipBannerEnabled = i.flagshipBannerEnabled;
   }
   return result;
 }
@@ -88,12 +92,17 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const cleaned = sanitize(body);
+  // 부분 업데이트 지원 — 기존 displayConfig 와 병합. body 에 없는 필드는 보존.
+  const current = await prisma.partner.findUnique({
+    where: { partnerCode: eff.partnerId },
+    select: { displayConfig: true },
+  });
+  const merged = sanitize({ ...sanitize(current?.displayConfig), ...(body as object) });
 
   await prisma.partner.update({
     where: { partnerCode: eff.partnerId },
-    data: { displayConfig: cleaned as never },
+    data: { displayConfig: merged as never },
   });
 
-  return NextResponse.json({ ok: true, config: cleaned });
+  return NextResponse.json({ ok: true, config: merged });
 }
