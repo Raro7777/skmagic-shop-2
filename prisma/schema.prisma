@@ -516,8 +516,11 @@ model Product {
   modelName         String
   imageUrl          String?  // primary image (legacy single field)
   imageUrls         String[] @default([])  // gallery (multi-image)
-  rentalPrice       Int      // 월 렌탈료 (전국 동일)
-  cardDiscountPrice Int?
+  // 3-tier 가격: 기준가 → 운영가(기본할인) → 판촉가(전사할인). 표시 우선순위 promo ?? rental ?? base.
+  baseRentalPrice   Int?     // 기준가 (할인 전)
+  rentalPrice       Int      // 운영가 — 기본 할인 적용가. 전국 동일.
+  promoRentalPrice  Int?     // 5월 판촉가 — 전사 할인 적용가 (해당 모델만, 없으면 null)
+  cardDiscountPrice Int?     // 매직몰 카드할인 (-15k) 적용가 — (effective − 15,000), null 이면 카드혜택 없음
   contractPeriod    Int      @default(60)
   managementType    String   // 자가관리 | 방문관리 | 방문관리_4 | ...
   description       String?  // long-form copy (paragraphs split by \n\n)
@@ -525,8 +528,10 @@ model Product {
   specs             Json?    // { [label: string]: string } — spec table
   warrantyMonths    Int      @default(60)
   // 약정기간/운영모드별 가격 매트릭스 — 본사 정책 시트 기반.
-  // 형태: PriceOption[] = [{ mode, contractPeriod, ownershipPeriod, visitInterval, rentalPrice, cardDiscountPrice, baseCommission }, ...]
-  // 기본 옵션(보통 60개월)은 위 rentalPrice/cardDiscountPrice/contractPeriod에 동일하게 적용됨.
+  // 형태: PriceOption[] = [{ mode, contractPeriod, ownershipPeriod, visitInterval,
+  //   basePrice, rentalPrice, promoPrice, cardDiscountPrice, baseCommission,
+  //   rivalCompensationPrice, rivalCompensationHalfPriceMonths }, ...]
+  // 기본 옵션(보통 60개월)은 위 baseRentalPrice/rentalPrice/promoRentalPrice/cardDiscountPrice 와 동일.
   priceMatrix       Json?
   isFeatured        Boolean  @default(false)
   status            String   @default("active") // active | discontinued

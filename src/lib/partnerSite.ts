@@ -30,7 +30,13 @@ export type ConsumerProduct = {
   category: string;
   name: string;
   modelName: string;
+  // rentalPrice = effective 월요금 = promo ?? operational (사용자 청구 기준).
+  // 메인 카드 헤드라인에 노출. UI 코드 호환을 위해 필드명 유지.
   rentalPrice: number;
+  // baseRentalPrice = 기준가 (할인 전). effective 와 다를 때만 취소선으로 표시.
+  baseRentalPrice: number | null;
+  // promoApplied = 5월 전사할인 (판촉가) 이 effective 에 적용된 모델인지. 라벨용.
+  promoApplied: boolean;
   cardDiscountPrice: number | null;
   contractPeriod: number;
   managementType: string;
@@ -62,32 +68,69 @@ function pickThumbnail(p: { imageUrl: string | null; imageUrls: string[] }): str
   return p.imageUrls?.[0] ?? p.imageUrl ?? null;
 }
 
-// priceMatrix 에서 최저 cardDiscountPrice (또는 rentalPrice) 옵션 picking.
-// 메인 페이지 카드 노출용 — 가장 저렴한 옵션의 가격을 "월 X부터" 표시.
-// 셀프형이 방문형보다 저렴한 모델은 자연스럽게 셀프형이 선택됨 → mode 도 함께 반환해
-// UI 에서 "자가관리형" 라벨로 안내 가능.
+// 옵션 단위 effective 가격 — 표시 우선순위: promoPrice ?? rentalPrice. base 는 취소선용.
+function optionPrices(opt: Record<string, unknown>): {
+  base: number | null;
+  rental: number;          // 운영가 (원본)
+  effective: number;       // promo ?? rental
+  promoApplied: boolean;
+  card: number | null;     // option.cardDiscountPrice (already effective − 15k)
+} {
+  const rental = Number(opt.rentalPrice ?? 0);
+  const promo = opt.promoPrice != null && Number(opt.promoPrice) > 0 ? Number(opt.promoPrice) : null;
+  const base = opt.basePrice != null && Number(opt.basePrice) > 0 ? Number(opt.basePrice) : null;
+  const effective = promo ?? rental;
+  const card = opt.cardDiscountPrice != null && Number(opt.cardDiscountPrice) > 0 ? Number(opt.cardDiscountPrice) : null;
+  return { base, rental, effective, promoApplied: promo != null, card };
+}
+
+// priceMatrix 에서 최저 effective 옵션 picking.
+// "effective" = promo ?? rental. 비교 시 카드 적용가가 있으면 그것을 사용.
+// 셀프형이 더 저렴하면 자연스럽게 셀프형이 채택되어 자가관리형으로 라벨링됨.
 function pickLowestPrice(
   raw: unknown,
-  fallback: { rentalPrice: number; cardDiscountPrice: number | null },
-): { rentalPrice: number; cardDiscountPrice: number | null; mode: "방문형" | "셀프형" | null } {
-  if (!Array.isArray(raw) || raw.length === 0) return { ...fallback, mode: null };
-  let bestRental = fallback.rentalPrice;
-  let bestCard = fallback.cardDiscountPrice;
-  let bestMode: "방문형" | "셀프형" | null = null;
-  let bestEffective = bestCard ?? bestRental;
+  fallback: { rentalPrice: number; cardDiscountPrice: number | null; baseRentalPrice: number | null; promoRentalPrice: number | null },
+): {
+  rentalPrice: number;            // effective
+  baseRentalPrice: number | null;
+  promoApplied: boolean;
+  cardDiscountPrice: number | null;
+  mode: "방문형" | "셀프형" | null;
+} {
+  const fallbackEffective = fallback.promoRentalPrice ?? fallback.rentalPrice;
+  if (!Array.isArray(raw) || raw.length === 0) {
+    return {
+      rentalPrice: fallbackEffective,
+      baseRentalPrice: fallback.baseRentalPrice,
+      promoApplied: fallback.promoRentalPrice != null,
+      cardDiscountPrice: fallback.cardDiscountPrice,
+      mode: null,
+    };
+  }
+  let best = {
+    rentalPrice: fallbackEffective,
+    baseRentalPrice: fallback.baseRentalPrice,
+    promoApplied: fallback.promoRentalPrice != null,
+    cardDiscountPrice: fallback.cardDiscountPrice,
+    mode: null as "방문형" | "셀프형" | null,
+  };
+  let bestKey = best.cardDiscountPrice ?? best.rentalPrice;
   for (const opt of raw as Array<Record<string, unknown>>) {
-    const r = Number(opt.rentalPrice ?? 0);
-    if (!r || r <= 0) continue;
-    const c = opt.cardDiscountPrice != null ? Number(opt.cardDiscountPrice) : null;
-    const effective = c != null && c > 0 && c < r ? c : r;
-    if (effective < bestEffective) {
-      bestEffective = effective;
-      bestRental = r;
-      bestCard = c;
-      bestMode = opt.mode === "방문형" || opt.mode === "셀프형" ? opt.mode : null;
+    const { base, effective, promoApplied, card } = optionPrices(opt);
+    if (!effective || effective <= 0) continue;
+    const compareKey = card != null && card < effective ? card : effective;
+    if (compareKey < bestKey) {
+      bestKey = compareKey;
+      best = {
+        rentalPrice: effective,
+        baseRentalPrice: base,
+        promoApplied,
+        cardDiscountPrice: card,
+        mode: opt.mode === "방문형" || opt.mode === "셀프형" ? opt.mode : null,
+      };
     }
   }
-  return { rentalPrice: bestRental, cardDiscountPrice: bestCard, mode: bestMode };
+  return best;
 }
 
 // 타사보상 옵션 중 (rentalPrice - rivalCompensationPrice) 최대값 = 최대 할인액
@@ -245,7 +288,12 @@ export async function getPartnerSite(partnerCode: string): Promise<PartnerSiteDa
     const gift = policy?.giftAmount ?? 0;
     const install = policy?.installAmount ?? 0;
     // 메인 페이지 카드 — priceMatrix 의 최저가 옵션을 표시 (없으면 단일 가격 fallback)
-    const lowest = pickLowestPrice(p.priceMatrix, { rentalPrice: p.rentalPrice, cardDiscountPrice: p.cardDiscountPrice });
+    const lowest = pickLowestPrice(p.priceMatrix, {
+      rentalPrice: p.rentalPrice,
+      cardDiscountPrice: p.cardDiscountPrice,
+      baseRentalPrice: p.baseRentalPrice,
+      promoRentalPrice: p.promoRentalPrice,
+    });
     const rival = bestRivalPrice(p.priceMatrix);
     return {
       productCode: p.productCode,
@@ -253,6 +301,8 @@ export async function getPartnerSite(partnerCode: string): Promise<PartnerSiteDa
       name: p.name,
       modelName: p.modelName,
       rentalPrice: lowest.rentalPrice,
+      baseRentalPrice: lowest.baseRentalPrice,
+      promoApplied: lowest.promoApplied,
       cardDiscountPrice: effectiveCardDiscount(lowest.rentalPrice, lowest.cardDiscountPrice),
       contractPeriod: p.contractPeriod,
       managementType: p.managementType,
@@ -477,7 +527,12 @@ export async function listPartnerProducts(
     const policy = p.partnerPolicies[0];
     const gift = policy?.giftAmount ?? 0;
     const install = policy?.installAmount ?? 0;
-    const lowest = pickLowestPrice(p.priceMatrix, { rentalPrice: p.rentalPrice, cardDiscountPrice: p.cardDiscountPrice });
+    const lowest = pickLowestPrice(p.priceMatrix, {
+      rentalPrice: p.rentalPrice,
+      cardDiscountPrice: p.cardDiscountPrice,
+      baseRentalPrice: p.baseRentalPrice,
+      promoRentalPrice: p.promoRentalPrice,
+    });
     const rival = bestRivalPrice(p.priceMatrix);
     return {
       productCode: p.productCode,
@@ -485,6 +540,8 @@ export async function listPartnerProducts(
       name: p.name,
       modelName: p.modelName,
       rentalPrice: lowest.rentalPrice,
+      baseRentalPrice: lowest.baseRentalPrice,
+      promoApplied: lowest.promoApplied,
       cardDiscountPrice: effectiveCardDiscount(lowest.rentalPrice, lowest.cardDiscountPrice),
       contractPeriod: p.contractPeriod,
       managementType: p.managementType,
@@ -565,8 +622,11 @@ export type PriceOption = {
   contractPeriod: number;
   ownershipPeriod: number | null;
   visitInterval: string;
-  rentalPrice: number;
-  cardDiscountPrice: number | null;
+  // 3-tier: basePrice (기준가, 취소선용) → rentalPrice (운영가) → promoPrice (전사할인 판촉가, 있으면)
+  basePrice: number | null;
+  rentalPrice: number;       // 운영가
+  promoPrice: number | null; // 5월 판촉가 (전사할인)
+  cardDiscountPrice: number | null; // (promo ?? rental) − 15,000
   baseCommission: number | null;
   // 타사보상 (rival compensation) 가격 — 본사 정책 PDF 별첨 (신규 단품에만 적용)
   // 카드할인은 이 값과 별개로 들어감.
@@ -650,13 +710,15 @@ export async function getPartnerProductDetail(
   const effectiveCard = effectiveCardDiscount(product.rentalPrice, product.cardDiscountPrice);
   const cardDiscountSavings = effectiveCard != null ? product.rentalPrice - effectiveCard : null;
 
-  // priceMatrix 정리 — null 가격 제외 + 카드할인가 정규화 + 타사보상 가격 전달
+  // priceMatrix 정리 — null 가격 제외 + 카드할인가 정규화 + 3-tier 전달.
   const rawMatrix = (product.priceMatrix as unknown as Array<{
     mode: string | null;
     contractPeriod: number;
     ownershipPeriod: number | null;
     visitInterval: string;
+    basePrice?: number | null;
     rentalPrice: number | null;
+    promoPrice?: number | null;
     cardDiscountPrice: number | null;
     baseCommission: number | null;
     rivalCompensationPrice?: number | null;
@@ -664,17 +726,23 @@ export async function getPartnerProductDetail(
   }> | null) ?? [];
   const priceMatrix: PriceOption[] = rawMatrix
     .filter(r => r.rentalPrice != null && r.rentalPrice > 0)
-    .map(r => ({
-      mode: (r.mode === "방문형" || r.mode === "셀프형") ? r.mode : null,
-      contractPeriod: r.contractPeriod,
-      ownershipPeriod: r.ownershipPeriod,
-      visitInterval: r.visitInterval,
-      rentalPrice: r.rentalPrice as number,
-      cardDiscountPrice: effectiveCardDiscount(r.rentalPrice as number, r.cardDiscountPrice),
-      baseCommission: r.baseCommission,
-      rivalCompensationPrice: r.rivalCompensationPrice ?? null,
-      rivalCompensationHalfPriceMonths: r.rivalCompensationHalfPriceMonths ?? null,
-    }));
+    .map(r => {
+      // effective = promo ?? rental. cardDiscount 는 effective 기준으로 정규화.
+      const effective = r.promoPrice ?? (r.rentalPrice as number);
+      return {
+        mode: (r.mode === "방문형" || r.mode === "셀프형") ? r.mode : null,
+        contractPeriod: r.contractPeriod,
+        ownershipPeriod: r.ownershipPeriod,
+        visitInterval: r.visitInterval,
+        basePrice: r.basePrice ?? null,
+        rentalPrice: r.rentalPrice as number,
+        promoPrice: r.promoPrice ?? null,
+        cardDiscountPrice: effectiveCardDiscount(effective, r.cardDiscountPrice),
+        baseCommission: r.baseCommission,
+        rivalCompensationPrice: r.rivalCompensationPrice ?? null,
+        rivalCompensationHalfPriceMonths: r.rivalCompensationHalfPriceMonths ?? null,
+      };
+    });
 
   const detailRival = bestRivalPrice(product.priceMatrix);
   const detail: ProductDetail = {
@@ -682,7 +750,10 @@ export async function getPartnerProductDetail(
     category: product.category,
     name: product.name,
     modelName: product.modelName,
-    rentalPrice: product.rentalPrice,
+    // 상세 페이지 헤더는 effective (promo ?? rental) 노출. PriceConfigurator 가 옵션별 정확 계산.
+    rentalPrice: product.promoRentalPrice ?? product.rentalPrice,
+    baseRentalPrice: product.baseRentalPrice,
+    promoApplied: product.promoRentalPrice != null,
     cardDiscountPrice: effectiveCard,
     contractPeriod: product.contractPeriod,
     managementType: product.managementType,
@@ -797,7 +868,12 @@ export async function getPartnerProductDetail(
     const pp = p.partnerPolicies[0];
     const gift = pp?.giftAmount ?? 0;
     const install = pp?.installAmount ?? 0;
-    const lowest = pickLowestPrice(p.priceMatrix, { rentalPrice: p.rentalPrice, cardDiscountPrice: p.cardDiscountPrice });
+    const lowest = pickLowestPrice(p.priceMatrix, {
+      rentalPrice: p.rentalPrice,
+      cardDiscountPrice: p.cardDiscountPrice,
+      baseRentalPrice: p.baseRentalPrice,
+      promoRentalPrice: p.promoRentalPrice,
+    });
     const rival = bestRivalPrice(p.priceMatrix);
     return {
       productCode: p.productCode,
@@ -805,6 +881,8 @@ export async function getPartnerProductDetail(
       name: p.name,
       modelName: p.modelName,
       rentalPrice: lowest.rentalPrice,
+      baseRentalPrice: lowest.baseRentalPrice,
+      promoApplied: lowest.promoApplied,
       cardDiscountPrice: effectiveCardDiscount(lowest.rentalPrice, lowest.cardDiscountPrice),
       contractPeriod: p.contractPeriod,
       managementType: p.managementType,

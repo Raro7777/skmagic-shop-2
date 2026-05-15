@@ -110,7 +110,13 @@ export default function PriceConfigurator({
   }, [modeOptions, selectedPeriod, hasMatrix]);
 
   // 표시 가격
-  const baseRental = currentOption?.rentalPrice ?? defaultRental;
+  // 3-tier: basePrice (기준가, 취소선용) → rentalPrice (운영가) → promoPrice (전사할인 판촉가).
+  // PriceConfigurator 내부의 baseRental 은 effective 청구가 = promo ?? rental.
+  const optionBase = currentOption?.basePrice ?? null;
+  const optionOperational = currentOption?.rentalPrice ?? defaultRental;
+  const optionPromo = currentOption?.promoPrice ?? null;
+  const baseRental = optionPromo ?? optionOperational;
+  const promoApplied = optionPromo != null && optionPromo < optionOperational;
   const baseCard = currentOption?.cardDiscountPrice ?? defaultCard;
   const contractPeriod = currentOption?.contractPeriod ?? defaultContract;
   const ownership = currentOption?.ownershipPeriod ?? null;
@@ -243,12 +249,28 @@ export default function PriceConfigurator({
         </div>
       )}
 
-      {/* 최종 월 요금 — 단계별 시각화 (정상가 → 할인 적용 → 최종) */}
+      {/* 최종 월 요금 — 단계별 시각화 (기준가 → 운영가/판촉가 → 카드할인 → 최종) */}
       <div className="bg-gradient-to-br from-rk-tint-orange to-[#FFE3CC] border-2 border-rk-orange rounded-lg px-3 py-2.5 mb-2.5 shadow-sm">
-        {/* 1단: 정상가 */}
+        {/* 0단: 기준가 (할인 전, 운영가/판촉가와 다를 때만) */}
+        {optionBase != null && optionBase > finalRental && (
+          <div className="flex items-baseline justify-between text-rk-faint">
+            <small className="text-[11px]">기준가</small>
+            <small className="text-[12px] rk-num line-through">₩{fmt(optionBase)}/월</small>
+          </div>
+        )}
+        {/* 1단: 운영가 → 판촉가 차감 (판촉가 있을 때만) */}
+        {promoApplied && (
+          <div className="flex items-baseline justify-between text-rk-orange-deep mt-0.5">
+            <small className="text-[12px]">🏷️ 5월 전사할인</small>
+            <small className="text-[13px] rk-num font-semibold">
+              −₩{fmt(optionOperational - (optionPromo ?? optionOperational))}/월
+            </small>
+          </div>
+        )}
+        {/* 정상가 (운영가 또는 판촉가 — 카드할인 기준선) */}
         {finalCard != null && savings != null && savings > 0 && (
           <div className="flex items-baseline justify-between text-rk-muted">
-            <small className="text-[12px]">정상가</small>
+            <small className="text-[12px]">{promoApplied ? "전사할인 적용가" : "정상가"}</small>
             <small className="text-[13px] rk-num line-through">
               ₩{fmt(finalRental)}/월
             </small>

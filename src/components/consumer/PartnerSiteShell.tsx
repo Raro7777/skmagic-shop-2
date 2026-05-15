@@ -375,17 +375,21 @@ function RankCard({ rank, product, bg, href }: { rank: number; product: Consumer
             <span className="text-[12px] px-1 py-px rounded bg-rk-tint-orange text-rk-orange-deep font-medium">사은품 {product.giftLabel}</span>
           )}
         </div>
-        <div className="flex items-baseline gap-1.5 mt-1.5 flex-wrap">
-          <span className="text-[12px] text-rk-muted">기본 구독료</span>
-          {(product.cardDiscountPrice || (product.minRivalPrice != null && product.minRivalPrice > 0)) ? (
-            <span className="text-[13px] font-medium text-rk-faint line-through rk-num">
-              월 {fmt(product.rentalPrice)}원
-            </span>
-          ) : (
-            <span className="text-base font-bold text-rk-ink tracking-[-.02em] rk-num">
-              월 {fmt(product.rentalPrice)}<small className="text-[13px] font-medium">원~</small>
-            </span>
-          )}
+        {/* 기준가 (있고 effective 와 다를 때) — 취소선 */}
+        {product.baseRentalPrice != null && product.baseRentalPrice > product.rentalPrice && (
+          <div className="flex items-baseline gap-1 mt-1">
+            <span className="text-[11px] text-rk-faint">기준가</span>
+            <span className="text-[12px] text-rk-faint line-through rk-num">월 {fmt(product.baseRentalPrice)}원</span>
+          </div>
+        )}
+        {/* effective 월요금 (= promo ?? 운영가) — 헤드라인 */}
+        <div className="flex items-baseline gap-1.5 mt-0.5 flex-wrap">
+          <span className="text-[12px] text-rk-muted">
+            {product.promoApplied ? "🏷️ 전사할인가" : "월 렌탈가"}
+          </span>
+          <span className="text-base font-bold text-rk-ink tracking-[-.02em] rk-num">
+            {fmt(product.rentalPrice)}<small className="text-[13px] font-medium">원~</small>
+          </span>
         </div>
         {product.cardDiscountPrice && (
           <div className="text-[12px] text-rk-muted mt-px">
@@ -448,15 +452,12 @@ function PickCard({ product, bg, href }: { product: ConsumerProduct; bg: string;
       <div className="text-[13px] text-rk-muted mt-2">SK매직</div>
       <h4 className="text-[13px] font-medium text-rk-ink leading-[1.4] m-0 mt-0.5 line-clamp-2 min-h-[36px]">{product.name}</h4>
       <div className="text-[12px] text-rk-faint font-mono mt-0.5 truncate">{product.modelName}</div>
-      <div className="mt-1.5 flex items-baseline gap-1">
-        {(product.cardDiscountPrice || (product.minRivalPrice != null && product.minRivalPrice > 0)) ? (
-          <small className="text-[12px] text-rk-faint line-through rk-num">월 {fmt(product.rentalPrice)}원</small>
-        ) : (
-          <>
-            <small className="text-[12px] text-rk-muted">월</small>
-            <b className="text-[16px] font-bold tracking-[-.02em] text-rk-ink rk-num">{fmt(product.rentalPrice)}<small className="text-[13px] font-medium">원~</small></b>
-          </>
-        )}
+      {product.baseRentalPrice != null && product.baseRentalPrice > product.rentalPrice && (
+        <small className="block text-[11px] text-rk-faint line-through rk-num mt-1">월 {fmt(product.baseRentalPrice)}원</small>
+      )}
+      <div className="mt-0.5 flex items-baseline gap-1">
+        <small className="text-[11px] text-rk-muted">{product.promoApplied ? "🏷️ 전사할인가" : "월"}</small>
+        <b className="text-[16px] font-bold tracking-[-.02em] text-rk-ink rk-num">{fmt(product.rentalPrice)}<small className="text-[13px] font-medium">원~</small></b>
       </div>
       {product.cardDiscountPrice && (
         <div className="mt-px text-[12px] text-rk-sale font-medium">
