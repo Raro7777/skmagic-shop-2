@@ -45,6 +45,9 @@ export type ConsumerProduct = {
   // 타사보상 — 최저 옵션 기준 추가 할인액. 모델에 정책 없으면 0.
   // 메인 카드에 "타사 사용중이면 추가 -X" 칩 노출용.
   maxRivalSavings: number;
+  // 타사보상 적용 후 최저가 (priceMatrix.rivalCompensationPrice 의 최소값).
+  // 모델에 정책 없으면 null. "타사 적용시 월 ₩X부터" 표시용.
+  minRivalPrice: number | null;
 };
 
 function pickThumbnail(p: { imageUrl: string | null; imageUrls: string[] }): string | null {
@@ -89,6 +92,20 @@ function maxRivalSavings(raw: unknown): number {
     }
   }
   return max;
+}
+
+// 타사보상 적용 후 최저가 — priceMatrix.rivalCompensationPrice 의 최소값.
+// 모델에 정책 없으면 null.
+function minRivalPrice(raw: unknown): number | null {
+  if (!Array.isArray(raw)) return null;
+  let min: number | null = null;
+  for (const opt of raw as Array<Record<string, unknown>>) {
+    const rival = opt.rivalCompensationPrice != null ? Number(opt.rivalCompensationPrice) : null;
+    if (rival != null && rival > 0) {
+      if (min == null || rival < min) min = rival;
+    }
+  }
+  return min;
 }
 
 // 카드할인가가 운영가 이상이면 의미가 없으므로 null로 정규화.
@@ -217,6 +234,7 @@ export async function getPartnerSite(partnerCode: string): Promise<PartnerSiteDa
         installAmount: install,
       }),
       maxRivalSavings: maxRivalSavings(p.priceMatrix),
+      minRivalPrice: minRivalPrice(p.priceMatrix),
     };
   });
 
@@ -425,6 +443,7 @@ export async function listPartnerProducts(
         installAmount: install,
       }) : 0,
       maxRivalSavings: maxRivalSavings(p.priceMatrix),
+      minRivalPrice: minRivalPrice(p.priceMatrix),
     };
   });
 
@@ -612,6 +631,7 @@ export async function getPartnerProductDetail(
     installFreed: (policy?.installAmount ?? 0) > 0,
     maxRentalSupport: 0, // 상품 상세는 PriceConfigurator가 옵션별 정확 계산
     maxRivalSavings: maxRivalSavings(product.priceMatrix),
+    minRivalPrice: minRivalPrice(product.priceMatrix),
     partnerRentalSupportAmount: partner.rentalSupportAmount ?? 0,
     partnerRentalSupportEnabled: partner.rentalSupportEnabled ?? true,
     partnerInstallAmount: policy?.installAmount ?? 0,
@@ -735,6 +755,7 @@ export async function getPartnerProductDetail(
         installAmount: install,
       }),
       maxRivalSavings: maxRivalSavings(p.priceMatrix),
+      minRivalPrice: minRivalPrice(p.priceMatrix),
     };
   });
 

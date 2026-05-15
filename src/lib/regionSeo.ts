@@ -179,7 +179,8 @@ export async function listRegionRecommendedProducts(
       giftLabel: policy?.giftLabel ?? null,
       installFreed: (policy?.installAmount ?? 0) > 0,
       maxRentalSupport: 0,
-      maxRivalSavings: 0, // 지역 SEO 진입 화면은 메인 카드 표기 없음
+      maxRivalSavings: 0,
+      minRivalPrice: null, // 지역 SEO 진입 화면은 메인 카드 표기 없음
     };
   });
 }

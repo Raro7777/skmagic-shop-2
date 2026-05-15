@@ -394,9 +394,9 @@ function RankCard({ rank, product, bg, href }: { rank: number; product: Consumer
             카드할인 시 <b className="text-rk-sale rk-num">월 {fmt(product.cardDiscountPrice)}원~</b>
           </div>
         )}
-        {product.maxRivalSavings > 0 && (
+        {product.minRivalPrice != null && product.minRivalPrice > 0 && (
           <div className="text-[11px] text-rk-orange-deep mt-px">
-            🔄 타사 사용중 시 추가 −<b className="rk-num">{fmt(product.maxRivalSavings)}원</b>
+            🔄 타사 사용중 시 월 <b className="rk-num">{fmt(product.minRivalPrice)}원~</b>
           </div>
         )}
       </div>
@@ -452,9 +452,9 @@ function PickCard({ product, bg, href }: { product: ConsumerProduct; bg: string;
           카드 <b className="font-bold rk-num">월 {fmt(product.cardDiscountPrice)}원</b>
         </div>
       )}
-      {product.maxRivalSavings > 0 && (
+      {product.minRivalPrice != null && product.minRivalPrice > 0 && (
         <div className="mt-px text-[11px] text-rk-orange-deep font-medium">
-          🔄 타사 사용중 −<b className="rk-num">{fmt(product.maxRivalSavings)}원</b>
+          🔄 타사 사용중 시 월 <b className="rk-num">{fmt(product.minRivalPrice)}원~</b>
         </div>
       )}
       <div className="flex gap-0.5 flex-wrap mt-1.5">
