@@ -107,18 +107,23 @@ function maxRivalSavings(raw: unknown): number {
 }
 
 // 타사보상 + 동일옵션 카드할인 + (있으면) 반값 기간까지 반영한 최저 시나리오.
-// 적용 순서: rentalPrice → rivalCompensationPrice → 카드할인액 차감 → 반값 기간엔 추가 ½.
+// 적용 순서: rentalPrice → rivalCompensationPrice → 카드할인액 차감.
+// 반값 기간(첫 N개월) 은 SK매직 청구 자체가 rival/2 이므로 별도 표기. 카드 추가차감은
+// 카드 최소 사용 조건이 있어 반값 기간에 음수 보장이 안 되므로 보수적으로 반값 기준 그대로 노출.
 //
 // 반환값:
 //   monthly      — 반값 기간이 끝난 뒤의 정상 월요금 (rival − cardDelta)
 //   halfMonths   — 반값 적용 개월수 (0 이면 반값 정책 없음)
-//   halfMonthly  — 반값 기간 월요금 ((rival/2) − cardDelta)
+//   halfMonthly  — 반값 기간 월요금 (rival × 0.5, 카드 별도)
 // 모델에 타사 정책 없으면 null.
 //
-// 비교 기준은 "정상 monthly" 가 가장 낮은 옵션. 채택된 옵션의 반값 정보가 함께 따라감.
+// 비교 기준: 반값 정책이 있는 옵션을 우선적으로 채택해 매리트가 노출되도록 함.
+// 같은 그룹 내에선 monthly 가 가장 낮은 옵션.
 function bestRivalPrice(raw: unknown): { monthly: number; halfMonths: number; halfMonthly: number } | null {
   if (!Array.isArray(raw)) return null;
-  let best: { monthly: number; halfMonths: number; halfMonthly: number } | null = null;
+  type RivalOpt = { monthly: number; halfMonths: number; halfMonthly: number };
+  let bestHalf: RivalOpt | null = null;
+  let bestPlain: RivalOpt | null = null;
   for (const opt of raw as Array<Record<string, unknown>>) {
     const rental = Number(opt.rentalPrice ?? 0);
     if (!rental || rental <= 0) continue;
@@ -128,12 +133,14 @@ function bestRivalPrice(raw: unknown): { monthly: number; halfMonths: number; ha
     const cardDelta = card != null && card > 0 && card < rental ? rental - card : 0;
     const halfMonths = Math.max(0, Math.floor(Number(opt.rivalCompensationHalfPriceMonths ?? 0)));
     const monthly = Math.max(0, rival - cardDelta);
-    const halfMonthly = Math.max(0, Math.round(rival * 0.5) - cardDelta);
-    if (best == null || monthly < best.monthly) {
-      best = { monthly, halfMonths, halfMonthly };
+    const halfMonthly = Math.max(0, Math.round(rival * 0.5));
+    if (halfMonths > 0) {
+      if (bestHalf == null || monthly < bestHalf.monthly) bestHalf = { monthly, halfMonths, halfMonthly };
+    } else {
+      if (bestPlain == null || monthly < bestPlain.monthly) bestPlain = { monthly, halfMonths, halfMonthly };
     }
   }
-  return best;
+  return bestHalf ?? bestPlain;
 }
 
 // 카드할인가가 운영가 이상이면 의미가 없으므로 null로 정규화.
@@ -291,15 +298,27 @@ export async function getPartnerSite(partnerCode: string): Promise<PartnerSiteDa
     sortedByCommission[0] ??
     null;
 
-  // 카테고리별 랭킹 (탭용) — displayConfig.ranking[cat] 우선, 없으면 영업점수수료 높은 순 fallback
+  // 카테고리별 랭킹 (탭용) — displayConfig.ranking[cat] 우선, 없으면 영업점수수료 높은 순 fallback.
+  // 단, 카테고리에 반값(rivalHalfMonths>0) 모델이 있고 top 3 에 하나도 없으면
+  // 4번째 자리에 가장 수수료 높은 반값 모델 1건을 강제 삽입 — 반값 매리트가 메인에 노출되도록.
   const rankingsByCategory: Record<string, ConsumerProduct[]> = {};
   for (const cat of Object.keys(CATEGORY_META)) {
     const custom = pickByCodes(displayConfig?.ranking?.[cat]);
     if (custom.length > 0) {
       rankingsByCategory[cat] = custom.slice(0, 6);
+      continue;
+    }
+    const sorted = all.filter(p => p.category === cat).sort(commissionDesc);
+    if (sorted.length === 0) continue;
+    const top3 = sorted.slice(0, 3);
+    const top3HasHalf = top3.some(p => p.rivalHalfMonths > 0);
+    const topHalf = sorted.find(p => p.rivalHalfMonths > 0 && !top3.some(t => t.productCode === p.productCode));
+    if (!top3HasHalf && topHalf) {
+      // top3 + 반값모델 1건 + 나머지 (반값모델 제외) 채우기
+      const rest = sorted.slice(3).filter(p => p.productCode !== topHalf.productCode);
+      rankingsByCategory[cat] = [...top3, topHalf, ...rest].slice(0, 6);
     } else {
-      const auto = all.filter(p => p.category === cat).sort(commissionDesc).slice(0, 6);
-      if (auto.length > 0) rankingsByCategory[cat] = auto;
+      rankingsByCategory[cat] = sorted.slice(0, 6);
     }
   }
   const ranking = rankingsByCategory.water ?? sortedByCommission.slice(0, 4);
@@ -318,14 +337,21 @@ export async function getPartnerSite(partnerCode: string): Promise<PartnerSiteDa
     }))
     .sort((a, b) => CATEGORY_META[a.slug].rankPriority - CATEGORY_META[b.slug].rankPriority);
 
-  // 점장 추천 picks: displayConfig.picks 우선 (hero 다음 항목들), 없으면 영업점수수료 높은 순 자동 산출
+  // 점장 추천 picks: displayConfig.picks 우선 (hero 다음 항목들), 없으면 영업점수수료 높은 순 자동 산출.
+  // 반값(rivalHalfMonths>0) 모델이 있는데 top picks 에 하나도 없으면 1건 강제 삽입.
   let picks: ConsumerProduct[];
   if (customPicks.length > 1) {
     picks = customPicks.slice(1, 5);
   } else {
-    picks = sortedByCommission
-      .filter(p => p.productCode !== hero?.productCode)
-      .slice(0, 4);
+    const candidate = sortedByCommission.filter(p => p.productCode !== hero?.productCode);
+    const top4 = candidate.slice(0, 4);
+    const top4HasHalf = top4.some(p => p.rivalHalfMonths > 0);
+    const topHalf = candidate.find(p => p.rivalHalfMonths > 0 && !top4.some(t => t.productCode === p.productCode));
+    if (!top4HasHalf && topHalf) {
+      picks = [...top4.slice(0, 3), topHalf];
+    } else {
+      picks = top4;
+    }
   }
 
   // Active banners — status=active이고 현재 시각이 [startsAt, endsAt] 사이
