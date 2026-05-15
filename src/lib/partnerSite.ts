@@ -45,10 +45,14 @@ export type ConsumerProduct = {
   // 타사보상 — 최저 옵션 기준 추가 할인액. 모델에 정책 없으면 0.
   // 메인 카드에 "타사 사용중이면 추가 -X" 칩 노출용.
   maxRivalSavings: number;
-  // 타사보상 + 카드할인까지 누적 적용한 최저 최종가.
+  // 타사보상 + 카드할인까지 누적 적용한 정상 월요금 (반값 종료 이후 가격).
   // 적용 순서: 원래 요금 → 타사전환가 → 동일 옵션의 카드할인 차감.
   // 모델에 타사 정책 없으면 null. "🔄 타사+카드 적용시 월 ₩X부터" 표시용.
   minRivalPrice: number | null;
+  // 반값 기간 개월수 (0 이면 반값 정책 없음). 채택된 minRivalPrice 옵션 기준.
+  rivalHalfMonths: number;
+  // 반값 기간 월요금 ((rival/2) − cardDelta). 반값 정책 있는 모델만 사용 (halfMonths > 0).
+  rivalHalfPrice: number | null;
   // pickLowestPrice 가 채택한 옵션의 mode — 메인 카드 관리방식 라벨에 반영.
   // 셀프형이 더 저렴하면 자가관리형으로 안내 (null 이면 기존 managementType 사용).
   lowestMode: "방문형" | "셀프형" | null;
@@ -102,12 +106,19 @@ function maxRivalSavings(raw: unknown): number {
   return max;
 }
 
-// 타사보상 + 동일옵션 카드할인까지 누적 적용한 최저 최종가.
-// 적용 순서: rentalPrice → rivalCompensationPrice → 카드할인액(rental - card) 차감.
-// 모델에 타사 정책 없으면 null. 메인 카드 "🔄 타사+카드 적용시 월 ₩X부터" 표시용.
-function minRivalPrice(raw: unknown): number | null {
+// 타사보상 + 동일옵션 카드할인 + (있으면) 반값 기간까지 반영한 최저 시나리오.
+// 적용 순서: rentalPrice → rivalCompensationPrice → 카드할인액 차감 → 반값 기간엔 추가 ½.
+//
+// 반환값:
+//   monthly      — 반값 기간이 끝난 뒤의 정상 월요금 (rival − cardDelta)
+//   halfMonths   — 반값 적용 개월수 (0 이면 반값 정책 없음)
+//   halfMonthly  — 반값 기간 월요금 ((rival/2) − cardDelta)
+// 모델에 타사 정책 없으면 null.
+//
+// 비교 기준은 "정상 monthly" 가 가장 낮은 옵션. 채택된 옵션의 반값 정보가 함께 따라감.
+function bestRivalPrice(raw: unknown): { monthly: number; halfMonths: number; halfMonthly: number } | null {
   if (!Array.isArray(raw)) return null;
-  let min: number | null = null;
+  let best: { monthly: number; halfMonths: number; halfMonthly: number } | null = null;
   for (const opt of raw as Array<Record<string, unknown>>) {
     const rental = Number(opt.rentalPrice ?? 0);
     if (!rental || rental <= 0) continue;
@@ -115,10 +126,14 @@ function minRivalPrice(raw: unknown): number | null {
     if (rival == null || rival <= 0) continue;
     const card = opt.cardDiscountPrice != null ? Number(opt.cardDiscountPrice) : null;
     const cardDelta = card != null && card > 0 && card < rental ? rental - card : 0;
-    const final = Math.max(0, rival - cardDelta);
-    if (min == null || final < min) min = final;
+    const halfMonths = Math.max(0, Math.floor(Number(opt.rivalCompensationHalfPriceMonths ?? 0)));
+    const monthly = Math.max(0, rival - cardDelta);
+    const halfMonthly = Math.max(0, Math.round(rival * 0.5) - cardDelta);
+    if (best == null || monthly < best.monthly) {
+      best = { monthly, halfMonths, halfMonthly };
+    }
   }
-  return min;
+  return best;
 }
 
 // 카드할인가가 운영가 이상이면 의미가 없으므로 null로 정규화.
@@ -224,6 +239,7 @@ export async function getPartnerSite(partnerCode: string): Promise<PartnerSiteDa
     const install = policy?.installAmount ?? 0;
     // 메인 페이지 카드 — priceMatrix 의 최저가 옵션을 표시 (없으면 단일 가격 fallback)
     const lowest = pickLowestPrice(p.priceMatrix, { rentalPrice: p.rentalPrice, cardDiscountPrice: p.cardDiscountPrice });
+    const rival = bestRivalPrice(p.priceMatrix);
     return {
       productCode: p.productCode,
       category: p.category,
@@ -247,7 +263,9 @@ export async function getPartnerSite(partnerCode: string): Promise<PartnerSiteDa
         installAmount: install,
       }),
       maxRivalSavings: maxRivalSavings(p.priceMatrix),
-      minRivalPrice: minRivalPrice(p.priceMatrix),
+      minRivalPrice: rival?.monthly ?? null,
+      rivalHalfMonths: rival?.halfMonths ?? 0,
+      rivalHalfPrice: rival && rival.halfMonths > 0 ? rival.halfMonthly : null,
       lowestMode: lowest.mode,
     };
   });
@@ -434,6 +452,7 @@ export async function listPartnerProducts(
     const gift = policy?.giftAmount ?? 0;
     const install = policy?.installAmount ?? 0;
     const lowest = pickLowestPrice(p.priceMatrix, { rentalPrice: p.rentalPrice, cardDiscountPrice: p.cardDiscountPrice });
+    const rival = bestRivalPrice(p.priceMatrix);
     return {
       productCode: p.productCode,
       category: p.category,
@@ -457,7 +476,9 @@ export async function listPartnerProducts(
         installAmount: install,
       }) : 0,
       maxRivalSavings: maxRivalSavings(p.priceMatrix),
-      minRivalPrice: minRivalPrice(p.priceMatrix),
+      minRivalPrice: rival?.monthly ?? null,
+      rivalHalfMonths: rival?.halfMonths ?? 0,
+      rivalHalfPrice: rival && rival.halfMonths > 0 ? rival.halfMonthly : null,
       lowestMode: lowest.mode,
     };
   });
@@ -629,6 +650,7 @@ export async function getPartnerProductDetail(
       rivalCompensationHalfPriceMonths: r.rivalCompensationHalfPriceMonths ?? null,
     }));
 
+  const detailRival = bestRivalPrice(product.priceMatrix);
   const detail: ProductDetail = {
     productCode: product.productCode,
     category: product.category,
@@ -646,7 +668,9 @@ export async function getPartnerProductDetail(
     installFreed: (policy?.installAmount ?? 0) > 0,
     maxRentalSupport: 0, // 상품 상세는 PriceConfigurator가 옵션별 정확 계산
     maxRivalSavings: maxRivalSavings(product.priceMatrix),
-    minRivalPrice: minRivalPrice(product.priceMatrix),
+    minRivalPrice: detailRival?.monthly ?? null,
+    rivalHalfMonths: detailRival?.halfMonths ?? 0,
+    rivalHalfPrice: detailRival && detailRival.halfMonths > 0 ? detailRival.halfMonthly : null,
     lowestMode: null, // 상세 페이지는 옵션 선택 UI 에서 직접 노출 → 헤더 라벨은 그대로
     partnerRentalSupportAmount: partner.rentalSupportAmount ?? 0,
     partnerRentalSupportEnabled: partner.rentalSupportEnabled ?? true,
@@ -748,6 +772,7 @@ export async function getPartnerProductDetail(
     const gift = pp?.giftAmount ?? 0;
     const install = pp?.installAmount ?? 0;
     const lowest = pickLowestPrice(p.priceMatrix, { rentalPrice: p.rentalPrice, cardDiscountPrice: p.cardDiscountPrice });
+    const rival = bestRivalPrice(p.priceMatrix);
     return {
       productCode: p.productCode,
       category: p.category,
@@ -771,7 +796,9 @@ export async function getPartnerProductDetail(
         installAmount: install,
       }),
       maxRivalSavings: maxRivalSavings(p.priceMatrix),
-      minRivalPrice: minRivalPrice(p.priceMatrix),
+      minRivalPrice: rival?.monthly ?? null,
+      rivalHalfMonths: rival?.halfMonths ?? 0,
+      rivalHalfPrice: rival && rival.halfMonths > 0 ? rival.halfMonthly : null,
       lowestMode: lowest.mode,
     };
   });

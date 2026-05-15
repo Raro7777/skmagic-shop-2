@@ -41,6 +41,8 @@ export async function searchPartnerProducts(
       maxRentalSupport: 0,
       maxRivalSavings: 0,
       minRivalPrice: null, // 검색 결과 카드는 메인 배지 표기 없음
+      rivalHalfMonths: 0,
+      rivalHalfPrice: null,
       lowestMode: null,
     };
   });

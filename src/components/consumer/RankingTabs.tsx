@@ -121,7 +121,13 @@ export default function RankingTabs({
                   <div className="text-[12px] text-rk-sale font-medium">카드 {fmt(p.cardDiscountPrice)}원~</div>
                 )}
                 {p.minRivalPrice != null && p.minRivalPrice > 0 && (
-                  <div className="text-[11px] text-rk-orange-deep font-medium">🔄 타사+카드 월 {fmt(p.minRivalPrice)}원~</div>
+                  p.rivalHalfPrice != null && p.rivalHalfMonths > 0 ? (
+                    <div className="text-[11px] text-rk-orange-deep font-medium leading-tight">
+                      🔄 첫 {p.rivalHalfMonths}개월 월 {fmt(p.rivalHalfPrice)}원~ <span className="text-rk-faint font-normal">· 이후 {fmt(p.minRivalPrice)}원</span>
+                    </div>
+                  ) : (
+                    <div className="text-[11px] text-rk-orange-deep font-medium">🔄 타사+카드 월 {fmt(p.minRivalPrice)}원~</div>
+                  )
                 )}
               </div>
             </Link>
