@@ -8,6 +8,15 @@ import { listActivePartners, type ConsumerProduct, type PartnerSiteData } from "
 
 const fmt = (n: number) => n.toLocaleString("ko-KR");
 
+// 메인 카드 관리방식 라벨 — pickLowestPrice 가 채택한 옵션의 mode 기준으로 안내.
+// 셀프형이 채택되면 "자가관리" 로 (방문형보다 저렴해서 헤드라인이 셀프형으로 잡힐 때),
+// 방문형이면 "방문관리" 로. mode 정보 없으면 Product.managementType 그대로.
+function managementLabel(p: ConsumerProduct): string {
+  if (p.lowestMode === "셀프형") return "자가관리형";
+  if (p.lowestMode === "방문형") return "방문관리형";
+  return p.managementType;
+}
+
 // 협력점 brandLabel 표시 정규화 — 'SK매직 인증판매점' → 'SK매직 공식 인증판매점'
 function formatBrandLabel(raw: string): string {
   if (raw === "SK매직 인증판매점") return "SK매직 공식 인증판매점";
@@ -361,7 +370,7 @@ function RankCard({ rank, product, bg, href }: { rank: number; product: Consumer
         <div className="text-[12px] text-rk-faint font-mono mt-0.5">{product.modelName}</div>
         <div className="flex flex-wrap gap-0.5 mt-1">
           <span className="text-[12px] px-1 py-px rounded bg-rk-soft text-rk-muted">의무 {product.contractPeriod}개월</span>
-          <span className="text-[12px] px-1 py-px rounded bg-rk-soft text-rk-muted">{product.managementType}</span>
+          <span className="text-[12px] px-1 py-px rounded bg-rk-soft text-rk-muted">{managementLabel(product)}</span>
           {product.giftLabel && (
             <span className="text-[12px] px-1 py-px rounded bg-rk-tint-orange text-rk-orange-deep font-medium">사은품 {product.giftLabel}</span>
           )}
@@ -379,7 +388,7 @@ function RankCard({ rank, product, bg, href }: { rank: number; product: Consumer
         )}
         {product.minRivalPrice != null && product.minRivalPrice > 0 && (
           <div className="text-[11px] text-rk-orange-deep mt-px">
-            🔄 타사 사용중 시 월 <b className="rk-num">{fmt(product.minRivalPrice)}원~</b>
+            🔄 타사+카드 적용시 월 <b className="rk-num">{fmt(product.minRivalPrice)}원~</b>
           </div>
         )}
       </div>
@@ -437,12 +446,12 @@ function PickCard({ product, bg, href }: { product: ConsumerProduct; bg: string;
       )}
       {product.minRivalPrice != null && product.minRivalPrice > 0 && (
         <div className="mt-px text-[11px] text-rk-orange-deep font-medium">
-          🔄 타사 사용중 시 월 <b className="rk-num">{fmt(product.minRivalPrice)}원~</b>
+          🔄 타사+카드 적용시 월 <b className="rk-num">{fmt(product.minRivalPrice)}원~</b>
         </div>
       )}
       <div className="flex gap-0.5 flex-wrap mt-1.5">
         <span className="text-[9px] px-1 py-px rounded bg-rk-soft text-rk-muted">의무 {product.contractPeriod}</span>
-        <span className="text-[9px] px-1 py-px rounded bg-rk-soft text-rk-muted truncate max-w-[80px]">{product.managementType}</span>
+        <span className="text-[9px] px-1 py-px rounded bg-rk-soft text-rk-muted truncate max-w-[80px]">{managementLabel(product)}</span>
       </div>
       {product.giftLabel && <div className="text-[12px] text-rk-orange-deep font-medium mt-1 truncate">🎁 {product.giftLabel}</div>}
     </Link>

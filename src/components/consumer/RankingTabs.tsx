@@ -7,6 +7,13 @@ import ProductThumb from "./ProductThumb";
 
 const fmt = (n: number) => n.toLocaleString("ko-KR");
 
+// 채택된 옵션 mode 기준으로 관리방식 라벨링 (셀프형이 채택되면 자가관리형으로 안내)
+function managementLabel(p: ConsumerProduct): string {
+  if (p.lowestMode === "셀프형") return "자가관리형";
+  if (p.lowestMode === "방문형") return "방문관리형";
+  return p.managementType;
+}
+
 const PRODUCT_BG: Record<string, string> = {
   water:    "linear-gradient(160deg,#D8E2F0,#A4B4D0)",
   bidet:    "linear-gradient(160deg,#F0E5DA,#D6BFA8)",
@@ -97,7 +104,7 @@ export default function RankingTabs({
               </div>
               <div className="min-w-0">
                 <div className="text-[14px] font-medium text-rk-ink leading-[1.35] truncate">{p.name}</div>
-                <div className="text-[12px] text-rk-faint font-mono mt-0.5 truncate">{p.modelName} · {p.managementType}</div>
+                <div className="text-[12px] text-rk-faint font-mono mt-0.5 truncate">{p.modelName} · {managementLabel(p)}</div>
                 <div className="flex items-center gap-1 mt-1 flex-wrap">
                   {p.giftLabel && <span className="text-[9px] px-1 py-px rounded bg-rk-tint-orange text-rk-orange-deep font-medium">사은품</span>}
                   {p.installFreed && <span className="text-[9px] px-1 py-px rounded bg-rk-tint-green text-rk-success font-medium">설치비 면제</span>}
@@ -114,7 +121,7 @@ export default function RankingTabs({
                   <div className="text-[12px] text-rk-sale font-medium">카드 {fmt(p.cardDiscountPrice)}원~</div>
                 )}
                 {p.minRivalPrice != null && p.minRivalPrice > 0 && (
-                  <div className="text-[11px] text-rk-orange-deep font-medium">🔄 타사 월 {fmt(p.minRivalPrice)}원~</div>
+                  <div className="text-[11px] text-rk-orange-deep font-medium">🔄 타사+카드 월 {fmt(p.minRivalPrice)}원~</div>
                 )}
               </div>
             </Link>

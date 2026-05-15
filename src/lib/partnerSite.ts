@@ -45,9 +45,13 @@ export type ConsumerProduct = {
   // 타사보상 — 최저 옵션 기준 추가 할인액. 모델에 정책 없으면 0.
   // 메인 카드에 "타사 사용중이면 추가 -X" 칩 노출용.
   maxRivalSavings: number;
-  // 타사보상 적용 후 최저가 (priceMatrix.rivalCompensationPrice 의 최소값).
-  // 모델에 정책 없으면 null. "타사 적용시 월 ₩X부터" 표시용.
+  // 타사보상 + 카드할인까지 누적 적용한 최저 최종가.
+  // 적용 순서: 원래 요금 → 타사전환가 → 동일 옵션의 카드할인 차감.
+  // 모델에 타사 정책 없으면 null. "🔄 타사+카드 적용시 월 ₩X부터" 표시용.
   minRivalPrice: number | null;
+  // pickLowestPrice 가 채택한 옵션의 mode — 메인 카드 관리방식 라벨에 반영.
+  // 셀프형이 더 저렴하면 자가관리형으로 안내 (null 이면 기존 managementType 사용).
+  lowestMode: "방문형" | "셀프형" | null;
 };
 
 function pickThumbnail(p: { imageUrl: string | null; imageUrls: string[] }): string | null {
@@ -56,13 +60,16 @@ function pickThumbnail(p: { imageUrl: string | null; imageUrls: string[] }): str
 
 // priceMatrix 에서 최저 cardDiscountPrice (또는 rentalPrice) 옵션 picking.
 // 메인 페이지 카드 노출용 — 가장 저렴한 옵션의 가격을 "월 X부터" 표시.
+// 셀프형이 방문형보다 저렴한 모델은 자연스럽게 셀프형이 선택됨 → mode 도 함께 반환해
+// UI 에서 "자가관리형" 라벨로 안내 가능.
 function pickLowestPrice(
   raw: unknown,
   fallback: { rentalPrice: number; cardDiscountPrice: number | null },
-): { rentalPrice: number; cardDiscountPrice: number | null } {
-  if (!Array.isArray(raw) || raw.length === 0) return fallback;
+): { rentalPrice: number; cardDiscountPrice: number | null; mode: "방문형" | "셀프형" | null } {
+  if (!Array.isArray(raw) || raw.length === 0) return { ...fallback, mode: null };
   let bestRental = fallback.rentalPrice;
   let bestCard = fallback.cardDiscountPrice;
+  let bestMode: "방문형" | "셀프형" | null = null;
   let bestEffective = bestCard ?? bestRental;
   for (const opt of raw as Array<Record<string, unknown>>) {
     const r = Number(opt.rentalPrice ?? 0);
@@ -73,9 +80,10 @@ function pickLowestPrice(
       bestEffective = effective;
       bestRental = r;
       bestCard = c;
+      bestMode = opt.mode === "방문형" || opt.mode === "셀프형" ? opt.mode : null;
     }
   }
-  return { rentalPrice: bestRental, cardDiscountPrice: bestCard };
+  return { rentalPrice: bestRental, cardDiscountPrice: bestCard, mode: bestMode };
 }
 
 // 타사보상 옵션 중 (rentalPrice - rivalCompensationPrice) 최대값 = 최대 할인액
@@ -94,16 +102,21 @@ function maxRivalSavings(raw: unknown): number {
   return max;
 }
 
-// 타사보상 적용 후 최저가 — priceMatrix.rivalCompensationPrice 의 최소값.
-// 모델에 정책 없으면 null.
+// 타사보상 + 동일옵션 카드할인까지 누적 적용한 최저 최종가.
+// 적용 순서: rentalPrice → rivalCompensationPrice → 카드할인액(rental - card) 차감.
+// 모델에 타사 정책 없으면 null. 메인 카드 "🔄 타사+카드 적용시 월 ₩X부터" 표시용.
 function minRivalPrice(raw: unknown): number | null {
   if (!Array.isArray(raw)) return null;
   let min: number | null = null;
   for (const opt of raw as Array<Record<string, unknown>>) {
+    const rental = Number(opt.rentalPrice ?? 0);
+    if (!rental || rental <= 0) continue;
     const rival = opt.rivalCompensationPrice != null ? Number(opt.rivalCompensationPrice) : null;
-    if (rival != null && rival > 0) {
-      if (min == null || rival < min) min = rival;
-    }
+    if (rival == null || rival <= 0) continue;
+    const card = opt.cardDiscountPrice != null ? Number(opt.cardDiscountPrice) : null;
+    const cardDelta = card != null && card > 0 && card < rental ? rental - card : 0;
+    const final = Math.max(0, rival - cardDelta);
+    if (min == null || final < min) min = final;
   }
   return min;
 }
@@ -235,6 +248,7 @@ export async function getPartnerSite(partnerCode: string): Promise<PartnerSiteDa
       }),
       maxRivalSavings: maxRivalSavings(p.priceMatrix),
       minRivalPrice: minRivalPrice(p.priceMatrix),
+      lowestMode: lowest.mode,
     };
   });
 
@@ -444,6 +458,7 @@ export async function listPartnerProducts(
       }) : 0,
       maxRivalSavings: maxRivalSavings(p.priceMatrix),
       minRivalPrice: minRivalPrice(p.priceMatrix),
+      lowestMode: lowest.mode,
     };
   });
 
@@ -632,6 +647,7 @@ export async function getPartnerProductDetail(
     maxRentalSupport: 0, // 상품 상세는 PriceConfigurator가 옵션별 정확 계산
     maxRivalSavings: maxRivalSavings(product.priceMatrix),
     minRivalPrice: minRivalPrice(product.priceMatrix),
+    lowestMode: null, // 상세 페이지는 옵션 선택 UI 에서 직접 노출 → 헤더 라벨은 그대로
     partnerRentalSupportAmount: partner.rentalSupportAmount ?? 0,
     partnerRentalSupportEnabled: partner.rentalSupportEnabled ?? true,
     partnerInstallAmount: policy?.installAmount ?? 0,
@@ -756,6 +772,7 @@ export async function getPartnerProductDetail(
       }),
       maxRivalSavings: maxRivalSavings(p.priceMatrix),
       minRivalPrice: minRivalPrice(p.priceMatrix),
+      lowestMode: lowest.mode,
     };
   });
 
