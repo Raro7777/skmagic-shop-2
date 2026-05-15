@@ -181,8 +181,14 @@ export default async function PartnerSiteShell({
         )}
 
         {/* 렌탈지원금 promo 띠 — 협력점이 ON 한 경우만 (강조 버전). 클릭 → 추천 상품 영역 스크롤.
-            displayConfig.flagshipBannerEnabled === false 면 노출 안 함. */}
-        {data.flagshipBannerEnabled && heroSlides.some(p => p.maxRentalSupport > 0) && (
+            displayConfig.flagshipBannerEnabled === false 면 노출 안 함.
+            heroSlides 가 비어있는 경우 (자동 슬라이드 OFF) 에도 picks/ranking 의 maxRentalSupport 로 판단. */}
+        {data.flagshipBannerEnabled && (() => {
+          const pool = heroSlides.length > 0
+            ? heroSlides
+            : [...picks, ...ranking, ...(hero ? [hero] : [])];
+          return pool.some(p => p.maxRentalSupport > 0);
+        })() && (
           <a
             href="#picks"
             className="relative overflow-hidden bg-gradient-to-r from-[#FF6B2C] via-[#F26A1F] to-[#E04B0B] text-white px-4 py-3.5 flex items-center gap-3 no-underline cursor-pointer hover:brightness-105 active:brightness-95 transition-[filter] duration-150"
@@ -200,7 +206,10 @@ export default async function PartnerSiteShell({
               <div className="text-[11px] font-medium tracking-[.08em] opacity-90">FLAGSHIP CASHBACK</div>
               <div className="text-[17px] font-extrabold tracking-[-.02em] mt-px whitespace-nowrap">
                 개통 시 <span className="text-[22px] rk-num">+{(() => {
-                  const n = Math.max(...heroSlides.map(p => p.maxRentalSupport));
+                  const pool = heroSlides.length > 0
+                    ? heroSlides
+                    : [...picks, ...ranking, ...(hero ? [hero] : [])];
+                  const n = Math.max(0, ...pool.map(p => p.maxRentalSupport));
                   return n % 10000 === 0 ? `${n / 10000}만원` : `${fmt(n)}원`;
                 })()}</span> 현금 캐시백
               </div>
