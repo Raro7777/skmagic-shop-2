@@ -209,24 +209,7 @@ export default async function PartnerSiteShell({
           />
         )}
 
-        {/* QUICK nav — 활성 카테고리만 (이벤트 단축 비활성) */}
-        <nav className="bg-white px-3 py-3.5 border-b border-rk-line grid grid-cols-4 gap-y-1">
-          {data.categories.map(c => (
-            <Link
-              key={c.slug}
-              href={`/p/${partner.partnerCode}/category/${c.slug}`}
-              className="flex flex-col items-center gap-1.5 text-rk-text px-1 py-1.5 text-[13px] font-medium text-center leading-tight no-underline cursor-pointer"
-            >
-              <div className={"w-11 h-11 rounded-xl grid place-items-center text-[22px] " + (c.isHot ? "bg-rk-tint-orange" : "bg-rk-soft")}>
-                {c.icon}
-              </div>
-              <div>
-                {c.label}
-                <small className="block text-[9px] text-rk-faint font-mono mt-px">{c.count}개</small>
-              </div>
-            </Link>
-          ))}
-        </nav>
+        {/* QUICK nav 비활성 — 아래 카테고리 랭킹 탭과 중복되어 제거. 필요 시 주석 복구. */}
 
         <div className="bg-rk-tint-orange px-3.5 py-2 text-[14px] text-rk-orange-deep flex items-center gap-1.5 border-b border-[#F4DCC9]">
           <span className="text-sm">🚚</span>
