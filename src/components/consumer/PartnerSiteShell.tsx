@@ -192,10 +192,13 @@ export default async function PartnerSiteShell({
               }}
             />
             <span className="text-[28px] leading-none relative">🎁</span>
-            <div className="flex-1 leading-tight relative">
+            <div className="flex-1 leading-tight relative min-w-0">
               <div className="text-[11px] font-medium tracking-[.08em] opacity-90">FLAGSHIP CASHBACK</div>
-              <div className="text-[17px] font-extrabold tracking-[-.02em] mt-px">
-                개통 시 <span className="text-[22px] rk-num">+{fmt(Math.max(...heroSlides.map(p => p.maxRentalSupport)))}원</span> 현금 캐시백
+              <div className="text-[17px] font-extrabold tracking-[-.02em] mt-px whitespace-nowrap">
+                개통 시 <span className="text-[22px] rk-num">+{(() => {
+                  const n = Math.max(...heroSlides.map(p => p.maxRentalSupport));
+                  return n % 10000 === 0 ? `${n / 10000}만원` : `${fmt(n)}원`;
+                })()}</span> 현금 캐시백
               </div>
               <div className="text-[12px] opacity-90 mt-0.5">
                 협력점 단독 혜택 · 모든 상품 적용 · 가입 취소 시 전액 환수
