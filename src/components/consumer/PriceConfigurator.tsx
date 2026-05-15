@@ -275,6 +275,16 @@ export default function PriceConfigurator({
         </div>
       </div>
 
+      {/* 반값 기간 안내 — 타사보상 + 반값 정책 적용 시 청구 흐름 명시 */}
+      {rivalApplied && useNewPolicy && newPolicyHalfMonths != null && newPolicyHalfMonths > 0 && newPolicyRival != null && (
+        <div className="mb-2.5 text-[12px] text-rk-orange-deep bg-rk-tint-orange/50 border border-rk-orange/30 rounded px-3 py-2 leading-[1.55]">
+          🔥 <b>첫 {newPolicyHalfMonths}개월은 반값 · 월 {fmt(Math.round(newPolicyRival * 0.5))}원 청구</b>
+          <span className="block text-rk-muted font-normal mt-0.5">
+            {newPolicyHalfMonths + 1}개월차부터 월 {fmt(newPolicyRival)}원으로 청구 (카드 추가 할인은 별개 적용)
+          </span>
+        </div>
+      )}
+
       {/* 카드 혜택 — 카드사별 차등 + 5월 한정 추가 프로모션. 펼침 패널 */}
       {finalCard != null && <CardBenefitsPanel />}
 

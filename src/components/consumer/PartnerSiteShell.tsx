@@ -376,10 +376,16 @@ function RankCard({ rank, product, bg, href }: { rank: number; product: Consumer
           )}
         </div>
         <div className="flex items-baseline gap-1.5 mt-1.5 flex-wrap">
-          <span className="text-[12px] text-rk-muted">월 렌탈가 최저</span>
-          <span className="text-base font-bold text-rk-ink tracking-[-.02em] rk-num">
-            {fmt(product.rentalPrice)}<small className="text-[13px] font-medium">원~</small>
-          </span>
+          <span className="text-[12px] text-rk-muted">기본 구독료</span>
+          {(product.cardDiscountPrice || (product.minRivalPrice != null && product.minRivalPrice > 0)) ? (
+            <span className="text-[13px] font-medium text-rk-faint line-through rk-num">
+              월 {fmt(product.rentalPrice)}원
+            </span>
+          ) : (
+            <span className="text-base font-bold text-rk-ink tracking-[-.02em] rk-num">
+              월 {fmt(product.rentalPrice)}<small className="text-[13px] font-medium">원~</small>
+            </span>
+          )}
         </div>
         {product.cardDiscountPrice && (
           <div className="text-[12px] text-rk-muted mt-px">
@@ -443,8 +449,14 @@ function PickCard({ product, bg, href }: { product: ConsumerProduct; bg: string;
       <h4 className="text-[13px] font-medium text-rk-ink leading-[1.4] m-0 mt-0.5 line-clamp-2 min-h-[36px]">{product.name}</h4>
       <div className="text-[12px] text-rk-faint font-mono mt-0.5 truncate">{product.modelName}</div>
       <div className="mt-1.5 flex items-baseline gap-1">
-        <small className="text-[12px] text-rk-muted">월</small>
-        <b className="text-[16px] font-bold tracking-[-.02em] text-rk-ink rk-num">{fmt(product.rentalPrice)}<small className="text-[13px] font-medium">원~</small></b>
+        {(product.cardDiscountPrice || (product.minRivalPrice != null && product.minRivalPrice > 0)) ? (
+          <small className="text-[12px] text-rk-faint line-through rk-num">월 {fmt(product.rentalPrice)}원</small>
+        ) : (
+          <>
+            <small className="text-[12px] text-rk-muted">월</small>
+            <b className="text-[16px] font-bold tracking-[-.02em] text-rk-ink rk-num">{fmt(product.rentalPrice)}<small className="text-[13px] font-medium">원~</small></b>
+          </>
+        )}
       </div>
       {product.cardDiscountPrice && (
         <div className="mt-px text-[12px] text-rk-sale font-medium">

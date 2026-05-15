@@ -136,9 +136,25 @@ export default async function ProductDetailPage({
           fallbackBg={productBg}
           fallbackBadges={
             <>
-              {detail.isFeatured && <span className="text-[12px] px-1.5 py-0.5 rounded bg-rk-navy text-white font-semibold">MD추천</span>}
-              {detail.giftLabel && <span className="text-[12px] px-1.5 py-0.5 rounded bg-rk-orange text-white font-semibold">사은품</span>}
-              {detail.installFreed && <span className="text-[12px] px-1.5 py-0.5 rounded bg-rk-success text-white font-semibold">설치비 면제</span>}
+              {/* 큰 배지 — 본사 카탈로그 스타일. 반값 정책 있는 모델 + 관리방식 강조 */}
+              {detail.rivalHalfMonths > 0 && (
+                <span className="w-14 h-14 grid place-items-center rounded-lg bg-rk-sale text-white text-[13px] font-extrabold leading-[1.1] text-center px-1 shadow-md">
+                  {detail.rivalHalfMonths}개월<br />반값
+                </span>
+              )}
+              <span className="w-14 h-14 grid place-items-center rounded-lg bg-rk-navy text-white text-[13px] font-semibold leading-[1.1] text-center px-1 shadow-md">
+                {detail.managementType.includes("자가") || detail.managementType.includes("셀프") ? (
+                  <>셀프<br />관리</>
+                ) : (
+                  <>방문<br />관리</>
+                )}
+              </span>
+              {/* 보조 작은 칩 — 사은품/설치비/MD추천 */}
+              <div className="flex flex-col gap-1 mt-1">
+                {detail.isFeatured && <span className="text-[12px] px-1.5 py-0.5 rounded bg-rk-info text-white font-semibold">MD추천</span>}
+                {detail.giftLabel && <span className="text-[12px] px-1.5 py-0.5 rounded bg-rk-orange text-white font-semibold">사은품</span>}
+                {detail.installFreed && <span className="text-[12px] px-1.5 py-0.5 rounded bg-rk-success text-white font-semibold">설치비 면제</span>}
+              </div>
             </>
           }
         />
