@@ -384,14 +384,14 @@ function RankCard({ rank, product, bg, href }: { rank: number; product: Consumer
           )}
         </div>
         <div className="flex items-baseline gap-1.5 mt-1.5 flex-wrap">
-          <span className="text-[12px] text-rk-muted">월 렌탈가</span>
+          <span className="text-[12px] text-rk-muted">월 렌탈가 최저</span>
           <span className="text-base font-bold text-rk-ink tracking-[-.02em] rk-num">
-            {fmt(product.rentalPrice)}<small className="text-[13px] font-medium">원</small>
+            {fmt(product.rentalPrice)}<small className="text-[13px] font-medium">원~</small>
           </span>
         </div>
         {product.cardDiscountPrice && (
           <div className="text-[12px] text-rk-muted mt-px">
-            카드할인가 <b className="text-rk-sale rk-num">월 {fmt(product.cardDiscountPrice)}원</b>
+            카드할인 시 <b className="text-rk-sale rk-num">월 {fmt(product.cardDiscountPrice)}원~</b>
           </div>
         )}
       </div>

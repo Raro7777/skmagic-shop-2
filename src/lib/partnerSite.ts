@@ -48,6 +48,30 @@ function pickThumbnail(p: { imageUrl: string | null; imageUrls: string[] }): str
   return p.imageUrls?.[0] ?? p.imageUrl ?? null;
 }
 
+// priceMatrix 에서 최저 cardDiscountPrice (또는 rentalPrice) 옵션 picking.
+// 메인 페이지 카드 노출용 — 가장 저렴한 옵션의 가격을 "월 X부터" 표시.
+function pickLowestPrice(
+  raw: unknown,
+  fallback: { rentalPrice: number; cardDiscountPrice: number | null },
+): { rentalPrice: number; cardDiscountPrice: number | null } {
+  if (!Array.isArray(raw) || raw.length === 0) return fallback;
+  let bestRental = fallback.rentalPrice;
+  let bestCard = fallback.cardDiscountPrice;
+  let bestEffective = bestCard ?? bestRental;
+  for (const opt of raw as Array<Record<string, unknown>>) {
+    const r = Number(opt.rentalPrice ?? 0);
+    if (!r || r <= 0) continue;
+    const c = opt.cardDiscountPrice != null ? Number(opt.cardDiscountPrice) : null;
+    const effective = c != null && c > 0 && c < r ? c : r;
+    if (effective < bestEffective) {
+      bestEffective = effective;
+      bestRental = r;
+      bestCard = c;
+    }
+  }
+  return { rentalPrice: bestRental, cardDiscountPrice: bestCard };
+}
+
 // 카드할인가가 운영가 이상이면 의미가 없으므로 null로 정규화.
 // 데이터 문제가 있더라도 화면에 잘못된 "할인" 메시지가 노출되지 않게 보장.
 function effectiveCardDiscount(rentalPrice: number, cardDiscountPrice: number | null): number | null {
@@ -149,13 +173,15 @@ export async function getPartnerSite(partnerCode: string): Promise<PartnerSiteDa
     const policy = p.partnerPolicies[0];
     const gift = policy?.giftAmount ?? 0;
     const install = policy?.installAmount ?? 0;
+    // 메인 페이지 카드 — priceMatrix 의 최저가 옵션을 표시 (없으면 단일 가격 fallback)
+    const lowest = pickLowestPrice(p.priceMatrix, { rentalPrice: p.rentalPrice, cardDiscountPrice: p.cardDiscountPrice });
     return {
       productCode: p.productCode,
       category: p.category,
       name: p.name,
       modelName: p.modelName,
-      rentalPrice: p.rentalPrice,
-      cardDiscountPrice: effectiveCardDiscount(p.rentalPrice, p.cardDiscountPrice),
+      rentalPrice: lowest.rentalPrice,
+      cardDiscountPrice: effectiveCardDiscount(lowest.rentalPrice, lowest.cardDiscountPrice),
       contractPeriod: p.contractPeriod,
       managementType: p.managementType,
       isFeatured: p.isFeatured,
@@ -355,13 +381,14 @@ export async function listPartnerProducts(
     const policy = p.partnerPolicies[0];
     const gift = policy?.giftAmount ?? 0;
     const install = policy?.installAmount ?? 0;
+    const lowest = pickLowestPrice(p.priceMatrix, { rentalPrice: p.rentalPrice, cardDiscountPrice: p.cardDiscountPrice });
     return {
       productCode: p.productCode,
       category: p.category,
       name: p.name,
       modelName: p.modelName,
-      rentalPrice: p.rentalPrice,
-      cardDiscountPrice: effectiveCardDiscount(p.rentalPrice, p.cardDiscountPrice),
+      rentalPrice: lowest.rentalPrice,
+      cardDiscountPrice: effectiveCardDiscount(lowest.rentalPrice, lowest.cardDiscountPrice),
       contractPeriod: p.contractPeriod,
       managementType: p.managementType,
       isFeatured: p.isFeatured,
@@ -661,13 +688,14 @@ export async function getPartnerProductDetail(
     const pp = p.partnerPolicies[0];
     const gift = pp?.giftAmount ?? 0;
     const install = pp?.installAmount ?? 0;
+    const lowest = pickLowestPrice(p.priceMatrix, { rentalPrice: p.rentalPrice, cardDiscountPrice: p.cardDiscountPrice });
     return {
       productCode: p.productCode,
       category: p.category,
       name: p.name,
       modelName: p.modelName,
-      rentalPrice: p.rentalPrice,
-      cardDiscountPrice: effectiveCardDiscount(p.rentalPrice, p.cardDiscountPrice),
+      rentalPrice: lowest.rentalPrice,
+      cardDiscountPrice: effectiveCardDiscount(lowest.rentalPrice, lowest.cardDiscountPrice),
       contractPeriod: p.contractPeriod,
       managementType: p.managementType,
       isFeatured: p.isFeatured,

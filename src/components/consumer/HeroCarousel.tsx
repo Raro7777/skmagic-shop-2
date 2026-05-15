@@ -107,9 +107,9 @@ export default function HeroCarousel({
                 : "신용카드 36개월 무이자 · 무료설치"}
             </p>
             <div className="flex items-baseline gap-2 flex-wrap">
-              <span className="text-[13px] opacity-70">월 렌탈가</span>
+              <span className="text-[13px] opacity-70">월 렌탈가 최저</span>
               <span className="text-[28px] font-bold tracking-[-.02em] text-[#FFB374] rk-num">
-                {fmt(cur.product.rentalPrice)}<small className="text-[13px] font-medium">원</small>
+                {fmt(cur.product.rentalPrice)}<small className="text-[13px] font-medium">원~</small>
               </span>
             </div>
             <div className="flex gap-1 mt-2.5 flex-wrap">

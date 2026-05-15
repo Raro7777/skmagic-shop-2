@@ -109,9 +109,9 @@ export default function RankingTabs({
               </div>
               <div className="text-right shrink-0">
                 <div className="text-[12px] text-rk-muted">월</div>
-                <b className="text-[15px] font-bold tracking-[-.02em] text-rk-ink rk-num">{fmt(p.rentalPrice)}원</b>
+                <b className="text-[15px] font-bold tracking-[-.02em] text-rk-ink rk-num">{fmt(p.rentalPrice)}원~</b>
                 {p.cardDiscountPrice && (
-                  <div className="text-[12px] text-rk-sale font-medium">카드 {fmt(p.cardDiscountPrice)}원</div>
+                  <div className="text-[12px] text-rk-sale font-medium">카드 {fmt(p.cardDiscountPrice)}원~</div>
                 )}
               </div>
             </Link>
