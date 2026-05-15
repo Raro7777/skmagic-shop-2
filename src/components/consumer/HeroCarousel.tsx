@@ -113,7 +113,7 @@ export default function HeroCarousel({
               </span>
             </div>
             <div className="flex gap-1 mt-2.5 flex-wrap">
-              {cur.product.cardDiscountPrice && (
+              {cur.product.cardDiscountPrice != null && (
                 <span className="text-[12px] px-1.5 py-0.5 bg-white/10 rounded">
                   카드할인 최대 월 {fmt(cur.product.cardDiscountPrice)}원
                 </span>

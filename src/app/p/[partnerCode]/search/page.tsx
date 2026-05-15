@@ -128,9 +128,9 @@ function ResultCard({ product, href }: { product: ConsumerProduct; href: string 
         <small className="text-[12px] text-rk-muted">월</small>
         <b className="text-[15px] font-bold tracking-[-.02em] text-rk-ink rk-num">{fmt(product.rentalPrice)}원~</b>
       </div>
-      {product.cardDiscountPrice && (
+      {product.cardDiscountPrice != null && (
         <div className="mt-px text-[12px] text-rk-sale font-medium">
-          카드할인가 <b className="font-bold rk-num">월 {fmt(product.cardDiscountPrice)}원</b>
+          카드할인 시 최대 <b className="font-bold rk-num">월 {fmt(product.cardDiscountPrice)}원</b>
         </div>
       )}
       {product.giftLabel && (

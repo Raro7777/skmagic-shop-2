@@ -196,15 +196,16 @@ async function main() {
     const updatedMatrix: ExistingOption[] = dbMatrix.map(opt => {
       const key = optionKey(opt);
       const sheet = sheetByKey.get(key);
-      if (!sheet) return opt; // 시트에 없는 옵션 (별도 모드 등) — 보존
-      optionUpdates++;
-      const newRental = sheet.rentalPrice ?? opt.rentalPrice;
-      const newBase = sheet.basePrice;
-      const newPromo = sheet.promoPrice;
+      // 시트 매칭 시 시트 값 우선 (기준/운영/판촉 모두 갱신).
+      // 매칭 안 되면 기존 base/rental/promo 보존하되 cardDiscountPrice 만 재계산.
+      const newRental = sheet?.rentalPrice ?? opt.rentalPrice;
+      const newBase = sheet ? sheet.basePrice : (opt.basePrice ?? null);
+      const newPromo = sheet ? sheet.promoPrice : (opt.promoPrice ?? null);
+      if (sheet) optionUpdates++;
       if (newPromo != null) promoApplied++;
-      // 카드할인 — effective(promo ?? rental) − 15k. 음수는 null 처리 (혜택 의미 없음).
+      // 카드할인 — effective(promo ?? rental) − 23k. 음수는 0 으로 clamp (0원 노출 허용).
       const effective = newPromo ?? newRental;
-      const newCard = effective != null && effective > CARD_DISCOUNT ? effective - CARD_DISCOUNT : null;
+      const newCard = effective != null ? Math.max(0, effective - CARD_DISCOUNT) : null;
       return {
         ...opt,
         basePrice: newBase,
@@ -228,7 +229,7 @@ async function main() {
     const newRental = candidate?.rentalPrice ?? p.rentalPrice;
     const newPromo = candidate?.promoPrice ?? null;
     const newCardEffective = newPromo ?? newRental;
-    const newCard = newCardEffective != null && newCardEffective > CARD_DISCOUNT ? newCardEffective - CARD_DISCOUNT : null;
+    const newCard = newCardEffective != null ? Math.max(0, newCardEffective - CARD_DISCOUNT) : null;
 
     const willUpdateTop =
       p.baseRentalPrice !== newBase ||

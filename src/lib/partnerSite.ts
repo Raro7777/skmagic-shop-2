@@ -162,6 +162,9 @@ function maxRivalSavings(raw: unknown): number {
 //
 // 비교 기준: 반값 정책이 있는 옵션을 우선적으로 채택해 매리트가 노출되도록 함.
 // 같은 그룹 내에선 monthly 가 가장 낮은 옵션.
+// 본사 매직몰 카드할인 최대 금액 — UI 라벨/계산 일관성 유지를 위해 상수화.
+const CARD_DISCOUNT_MAX = 23000;
+
 function bestRivalPrice(raw: unknown): { monthly: number; halfMonths: number; halfMonthly: number } | null {
   if (!Array.isArray(raw)) return null;
   type RivalOpt = { monthly: number; halfMonths: number; halfMonthly: number };
@@ -172,8 +175,11 @@ function bestRivalPrice(raw: unknown): { monthly: number; halfMonths: number; ha
     if (!rental || rental <= 0) continue;
     const rival = opt.rivalCompensationPrice != null ? Number(opt.rivalCompensationPrice) : null;
     if (rival == null || rival <= 0) continue;
-    const card = opt.cardDiscountPrice != null ? Number(opt.cardDiscountPrice) : null;
-    const cardDelta = card != null && card > 0 && card < rental ? rental - card : 0;
+    // cardDelta 는 effective(promo ?? rental) 기준 — 옵션의 rental 만 보면 promo 모델에서 부풀려짐.
+    // 일관성 위해 정책 상한 (CARD_DISCOUNT_MAX = 23k) 으로 cap.
+    const promo = opt.promoPrice != null ? Number(opt.promoPrice) : null;
+    const effective = promo ?? rental;
+    const cardDelta = Math.min(CARD_DISCOUNT_MAX, effective);
     const halfMonths = Math.max(0, Math.floor(Number(opt.rivalCompensationHalfPriceMonths ?? 0)));
     const monthly = Math.max(0, rival - cardDelta);
     const halfMonthly = Math.max(0, Math.round(rival * 0.5));

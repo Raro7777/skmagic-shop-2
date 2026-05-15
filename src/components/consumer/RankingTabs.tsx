@@ -120,7 +120,7 @@ export default function RankingTabs({
                 )}
                 <div className="text-[11px] text-rk-muted">{p.promoApplied ? "🏷️ 전사할인가" : "월"}</div>
                 <b className="text-[15px] font-bold tracking-[-.02em] text-rk-ink rk-num">{fmt(p.rentalPrice)}원~</b>
-                {p.cardDiscountPrice && (
+                {p.cardDiscountPrice != null && (
                   <div className="text-[12px] text-rk-sale font-medium">카드 최대 {fmt(p.cardDiscountPrice)}원~</div>
                 )}
                 {p.minRivalPrice != null && p.minRivalPrice > 0 && (

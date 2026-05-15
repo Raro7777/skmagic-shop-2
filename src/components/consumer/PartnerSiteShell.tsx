@@ -407,7 +407,7 @@ function RankCard({ rank, product, bg, href }: { rank: number; product: Consumer
             {fmt(product.rentalPrice)}<small className="text-[13px] font-medium">원~</small>
           </span>
         </div>
-        {product.cardDiscountPrice && (
+        {product.cardDiscountPrice != null && (
           <div className="text-[12px] text-rk-muted mt-px">
             카드할인 시 최대 <b className="text-rk-sale rk-num">월 {fmt(product.cardDiscountPrice)}원~</b>
           </div>
@@ -475,7 +475,7 @@ function PickCard({ product, bg, href }: { product: ConsumerProduct; bg: string;
         <small className="text-[11px] text-rk-muted">{product.promoApplied ? "🏷️ 전사할인가" : "월"}</small>
         <b className="text-[16px] font-bold tracking-[-.02em] text-rk-ink rk-num">{fmt(product.rentalPrice)}<small className="text-[13px] font-medium">원~</small></b>
       </div>
-      {product.cardDiscountPrice && (
+      {product.cardDiscountPrice != null && (
         <div className="mt-px text-[12px] text-rk-sale font-medium">
           카드 최대 <b className="font-bold rk-num">월 {fmt(product.cardDiscountPrice)}원</b>
         </div>

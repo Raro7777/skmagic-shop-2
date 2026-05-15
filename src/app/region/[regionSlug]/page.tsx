@@ -185,9 +185,9 @@ export default async function RegionPage({
                     <small className="text-[10px] text-rk-muted">월</small>
                     <b className="text-[16px] font-bold tracking-[-.02em] text-rk-ink rk-num">{fmt(p.rentalPrice)}<small className="text-[11px] font-medium">원~</small></b>
                   </div>
-                  {p.cardDiscountPrice && (
+                  {p.cardDiscountPrice != null && (
                     <div className="mt-px text-[10px] text-rk-sale font-medium">
-                      카드 <b className="font-bold rk-num">{fmt(p.cardDiscountPrice)}원</b>
+                      카드 최대 <b className="font-bold rk-num">{fmt(p.cardDiscountPrice)}원</b>
                     </div>
                   )}
                   {p.giftLabel && <div className="text-[10px] text-rk-orange-deep font-medium mt-1 truncate">🎁 {p.giftLabel}</div>}
