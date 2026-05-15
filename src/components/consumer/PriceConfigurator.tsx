@@ -128,6 +128,9 @@ export default function PriceConfigurator({
   const newPolicyHalfMonths = currentOption?.rivalCompensationHalfPriceMonths ?? null;
   const useNewPolicy = newPolicyRival != null;
 
+  // 카드할인 적용 토글 — 사용자가 카드 미사용 시 끄면 가격에서 카드할인 사라짐. 기본값 ON.
+  const [cardApplied, setCardApplied] = useState(true);
+
   // 신정책: 렌탈가 자체가 rivalCompensationPrice 로 대체. 카드할인 효과(=baseRental-baseCard)는
   //         타사보상 적용 후에도 동일하게 유지되어 카드할인가도 함께 내려감.
   // 구정책 fallback: 월 −N원 일률 차감.
@@ -136,16 +139,18 @@ export default function PriceConfigurator({
     ? rivalCompensation.monthlyDiscount
     : 0;
   const finalRental = Math.max(0, rental - rivalLegacyDiscount);
-  // 카드할인 효과 (예: baseRental 57,900 − baseCard 50,400 = 7,500) 를 finalRental 에서도 동일하게 차감
-  const cardDiscountEffect = baseCard != null && baseCard < baseRental ? baseRental - baseCard : 0;
-  const finalCard = baseCard != null
+  // 카드할인 효과 (예: baseRental 57,900 − baseCard 50,400 = 7,500) 를 finalRental 에서도 동일하게 차감.
+  // cardApplied=false 면 0 (카드 미사용 시나리오).
+  const cardDiscountEffect = cardApplied && baseCard != null && baseCard < baseRental ? baseRental - baseCard : 0;
+  const finalCard = cardApplied && baseCard != null
     ? Math.max(0, finalRental - cardDiscountEffect)
     : null;
   const savings = finalCard != null ? finalRental - finalCard : null;
   // 신정책 절약 표시용 — 기본가 대비 차감액
   const rivalNewSavings = rivalApplied && useNewPolicy ? Math.max(0, baseRental - newPolicyRival!) : 0;
 
-  // 선택 변경 시 sessionStorage에 페이로드 저장 — ConsultForm이 submit 시 읽어 함께 전송
+  // 선택 변경 시 sessionStorage에 페이로드 저장 — ConsultForm이 submit 시 읽어 함께 전송.
+  // cardApplied=false 면 카드할인가 스냅샷도 null 로 (가입 시 카드 미사용 의사 표시).
   useEffect(() => {
     if (typeof window === "undefined") return;
     const payload: PurchaseConfigPayload = {
@@ -153,14 +158,14 @@ export default function PriceConfigurator({
       selectedMode: (currentOption?.mode as "방문형" | "셀프형" | null) ?? null,
       selectedContractPeriod: contractPeriod,
       selectedRentalPrice: rental,           // 타사보상 적용 전 운영가
-      selectedCardDiscountPrice: baseCard,
+      selectedCardDiscountPrice: cardApplied ? baseCard : null,
       rivalCompensationRequested: rivalApplied,
       selectedColor,
     };
     try {
       sessionStorage.setItem(PRICE_CONFIG_STORAGE_KEY, JSON.stringify(payload));
     } catch { /* noop */ }
-  }, [productCode, currentOption, contractPeriod, rental, baseCard, rivalApplied, selectedColor]);
+  }, [productCode, currentOption, contractPeriod, rental, baseCard, rivalApplied, cardApplied, selectedColor]);
 
   // 관리방식 표시 (선택 옵션 기반 또는 default)
   const mgmtLabel = currentOption
@@ -343,6 +348,35 @@ export default function PriceConfigurator({
           </div>
         );
       })()}
+
+      {/* 카드할인 적용 토글 — 카드 발급 의사가 있을 때만 가격에 반영. 기본 ON. */}
+      {baseCard != null && baseCard < baseRental && (
+        <label className={
+          "mt-2 flex items-start gap-2 px-2.5 py-2 rounded border cursor-pointer transition-colors " +
+          (cardApplied
+            ? "bg-rk-tint-red border-rk-sale"
+            : "bg-rk-soft-2 border-rk-line-2 hover:border-rk-sale")
+        }>
+          <input
+            type="checkbox"
+            checked={cardApplied}
+            onChange={e => setCardApplied(e.target.checked)}
+            className="mt-0.5 w-4 h-4 cursor-pointer accent-rk-sale"
+          />
+          <div className="flex-1 text-[14px] leading-[1.4]">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <b className={cardApplied ? "text-rk-sale" : "text-rk-ink"}>💳 카드할인 적용</b>
+              <span className={"text-[13px] " + (cardApplied ? "text-rk-sale" : "text-rk-muted")}>
+                최대 월 −{fmt(baseRental - baseCard)}원
+              </span>
+            </div>
+            <small className="block text-rk-muted mt-0.5 text-[13px]">
+              매직몰 제휴카드로 결제 시 적용. 카드 발급/실적 조건은 카드사별 상이.
+              카드 미사용 시 체크 해제하면 가격에서 카드할인이 빠집니다.
+            </small>
+          </div>
+        </label>
+      )}
 
       {/* Rival compensation toggle */}
       {(useNewPolicy || rivalCompensation.enabled) && (
