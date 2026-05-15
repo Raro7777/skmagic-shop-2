@@ -42,6 +42,9 @@ export type ConsumerProduct = {
   installFreed: boolean;
   // 옵션별 렌탈지원금 중 최대값 (메인 카드 배지용). enabled=false 또는 모든 옵션 0이면 0.
   maxRentalSupport: number;
+  // 타사보상 — 최저 옵션 기준 추가 할인액. 모델에 정책 없으면 0.
+  // 메인 카드에 "타사 사용중이면 추가 -X" 칩 노출용.
+  maxRivalSavings: number;
 };
 
 function pickThumbnail(p: { imageUrl: string | null; imageUrls: string[] }): string | null {
@@ -70,6 +73,22 @@ function pickLowestPrice(
     }
   }
   return { rentalPrice: bestRental, cardDiscountPrice: bestCard };
+}
+
+// 타사보상 옵션 중 (rentalPrice - rivalCompensationPrice) 최대값 = 최대 할인액
+// 0 이면 모델에 타사보상 정책 없음 → 칩 안 보임.
+function maxRivalSavings(raw: unknown): number {
+  if (!Array.isArray(raw)) return 0;
+  let max = 0;
+  for (const opt of raw as Array<Record<string, unknown>>) {
+    const rental = Number(opt.rentalPrice ?? 0);
+    const rival = opt.rivalCompensationPrice != null ? Number(opt.rivalCompensationPrice) : null;
+    if (rental > 0 && rival != null && rival > 0 && rival < rental) {
+      const saving = rental - rival;
+      if (saving > max) max = saving;
+    }
+  }
+  return max;
 }
 
 // 카드할인가가 운영가 이상이면 의미가 없으므로 null로 정규화.
@@ -197,6 +216,7 @@ export async function getPartnerSite(partnerCode: string): Promise<PartnerSiteDa
         giftAmount: gift,
         installAmount: install,
       }),
+      maxRivalSavings: maxRivalSavings(p.priceMatrix),
     };
   });
 
@@ -404,6 +424,7 @@ export async function listPartnerProducts(
         giftAmount: gift,
         installAmount: install,
       }) : 0,
+      maxRivalSavings: maxRivalSavings(p.priceMatrix),
     };
   });
 
@@ -590,6 +611,7 @@ export async function getPartnerProductDetail(
     giftLabel: policy?.giftLabel ?? null,
     installFreed: (policy?.installAmount ?? 0) > 0,
     maxRentalSupport: 0, // 상품 상세는 PriceConfigurator가 옵션별 정확 계산
+    maxRivalSavings: maxRivalSavings(product.priceMatrix),
     partnerRentalSupportAmount: partner.rentalSupportAmount ?? 0,
     partnerRentalSupportEnabled: partner.rentalSupportEnabled ?? true,
     partnerInstallAmount: policy?.installAmount ?? 0,
@@ -597,11 +619,12 @@ export async function getPartnerProductDetail(
     finalAfterCard: effectiveCard,
     priceMatrix,
     rivalCompensation: {
-      // placeholder: 본사 시트에 명시되지 않아 일률 정책 가정. 시트 정식 정책이 들어오면 갱신.
-      enabled: true,
-      monthlyDiscount: 5000,
-      months: 12,
-      note: "타사 가전 보유 시 첫 12개월 월 5,000원 추가 할인 (본사 사전 약정 가정)",
+      // 본사 정책 — 신규/단품 정수기에만 적용. priceMatrix.rivalCompensationPrice (모델별)
+      // 가 진본. 여기 legacy 일률 정책은 사용하지 않음 (enabled=false).
+      enabled: false,
+      monthlyDiscount: 0,
+      months: 0,
+      note: "신규 단품 정수기 한정. 옵션 선택 후 '타사보상 적용' 토글에서 모델별 가격 자동 적용.",
     },
     imageUrls: product.imageUrls ?? [],
     contentImages: (product.contentImages ?? []).map(ci => ({
@@ -711,6 +734,7 @@ export async function getPartnerProductDetail(
         giftAmount: gift,
         installAmount: install,
       }),
+      maxRivalSavings: maxRivalSavings(p.priceMatrix),
     };
   });
 

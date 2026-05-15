@@ -38,7 +38,8 @@ export async function searchPartnerProducts(
       giftAmount: policy?.giftAmount ?? 0,
       giftLabel: policy?.giftLabel ?? null,
       installFreed: (policy?.installAmount ?? 0) > 0,
-      maxRentalSupport: 0, // 검색 결과 카드는 메인 배지 표기 없음
+      maxRentalSupport: 0,
+      maxRivalSavings: 0, // 검색 결과 카드는 메인 배지 표기 없음
     };
   });
 }

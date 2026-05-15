@@ -113,6 +113,9 @@ export default function RankingTabs({
                 {p.cardDiscountPrice && (
                   <div className="text-[12px] text-rk-sale font-medium">카드 {fmt(p.cardDiscountPrice)}원~</div>
                 )}
+                {p.maxRivalSavings > 0 && (
+                  <div className="text-[11px] text-rk-orange-deep font-medium">🔄 타사 −{fmt(p.maxRivalSavings)}원</div>
+                )}
               </div>
             </Link>
           ))}
