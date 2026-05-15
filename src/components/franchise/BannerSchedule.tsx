@@ -149,9 +149,6 @@ export default function BannerSchedule() {
   // hero 캐러셀의 자동 상품 슬라이드 (협력점 등록 배너와 함께 도는 5장) 노출 토글
   const [heroAutoEnabled, setHeroAutoEnabled] = useState<boolean>(true);
   const [heroAutoSaving, setHeroAutoSaving] = useState(false);
-  // 본사 공식 캠페인 배너 (5월 ICE IS MAGIC 등) 노출 토글
-  const [hqCampaignEnabled, setHqCampaignEnabled] = useState<boolean>(true);
-  const [hqCampaignSaving, setHqCampaignSaving] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -171,7 +168,6 @@ export default function BannerSchedule() {
         const c = await resConfig.json();
         setFlagshipEnabled(c.config?.flagshipBannerEnabled !== false);
         setHeroAutoEnabled(c.config?.heroAutoSlidesEnabled !== false);
-        setHqCampaignEnabled(c.config?.hqCampaignBannerEnabled !== false);
       }
     } catch {
       setError("배너 로드 실패");
@@ -215,22 +211,6 @@ export default function BannerSchedule() {
     finally { setHeroAutoSaving(false); }
   };
 
-  const toggleHqCampaign = async (next: boolean) => {
-    setHqCampaignSaving(true);
-    setFlash(null);
-    try {
-      const res = await fetch("/api/franchise/display-config", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ hqCampaignBannerEnabled: next }),
-      });
-      const j = await res.json();
-      if (!res.ok) { setFlash(j.error ?? "토글 실패"); return; }
-      setHqCampaignEnabled(next);
-      setFlash(next ? "본사 공식 캠페인 배너 켜짐" : "본사 공식 캠페인 배너 끔");
-    } catch { setFlash("네트워크 오류"); }
-    finally { setHqCampaignSaving(false); }
-  };
 
   // 통계 로드 (배너 변경 시)
   useEffect(() => {
@@ -416,7 +396,7 @@ export default function BannerSchedule() {
 
       {/* hero 자동 슬라이드 토글 — 협력점 hero 캐러셀에 자동으로 끼워지는 5개 상품 슬라이드.
           끄면 협력점이 직접 등록한 DB 배너만 노출됨. */}
-      <div className="mb-2 bg-rk-soft border border-rk-line rounded px-3 py-2 flex items-center gap-2 flex-wrap">
+      <div className="mb-3 bg-rk-soft border border-rk-line rounded px-3 py-2 flex items-center gap-2 flex-wrap">
         <span className="text-[18px]">🎞️</span>
         <div className="flex-1 min-w-0">
           <b className="text-[13px] text-rk-ink block">자동 hero 슬라이드 (5장)</b>
@@ -438,29 +418,6 @@ export default function BannerSchedule() {
         </label>
       </div>
 
-      {/* 본사 공식 캠페인 배너 토글 — 본사가 박아놓은 5월 ICE IS MAGIC 등 공식 캠페인 hero 슬라이드.
-          종료일이 지나면 자동으로 빠지지만 협력점이 미리 끌 수 있음. */}
-      <div className="mb-3 bg-rk-soft border border-rk-line rounded px-3 py-2 flex items-center gap-2 flex-wrap">
-        <span className="text-[18px]">🏢</span>
-        <div className="flex-1 min-w-0">
-          <b className="text-[13px] text-rk-ink block">본사 공식 캠페인 배너</b>
-          <small className="text-[12px] text-rk-muted">
-            본사가 모든 협력점에 자동 노출하는 캠페인 hero 이미지 (예: 5월 ICE IS MAGIC). 끄면 우리 사이트에만 노출 안 함.
-          </small>
-        </div>
-        <label className="inline-flex items-center gap-1.5 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={hqCampaignEnabled}
-            disabled={hqCampaignSaving}
-            onChange={e => toggleHqCampaign(e.target.checked)}
-            className="w-4 h-4 accent-rk-orange cursor-pointer"
-          />
-          <span className={"text-[13px] font-medium " + (hqCampaignEnabled ? "text-rk-orange-deep" : "text-rk-muted")}>
-            {hqCampaignSaving ? "저장 중…" : hqCampaignEnabled ? "노출" : "숨김"}
-          </span>
-        </label>
-      </div>
 
       {/* 본사 템플릿 가져오기 모달 */}
       {templateModalOpen && (
