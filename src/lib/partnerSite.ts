@@ -53,7 +53,7 @@ export type ConsumerProduct = {
   maxRivalSavings: number;
   // 타사보상 + 카드할인까지 누적 적용한 정상 월요금 (반값 종료 이후 가격).
   // 적용 순서: 원래 요금 → 타사전환가 → 동일 옵션의 카드할인 차감.
-  // 모델에 타사 정책 없으면 null. "🔄 타사+카드 적용시 월 ₩X부터" 표시용.
+  // 모델에 타사 정책 없으면 null. "🔄 타사 적용시 월 ₩X부터" 표시용 (카드는 별도).
   minRivalPrice: number | null;
   // 반값 기간 개월수 (0 이면 반값 정책 없음). 채택된 minRivalPrice 옵션 기준.
   rivalHalfMonths: number;
@@ -149,21 +149,18 @@ function maxRivalSavings(raw: unknown): number {
   return max;
 }
 
-// 타사보상 + 동일옵션 카드할인 + (있으면) 반값 기간까지 반영한 최저 시나리오.
-// 적용 순서: rentalPrice → rivalCompensationPrice → 카드할인액 차감.
-// 반값 기간(첫 N개월) 은 SK매직 청구 자체가 rival/2 이므로 별도 표기. 카드 추가차감은
-// 카드 최소 사용 조건이 있어 반값 기간에 음수 보장이 안 되므로 보수적으로 반값 기준 그대로 노출.
+// 타사보상 + (있으면) 반값 기간 반영한 최저 시나리오.
+// 카드할인은 별개 적용으로 처리 — SK매직 청구 기준만 표시하고 카드는 별도 라벨로 안내.
+// (상세페이지 PriceConfigurator 의 "4개월차부터 월 X원으로 청구 — 카드 추가 할인은 별개 적용"
+//  표현과 일관되도록 메인 카드도 카드 미스택으로 통일.)
 //
 // 반환값:
-//   monthly      — 반값 기간이 끝난 뒤의 정상 월요금 (rival − cardDelta)
+//   monthly      — 반값 기간 종료 이후 정상 월요금 (= rivalCompensationPrice, 카드 별도)
 //   halfMonths   — 반값 적용 개월수 (0 이면 반값 정책 없음)
-//   halfMonthly  — 반값 기간 월요금 (rival × 0.5, 카드 별도)
+//   halfMonthly  — 반값 기간 월요금 (= rival × 0.5, 카드 별도)
 // 모델에 타사 정책 없으면 null.
 //
-// 비교 기준: 반값 정책이 있는 옵션을 우선적으로 채택해 매리트가 노출되도록 함.
-// 같은 그룹 내에선 monthly 가 가장 낮은 옵션.
-// 본사 매직몰 카드할인 최대 금액 — UI 라벨/계산 일관성 유지를 위해 상수화.
-const CARD_DISCOUNT_MAX = 23000;
+// 비교 기준: 반값 정책 있는 옵션 우선 채택, 같은 그룹 내에선 rival 이 가장 낮은 옵션.
 
 function bestRivalPrice(raw: unknown): { monthly: number; halfMonths: number; halfMonthly: number } | null {
   if (!Array.isArray(raw)) return null;
@@ -175,13 +172,9 @@ function bestRivalPrice(raw: unknown): { monthly: number; halfMonths: number; ha
     if (!rental || rental <= 0) continue;
     const rival = opt.rivalCompensationPrice != null ? Number(opt.rivalCompensationPrice) : null;
     if (rival == null || rival <= 0) continue;
-    // cardDelta 는 effective(promo ?? rental) 기준 — 옵션의 rental 만 보면 promo 모델에서 부풀려짐.
-    // 일관성 위해 정책 상한 (CARD_DISCOUNT_MAX = 23k) 으로 cap.
-    const promo = opt.promoPrice != null ? Number(opt.promoPrice) : null;
-    const effective = promo ?? rental;
-    const cardDelta = Math.min(CARD_DISCOUNT_MAX, effective);
     const halfMonths = Math.max(0, Math.floor(Number(opt.rivalCompensationHalfPriceMonths ?? 0)));
-    const monthly = Math.max(0, rival - cardDelta);
+    // 카드할인 미스택 — SK매직 청구 그대로 노출. 카드 별개 표기는 UI 라벨에서 처리.
+    const monthly = rival;
     const halfMonthly = Math.max(0, Math.round(rival * 0.5));
     if (halfMonths > 0) {
       if (bestHalf == null || monthly < bestHalf.monthly) bestHalf = { monthly, halfMonths, halfMonthly };

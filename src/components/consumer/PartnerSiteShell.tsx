@@ -416,11 +416,11 @@ function RankCard({ rank, product, bg, href }: { rank: number; product: Consumer
           product.rivalHalfPrice != null && product.rivalHalfMonths > 0 ? (
             <div className="text-[11px] text-rk-orange-deep mt-px">
               🔥 첫 {product.rivalHalfMonths}개월 반값 월 <b className="rk-num">{fmt(product.rivalHalfPrice)}원~</b>
-              <span className="text-rk-faint"> · 이후 {fmt(product.minRivalPrice)}원 (타사+카드)</span>
+              <span className="text-rk-faint"> · 이후 {fmt(product.minRivalPrice)}원 (카드 별도)</span>
             </div>
           ) : (
             <div className="text-[11px] text-rk-orange-deep mt-px">
-              🔄 타사+카드 적용시 월 <b className="rk-num">{fmt(product.minRivalPrice)}원~</b>
+              🔄 타사 적용시 월 <b className="rk-num">{fmt(product.minRivalPrice)}원~</b> <span className="text-rk-faint font-normal">(카드 별도)</span>
             </div>
           )
         )}
@@ -484,11 +484,11 @@ function PickCard({ product, bg, href }: { product: ConsumerProduct; bg: string;
         product.rivalHalfPrice != null && product.rivalHalfMonths > 0 ? (
           <div className="mt-px text-[11px] text-rk-orange-deep font-medium leading-tight">
             🔥 첫 {product.rivalHalfMonths}개월 반값 월 <b className="rk-num">{fmt(product.rivalHalfPrice)}원~</b>
-            <span className="block text-rk-faint font-normal">이후 {fmt(product.minRivalPrice)}원 (타사+카드)</span>
+            <span className="block text-rk-faint font-normal">이후 {fmt(product.minRivalPrice)}원 (카드 별도)</span>
           </div>
         ) : (
           <div className="mt-px text-[11px] text-rk-orange-deep font-medium">
-            🔄 타사+카드 적용시 월 <b className="rk-num">{fmt(product.minRivalPrice)}원~</b>
+            🔄 타사 적용시 월 <b className="rk-num">{fmt(product.minRivalPrice)}원~</b> <span className="text-rk-faint font-normal">(카드 별도)</span>
           </div>
         )
       )}
