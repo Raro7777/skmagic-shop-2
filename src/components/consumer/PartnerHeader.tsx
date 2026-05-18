@@ -33,7 +33,9 @@ export default function PartnerHeader({
 
               <div>
                 <div className="font-bold text-[16px] text-rk-ink tracking-[-.02em] leading-tight">{partner.partnerName}</div>
-                <div className="text-[13px] text-rk-muted">{formatBrandLabel(partner.brandLabel)}</div>
+                {partner.brandLabel && partner.brandLabel !== partner.partnerName && (
+                  <div className="text-[13px] text-rk-muted">{formatBrandLabel(partner.brandLabel)}</div>
+                )}
               </div>
             </Link>
             <div className="ml-auto flex gap-3.5 text-[20px] text-rk-ink">
@@ -83,7 +85,9 @@ export default function PartnerHeader({
               <div className="font-bold text-[13px] text-rk-ink leading-tight truncate">
                 {partner.partnerName}
               </div>
-              <div className="text-[12px] text-rk-muted truncate">{formatBrandLabel(partner.brandLabel)}</div>
+              {partner.brandLabel && partner.brandLabel !== partner.partnerName && (
+                <div className="text-[12px] text-rk-muted truncate">{formatBrandLabel(partner.brandLabel)}</div>
+              )}
             </div>
           </Link>
           <div className="flex gap-3 text-[18px] text-rk-ink shrink-0">
