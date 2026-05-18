@@ -24,7 +24,6 @@ export default function HeroCarousel({
   sellerName?: string;
   partnerCode: string;
 }) {
-  // 협력점 활성 배너를 hero 슬라이드 가장 앞에 끼워 넣기 (priority 높은 순)
   const slides: Slide[] = [
     ...(banners ?? []).map(b => ({ kind: "banner" as const, banner: b })),
     ...items.map(p => ({ kind: "product" as const, product: p })),
@@ -38,14 +37,10 @@ export default function HeroCarousel({
     return () => clearInterval(t);
   }, [slides.length, paused]);
 
-  if (slides.length === 0) return null;
-  const cur = slides[idx] ?? slides[0];
-  const total = slides.length;
-
-  // 배너 노출 이벤트 (slide 진입 시 1회) — public endpoint, fire-and-forget
   useEffect(() => {
-    if (cur.kind !== "banner") return;
-    const bid = cur.banner.id;
+    const c = slides[idx];
+    if (!c || c.kind !== "banner") return;
+    const bid = c.banner.id;
     try {
       const blob = new Blob([JSON.stringify({ bannerId: bid, eventType: "impression" })], { type: "application/json" });
       if (typeof navigator !== "undefined" && navigator.sendBeacon) {
@@ -54,20 +49,41 @@ export default function HeroCarousel({
         void fetch("/api/banner-events", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ bannerId: bid, eventType: "impression" }), keepalive: true });
       }
     } catch { /* noop */ }
-  }, [cur]);
+  }, [idx, slides]);
 
-  // 슬라이드별 배경 결정 — banner는 자체 색상, product는 navy + orange radial
+  if (slides.length === 0) return null;
+  const cur = slides[idx] ?? slides[0];
+  const total = slides.length;
+
+  // image-only 레이아웃 — 텍스트/CTA 모두 hide, 풀-블리드 이미지만.
+  // 캐러셀 indicator/카운트는 유지 (네비게이션 필요).
+  const isImageOnly = cur.kind === "banner" && cur.banner.layout === "image-only";
+
   const sectionStyle: React.CSSProperties = cur.kind === "banner"
     ? { background: `linear-gradient(135deg, ${cur.banner.bgColor1}, ${cur.banner.bgColor2})`, color: cur.banner.textColor }
     : { backgroundImage: "radial-gradient(ellipse at 110% 110%, rgba(242,106,31,.4), transparent 50%)" };
-  // 모든 슬라이드(상품/배너 5종 레이아웃)의 세로 사이즈 통일 — 사용자 보고 1a
+  // 모든 슬라이드 통일 min-h 320px. 3구역 (상/중/하) 수직 리듬 확보.
   const sectionClass = cur.kind === "banner"
-    ? "relative pt-[22px] px-4 pb-14 overflow-hidden min-h-[220px]"
-    : "relative bg-rk-navy text-white pt-[22px] px-4 pb-14 overflow-hidden min-h-[220px]";
+    ? "relative overflow-hidden min-h-[320px] flex flex-col"
+    : "relative bg-rk-navy text-white overflow-hidden min-h-[320px] flex flex-col";
 
-  // 슬라이드 콘텐츠
   const slideKey = cur.kind === "banner" ? `banner-${cur.banner.id}` : `product-${cur.product.productCode}`;
   const productHrefBase = `/p/${partnerCode}/products`;
+
+  // image-only 는 클릭으로 ctaHref 이동 + 노출 통계만 추적
+  if (isImageOnly && cur.kind === "banner") {
+    return (
+      <ImageOnlySlide
+        banner={cur.banner}
+        slides={slides}
+        idx={idx}
+        setIdx={setIdx}
+        total={total}
+        paused={paused}
+        setPaused={setPaused}
+      />
+    );
+  }
 
   return (
     <section
@@ -77,61 +93,22 @@ export default function HeroCarousel({
       className={sectionClass}
       style={sectionStyle}
     >
-      {/* SK magic 공식 인증 배지 — 슬라이드 우측 상단. 흰 배경에 컬러 로고 그대로 */}
+      {/* SK magic 인증 배지 — 우측 상단 고정 */}
       <div className="absolute top-3 right-3 z-[5] flex items-center gap-1.5 bg-white px-2 py-1 rounded-md shadow-sm">
         <img src="/sk-magic-logo.png" alt="SK magic 공식" className="h-[18px] w-auto" />
         <span className="text-[10px] font-bold text-rk-ink leading-none">공식 인증</span>
       </div>
-      {/* 풀-블리드 레이아웃(image-bg / html)에선 라벨이 위쪽에 빈 공간을 만들어 다른 슬라이드의 잔상처럼 보임 → 숨김 */}
-      {cur.kind === "product" && (
-        <span className="inline-flex gap-1.5 items-center text-[13px] px-2 py-0.5 bg-white/10 rounded-full font-medium mb-2.5">
-          {sellerName ?? partnerName} 단독 프로모션
-        </span>
-      )}
-      {cur.kind === "banner" && cur.banner.layout !== "image-bg" && cur.banner.layout !== "html" && (
-        <span className="inline-flex gap-1.5 items-center text-[13px] px-2 py-0.5 bg-white/20 rounded-full font-medium mb-2.5">
-          🎁 진행중 이벤트
-        </span>
-      )}
 
-      <div key={slideKey} className="hero-slide-fade">
+      <div key={slideKey} className="hero-slide-fade flex-1 flex flex-col">
         {cur.kind === "product" ? (
-          <Link href={`${productHrefBase}/${cur.product.productCode}`} className="block no-underline" style={{ color: "inherit" }}>
-            <h2 className="text-[22px] font-bold leading-[1.3] tracking-[-.03em] m-0 mb-1 text-white">
-              {cur.product.name}<br />
-              <span className="text-[#FFB374]">의무 {cur.product.contractPeriod / 12}년 · {cur.product.managementType}</span>
-            </h2>
-            <p className="text-[14px] opacity-80 m-0 mb-4 line-clamp-1">
-              {cur.product.giftLabel
-                ? `${cur.product.giftLabel} 증정 · 카드 36개월 무이자`
-                : "신용카드 36개월 무이자 · 무료설치"}
-            </p>
-            <div className="flex items-baseline gap-2 flex-wrap">
-              <span className="text-[13px] opacity-70">월 렌탈가 최저</span>
-              <span className="text-[28px] font-bold tracking-[-.02em] text-[#FFB374] rk-num">
-                {fmt(cur.product.rentalPrice)}<small className="text-[13px] font-medium">원~</small>
-              </span>
-            </div>
-            <div className="flex gap-1 mt-2.5 flex-wrap">
-              {cur.product.cardDiscountPrice != null && (
-                <span className="text-[12px] px-1.5 py-0.5 bg-white/10 rounded">
-                  카드할인 최대 월 {fmt(cur.product.cardDiscountPrice)}원
-                </span>
-              )}
-              <span className="text-[12px] px-1.5 py-0.5 bg-white/10 rounded">의무사용 {cur.product.contractPeriod}개월</span>
-              <span className="text-[12px] px-1.5 py-0.5 bg-white/10 rounded">전국 무료설치</span>
-              {cur.product.giftAmount > 0 && cur.product.giftLabel && (
-                <span className="text-[12px] px-1.5 py-0.5 bg-rk-orange rounded font-medium">사은품 {cur.product.giftLabel}</span>
-              )}
-            </div>
-          </Link>
+          <ProductSlide product={cur.product} hrefBase={productHrefBase} partnerName={partnerName} sellerName={sellerName} />
         ) : (
           <BannerSlideContent banner={cur.banner} />
         )}
       </div>
 
-      {/* indicator + count */}
-      <div className="absolute left-4 right-4 bottom-3.5 flex justify-between items-center">
+      {/* indicator + count — 하단 고정 */}
+      <div className="absolute left-4 right-4 bottom-3.5 flex justify-between items-center z-[6]">
         <div className="flex gap-1">
           {slides.map((_, i) => (
             <button
@@ -164,131 +141,67 @@ export default function HeroCarousel({
   );
 }
 
-function BannerSlideContent({ banner }: { banner: ActiveBanner }) {
-  const inner = (() => {
-    // layout=html — 협력점이 직접 작성한 마크업 (이미 partnerSite에서 sanitize 됨)
-    if (banner.layout === "html" && banner.htmlContent) {
-      return (
-        <div
-          className="banner-html relative -mx-4 -mt-[22px] mb-[-56px] min-h-[260px]"
-          dangerouslySetInnerHTML={{ __html: banner.htmlContent }}
-        />
-      );
-    }
+/* ─────────────────── 상품 슬라이드 — 3구역 ─────────────────── */
+function ProductSlide({
+  product,
+  hrefBase,
+  partnerName,
+  sellerName,
+}: {
+  product: ConsumerProduct;
+  hrefBase: string;
+  partnerName: string;
+  sellerName?: string;
+}) {
+  return (
+    <Link href={`${hrefBase}/${product.productCode}`} className="block no-underline flex-1 flex flex-col" style={{ color: "inherit" }}>
+      {/* 상단 — 배지 + 타이틀 (2줄 max) */}
+      <div className="pt-[22px] px-4">
+        <span className="inline-flex gap-1.5 items-center text-[13px] px-2 py-0.5 bg-white/10 rounded-full font-medium mb-2.5">
+          {sellerName ?? partnerName} 단독 프로모션
+        </span>
+        <h2 className="text-[22px] font-bold leading-[1.25] tracking-[-.03em] m-0 text-white line-clamp-2">
+          {product.name}
+        </h2>
+        <p className="text-[14px] text-[#FFB374] mt-1 m-0">
+          의무 {product.contractPeriod / 12}년 · {product.managementType}
+        </p>
+      </div>
 
-    if (banner.layout === "image-bg") {
-      // 이미지에 텍스트가 이미 들어있으면 title 을 빈 문자열로 두어 시스템 텍스트·그라데이션 안 그리기
-      const hasOverlay = (banner.title?.trim().length ?? 0) > 0;
-      return (
-        <div className="relative -mx-4 -mt-[22px] mb-[-56px] min-h-[260px]">
-          {banner.imageUrl && (
-            <img src={banner.imageUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
-          )}
-          {hasOverlay && (
-            <>
-              <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/20 to-transparent" />
-              <div className="relative px-4 pt-[22px] pb-14" style={{ color: banner.textColor }}>
-                <h2 className="text-[22px] font-bold leading-[1.3] tracking-[-.03em] m-0 mb-1.5" style={{ textShadow: "0 2px 6px rgba(0,0,0,.4)", color: "inherit" }}>
-                  {banner.title}
-                </h2>
-                {banner.subtitle && (
-                  <p className="text-[13px] opacity-95 m-0 mb-3 leading-[1.4]">{banner.subtitle}</p>
-                )}
-                {banner.ctaLabel && (
-                  <span className="inline-block px-3 py-1.5 rounded-full text-[14px] font-semibold bg-white text-rk-ink">
-                    {banner.ctaLabel} →
-                  </span>
-                )}
-              </div>
-            </>
-          )}
+      {/* 중단 — 가격 강조 영역 (충분한 여백) */}
+      <div className="flex-1 px-4 py-5 flex flex-col justify-center">
+        <span className="text-[13px] opacity-70 mb-1">월 렌탈가 최저</span>
+        <div className="text-[32px] font-bold tracking-[-.02em] text-[#FFB374] rk-num leading-none">
+          {fmt(product.rentalPrice)}<small className="text-[15px] font-medium">원~</small>
         </div>
-      );
-    }
+        <p className="text-[13px] opacity-80 mt-2 m-0 line-clamp-1">
+          {product.giftLabel
+            ? `${product.giftLabel} 증정 · 카드 36개월 무이자`
+            : "신용카드 36개월 무이자 · 무료설치"}
+        </p>
+      </div>
 
-    if (banner.layout === "product-spotlight") {
-      return (
-        <div className="grid grid-cols-[1fr_88px] gap-3 items-center">
-          <div>
-            <h2 className="text-[22px] font-bold leading-[1.3] tracking-[-.03em] m-0 mb-1.5">
-              {banner.title}
-            </h2>
-            {banner.subtitle && (
-              <p className="text-[13px] opacity-90 m-0 mb-2 leading-[1.4]">{banner.subtitle}</p>
-            )}
-            {banner.ctaLabel && (
-              <span className="inline-block px-3 py-1.5 rounded text-[14px] font-semibold bg-white/20">
-                {banner.ctaLabel} →
-              </span>
-            )}
-          </div>
-          <div className="w-[88px] h-[88px] rounded-md bg-white/15 grid place-items-center overflow-hidden">
-            {(banner.spotlightProductImage || banner.imageUrl) ? (
-              <img src={banner.spotlightProductImage ?? banner.imageUrl ?? ""} alt="" className="w-full h-full object-contain" />
-            ) : (
-              <span className="text-[12px] opacity-70 text-center">상품<br />이미지</span>
-            )}
-          </div>
-        </div>
-      );
-    }
-
-    if (banner.layout === "promo-stamp") {
-      return (
-        <div className="flex items-center gap-3">
-          {banner.imageUrl && (
-            <img src={banner.imageUrl} alt="" className="w-[72px] h-[72px] rounded-md object-cover shrink-0 border border-white/20" />
-          )}
-          <div className="flex-1 text-center">
-            {banner.subtitle && (
-              <b className="block text-[14px] uppercase tracking-[.1em] opacity-75 mb-1">{banner.subtitle}</b>
-            )}
-            <h2 className="text-[22px] font-bold leading-[1.2] tracking-[-.03em] m-0 mb-2">
-              {banner.title}
-            </h2>
-            {banner.stampText && (
-              <div
-                className="inline-block px-4 py-2 rounded-md text-[20px] font-bold tracking-[-.02em] mb-2"
-                style={{ background: banner.textColor, color: banner.bgColor2 }}
-              >
-                {banner.stampText}
-              </div>
-            )}
-            {banner.ctaLabel && (
-              <div>
-                <span className="inline-block px-3 py-1.5 rounded-full bg-white text-rk-ink text-[14px] font-semibold">
-                  {banner.ctaLabel} →
-                </span>
-              </div>
-            )}
-          </div>
-        </div>
-      );
-    }
-
-    // classic — 이미지 있으면 좌측 썸네일
-    return (
-      <div className={banner.imageUrl ? "flex items-center gap-3" : ""}>
-        {banner.imageUrl && (
-          <img src={banner.imageUrl} alt="" className="w-[80px] h-[80px] rounded-md object-cover shrink-0 border border-white/20" />
-        )}
-        <div className="flex-1">
-          <h2 className="text-[22px] font-bold leading-[1.3] tracking-[-.03em] m-0 mb-1.5">
-            {banner.title}
-          </h2>
-          {banner.subtitle && (
-            <p className="text-[13px] opacity-90 m-0 mb-3 leading-[1.4]">{banner.subtitle}</p>
-          )}
-          {banner.ctaLabel && (
-            <span className="inline-block px-3 py-1.5 rounded text-[14px] font-semibold bg-white/20">
-              {banner.ctaLabel} →
+      {/* 하단 — 메타 칩 안정감 있게 정렬 */}
+      <div className="px-4 pb-12">
+        <div className="flex gap-1 flex-wrap">
+          {product.cardDiscountPrice != null && (
+            <span className="text-[12px] px-1.5 py-0.5 bg-white/10 rounded">
+              카드 최대 월 {fmt(product.cardDiscountPrice)}원
             </span>
+          )}
+          <span className="text-[12px] px-1.5 py-0.5 bg-white/10 rounded">의무사용 {product.contractPeriod}개월</span>
+          <span className="text-[12px] px-1.5 py-0.5 bg-white/10 rounded">전국 무료설치</span>
+          {product.giftAmount > 0 && product.giftLabel && (
+            <span className="text-[12px] px-1.5 py-0.5 bg-rk-orange rounded font-medium">사은품 {product.giftLabel}</span>
           )}
         </div>
       </div>
-    );
-  })();
+    </Link>
+  );
+}
 
+/* ─────────────────── 배너 슬라이드 — 5종 레이아웃 / 3구역 ─────────────────── */
+function BannerSlideContent({ banner }: { banner: ActiveBanner }) {
   const recordClick = () => {
     try {
       const blob = new Blob([JSON.stringify({ bannerId: banner.id, eventType: "click" })], { type: "application/json" });
@@ -300,11 +213,247 @@ function BannerSlideContent({ banner }: { banner: ActiveBanner }) {
     } catch { /* noop */ }
   };
 
-  return banner.ctaHref ? (
-    <Link href={banner.ctaHref} onClick={recordClick} className="block no-underline" style={{ color: "inherit" }}>
-      {inner}
-    </Link>
-  ) : (
-    <div>{inner}</div>
+  const Wrap = ({ children }: { children: React.ReactNode }) =>
+    banner.ctaHref ? (
+      <Link href={banner.ctaHref} onClick={recordClick} className="block no-underline flex-1 flex flex-col" style={{ color: "inherit" }}>
+        {children}
+      </Link>
+    ) : (
+      <div className="flex-1 flex flex-col">{children}</div>
+    );
+
+  // ─── layout=html — 협력점 자유 마크업 (텍스트가 이미 포함됨) ───
+  if (banner.layout === "html" && banner.htmlContent) {
+    return (
+      <Wrap>
+        <div
+          className="banner-html relative flex-1 min-h-[320px]"
+          dangerouslySetInnerHTML={{ __html: banner.htmlContent }}
+        />
+      </Wrap>
+    );
+  }
+
+  // ─── layout=image-bg — 풀-블리드 배경 + 텍스트 overlay (텍스트 있을 때만) ───
+  if (banner.layout === "image-bg") {
+    const hasOverlay = (banner.title?.trim().length ?? 0) > 0;
+    return (
+      <Wrap>
+        <div className="relative flex-1 min-h-[320px]">
+          {banner.imageUrl && (
+            <img src={banner.imageUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
+          )}
+          {hasOverlay && (
+            <>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-black/10" />
+              <div className="relative flex-1 flex flex-col h-full" style={{ color: banner.textColor }}>
+                {/* 상단 — 타이틀 */}
+                <div className="pt-[22px] px-4">
+                  <h2 className="text-[22px] font-bold leading-[1.25] tracking-[-.03em] m-0 line-clamp-2" style={{ textShadow: "0 2px 6px rgba(0,0,0,.4)", color: "inherit" }}>
+                    {banner.title}
+                  </h2>
+                  {banner.subtitle && (
+                    <p className="text-[13px] opacity-95 mt-1.5 m-0 leading-[1.4] line-clamp-1">{banner.subtitle}</p>
+                  )}
+                </div>
+                {/* 중단 — flex spacer (이미지 부분 자연 노출) */}
+                <div className="flex-1" />
+                {/* 하단 — CTA */}
+                {banner.ctaLabel && (
+                  <div className="px-4 pb-12">
+                    <span className="inline-block px-3 py-1.5 rounded-full text-[14px] font-semibold bg-white text-rk-ink">
+                      {banner.ctaLabel} →
+                    </span>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+      </Wrap>
+    );
+  }
+
+  // ─── layout=product-spotlight — 상품 이미지 중앙 강조 ───
+  if (banner.layout === "product-spotlight") {
+    return (
+      <Wrap>
+        {/* 상단 — 타이틀 (2줄 max) */}
+        <div className="pt-[22px] px-4">
+          <h2 className="text-[22px] font-bold leading-[1.25] tracking-[-.03em] m-0 line-clamp-2">
+            {banner.title}
+          </h2>
+          {banner.subtitle && (
+            <p className="text-[13px] opacity-90 mt-1.5 m-0 leading-[1.4] line-clamp-1">{banner.subtitle}</p>
+          )}
+        </div>
+        {/* 중단 — 상품 이미지 중앙 (140px) */}
+        <div className="flex-1 px-4 py-4 flex items-center justify-center">
+          <div className="w-[140px] h-[140px] rounded-lg bg-white/15 grid place-items-center overflow-hidden shadow-lg">
+            {(banner.spotlightProductImage || banner.imageUrl) ? (
+              <img src={banner.spotlightProductImage ?? banner.imageUrl ?? ""} alt="" className="w-full h-full object-contain" />
+            ) : (
+              <span className="text-[12px] opacity-70 text-center">상품<br />이미지</span>
+            )}
+          </div>
+        </div>
+        {/* 하단 — CTA */}
+        {banner.ctaLabel && (
+          <div className="px-4 pb-12">
+            <span className="inline-block px-3 py-1.5 rounded text-[14px] font-semibold bg-white/20">
+              {banner.ctaLabel} →
+            </span>
+          </div>
+        )}
+      </Wrap>
+    );
+  }
+
+  // ─── layout=promo-stamp — 스탬프 강조 ───
+  if (banner.layout === "promo-stamp") {
+    return (
+      <Wrap>
+        {/* 상단 — subtitle (eyebrow) + 타이틀 */}
+        <div className="pt-[22px] px-4 text-center">
+          {banner.subtitle && (
+            <b className="block text-[13px] uppercase tracking-[.1em] opacity-75 mb-1.5">{banner.subtitle}</b>
+          )}
+          <h2 className="text-[22px] font-bold leading-[1.2] tracking-[-.03em] m-0 line-clamp-2">
+            {banner.title}
+          </h2>
+        </div>
+        {/* 중단 — 스탬프 + 이미지 */}
+        <div className="flex-1 px-4 py-3 flex items-center justify-center gap-3">
+          {banner.imageUrl && (
+            <img src={banner.imageUrl} alt="" className="w-[90px] h-[90px] rounded-md object-cover shrink-0 border border-white/20" />
+          )}
+          {banner.stampText && (
+            <div
+              className="inline-block px-4 py-2 rounded-md text-[22px] font-bold tracking-[-.02em]"
+              style={{ background: banner.textColor, color: banner.bgColor2 }}
+            >
+              {banner.stampText}
+            </div>
+          )}
+        </div>
+        {/* 하단 — CTA */}
+        {banner.ctaLabel && (
+          <div className="px-4 pb-12 text-center">
+            <span className="inline-block px-3 py-1.5 rounded-full bg-white text-rk-ink text-[14px] font-semibold">
+              {banner.ctaLabel} →
+            </span>
+          </div>
+        )}
+      </Wrap>
+    );
+  }
+
+  // ─── layout=classic — 기본 ───
+  return (
+    <Wrap>
+      {/* 상단 — 배지 + 타이틀 */}
+      <div className="pt-[22px] px-4">
+        <span className="inline-flex gap-1.5 items-center text-[13px] px-2 py-0.5 bg-white/20 rounded-full font-medium mb-2.5">
+          🎁 진행중 이벤트
+        </span>
+        <h2 className="text-[22px] font-bold leading-[1.25] tracking-[-.03em] m-0 line-clamp-2">
+          {banner.title}
+        </h2>
+        {banner.subtitle && (
+          <p className="text-[13px] opacity-90 mt-1.5 m-0 leading-[1.4] line-clamp-2">{banner.subtitle}</p>
+        )}
+      </div>
+      {/* 중단 — 썸네일 (있을 때만, 중앙) */}
+      <div className="flex-1 px-4 py-3 flex items-center justify-center">
+        {banner.imageUrl && (
+          <img src={banner.imageUrl} alt="" className="w-[100px] h-[100px] rounded-md object-cover border border-white/20" />
+        )}
+      </div>
+      {/* 하단 — CTA */}
+      {banner.ctaLabel && (
+        <div className="px-4 pb-12">
+          <span className="inline-block px-3 py-1.5 rounded text-[14px] font-semibold bg-white/20">
+            {banner.ctaLabel} →
+          </span>
+        </div>
+      )}
+    </Wrap>
+  );
+}
+
+/* ─────────────────── image-only 슬라이드 — 풀-블리드 이미지 + 캐러셀 컨트롤 ─────────────────── */
+function ImageOnlySlide({
+  banner,
+  slides,
+  idx,
+  setIdx,
+  total,
+  setPaused,
+}: {
+  banner: ActiveBanner;
+  slides: Slide[];
+  idx: number;
+  setIdx: (n: number) => void;
+  total: number;
+  paused: boolean;
+  setPaused: (p: boolean) => void;
+}) {
+  const recordClick = () => {
+    try {
+      const blob = new Blob([JSON.stringify({ bannerId: banner.id, eventType: "click" })], { type: "application/json" });
+      if (typeof navigator !== "undefined" && navigator.sendBeacon) {
+        navigator.sendBeacon("/api/banner-events", blob);
+      } else {
+        void fetch("/api/banner-events", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ bannerId: banner.id, eventType: "click" }), keepalive: true });
+      }
+    } catch { /* noop */ }
+  };
+
+  const inner = (
+    <div className="relative w-full min-h-[320px]">
+      {banner.imageUrl ? (
+        <img src={banner.imageUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
+      ) : (
+        <div className="absolute inset-0" style={{ background: `linear-gradient(135deg, ${banner.bgColor1}, ${banner.bgColor2})` }} />
+      )}
+    </div>
+  );
+
+  return (
+    <section
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+      onTouchStart={() => setPaused(true)}
+      className="relative overflow-hidden min-h-[320px] bg-rk-soft"
+    >
+      {banner.ctaHref ? (
+        <Link href={banner.ctaHref} onClick={recordClick} className="block w-full h-full no-underline">
+          {inner}
+        </Link>
+      ) : (
+        inner
+      )}
+
+      {/* indicator + count (이미지 위에 떠있어도 시인성 위해 어두운 배경 칩) */}
+      <div className="absolute left-4 right-4 bottom-3.5 flex justify-between items-center z-[6]">
+        <div className="flex gap-1">
+          {slides.map((_, i) => (
+            <button
+              key={i}
+              type="button"
+              aria-label={`슬라이드 ${i + 1}`}
+              onClick={(e) => { e.preventDefault(); setIdx(i); }}
+              className={
+                "h-1.5 rounded-full transition-all border-0 cursor-pointer p-0 " +
+                (i === idx ? "bg-white w-3.5" : "bg-white/40 w-1.5 hover:bg-white/70")
+              }
+            />
+          ))}
+        </div>
+        <span className="text-[13px] font-mono opacity-90 px-2 py-0.5 bg-black/40 rounded-full text-white rk-num">
+          {idx + 1} / {total}
+        </span>
+      </div>
+    </section>
   );
 }

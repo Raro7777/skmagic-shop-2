@@ -204,7 +204,7 @@ export type ActiveBanner = {
   ctaLabel: string | null;
   ctaHref: string | null;
   endsAt: string; // ISO — 클라이언트에서 카운트다운 표시 가능
-  layout: "classic" | "image-bg" | "product-spotlight" | "promo-stamp" | "html";
+  layout: "classic" | "image-bg" | "product-spotlight" | "promo-stamp" | "html" | "image-only";
   spotlightProductCode: string | null;
   spotlightProductImage: string | null;
   stampText: string | null;

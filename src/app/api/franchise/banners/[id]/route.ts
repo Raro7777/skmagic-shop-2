@@ -40,7 +40,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     endsAt: string;
     priority: number;
     status: "draft" | "active";
-    layout: "classic" | "image-bg" | "product-spotlight" | "promo-stamp" | "html";
+    layout: "classic" | "image-bg" | "product-spotlight" | "promo-stamp" | "html" | "image-only";
     spotlightProductCode: string | null;
     stampText: string | null;
     htmlContent: string | null;
@@ -55,7 +55,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   if (b.textColor) data.textColor = b.textColor.slice(0, 16);
   if (b.ctaLabel !== undefined) data.ctaLabel = b.ctaLabel == null ? null : b.ctaLabel.slice(0, 40);
   if (b.ctaHref !== undefined) data.ctaHref = b.ctaHref == null ? null : b.ctaHref.slice(0, 256);
-  if (b.layout && ["classic", "image-bg", "product-spotlight", "promo-stamp", "html"].includes(b.layout)) {
+  if (b.layout && ["classic", "image-bg", "product-spotlight", "promo-stamp", "html", "image-only"].includes(b.layout)) {
     data.layout = b.layout;
   }
   if (b.spotlightProductCode !== undefined) {

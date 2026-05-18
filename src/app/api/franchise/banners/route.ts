@@ -82,7 +82,7 @@ export async function POST(req: Request) {
     endsAt: string;
     priority: number;
     status: "draft" | "active";
-    layout: "classic" | "image-bg" | "product-spotlight" | "promo-stamp" | "html";
+    layout: "classic" | "image-bg" | "product-spotlight" | "promo-stamp" | "html" | "image-only";
     spotlightProductCode: string | null;
     stampText: string | null;
     htmlContent: string | null;
@@ -100,7 +100,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "종료일은 시작일 이후여야 합니다" }, { status: 400 });
   }
 
-  const allowedLayouts = ["classic", "image-bg", "product-spotlight", "promo-stamp", "html"] as const;
+  const allowedLayouts = ["classic", "image-bg", "product-spotlight", "promo-stamp", "html", "image-only"] as const;
   const layout = b.layout && (allowedLayouts as readonly string[]).includes(b.layout) ? b.layout : "classic";
 
   const banner = await prisma.banner.create({

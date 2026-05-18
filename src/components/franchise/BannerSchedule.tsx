@@ -23,7 +23,7 @@ type Banner = {
   sourceTemplateId?: string | null;
 };
 
-type Layout = "classic" | "image-bg" | "product-spotlight" | "promo-stamp" | "html";
+type Layout = "classic" | "image-bg" | "product-spotlight" | "promo-stamp" | "html" | "image-only";
 
 type Draft = {
   title: string;
@@ -45,11 +45,12 @@ type Draft = {
 };
 
 const LAYOUTS: Array<{ id: Layout; label: string; desc: string }> = [
-  { id: "classic",           label: "클래식",        desc: "그라데이션 + 텍스트 + CTA" },
-  { id: "image-bg",          label: "이미지 배경",   desc: "풀폭 이미지 + 텍스트 오버레이" },
-  { id: "product-spotlight", label: "상품 스포트라이트", desc: "좌측 텍스트 + 우측 상품 컷" },
-  { id: "promo-stamp",       label: "프로모 스탬프",  desc: "가격·할인 강조" },
+  { id: "classic",           label: "클래식",        desc: "그라데이션 + 텍스트 + CTA (3구역 수직)" },
+  { id: "image-bg",          label: "이미지 배경",   desc: "풀폭 이미지 + 텍스트 오버레이 (3구역)" },
+  { id: "product-spotlight", label: "상품 스포트라이트", desc: "타이틀 + 중앙 상품 이미지 + CTA" },
+  { id: "promo-stamp",       label: "프로모 스탬프",  desc: "가격·할인 강조 스탬프" },
   { id: "html",              label: "HTML 직접 입력",  desc: "자유 마크업 (sanitize 후 노출)" },
+  { id: "image-only",        label: "🖼 이미지 전용",  desc: "텍스트·CTA 없이 이미지만 풀-블리드 (텍스트 baked 이미지용)" },
 ];
 
 const PRESETS = [
@@ -288,18 +289,20 @@ export default function BannerSchedule() {
 
   const save = async () => {
     if (!draft || !editing) return;
-    if (!draft.title.trim()) { setFlash("제목을 입력해주세요"); return; }
+    // image-only 는 제목 필수 아님 (관리용 식별만 필요 → 자동 채움)
+    if (draft.layout !== "image-only" && !draft.title.trim()) { setFlash("제목을 입력해주세요"); return; }
+    if (draft.layout === "image-only" && !draft.imageUrl.trim()) { setFlash("이미지 전용 모드는 이미지 URL 이 필요합니다"); return; }
     setSaving(true);
     try {
       const payload = {
-        title: draft.title.trim(),
-        subtitle: draft.subtitle.trim() || null,
+        title: draft.layout === "image-only" ? (draft.title.trim() || "(이미지 전용 배너)") : draft.title.trim(),
+        subtitle: draft.layout === "image-only" ? null : (draft.subtitle.trim() || null),
         imageUrl: draft.imageUrl.trim() || null,
         bgColor1: draft.bgColor1,
         bgColor2: draft.bgColor2,
         textColor: draft.textColor,
-        ctaLabel: draft.ctaLabel.trim() || null,
-        ctaHref: draft.ctaHref.trim() || null,
+        ctaLabel: draft.layout === "image-only" ? null : (draft.ctaLabel.trim() || null),
+        ctaHref: draft.ctaHref.trim() || null, // image-only 도 ctaHref 는 클릭 이동용으로 유지
         startsAt: fromDtLocal(draft.startsAt),
         endsAt: fromDtLocal(draft.endsAt),
         priority: draft.priority,
@@ -504,12 +507,30 @@ export default function BannerSchedule() {
                 </div>
               </Field>
 
+              {draft.layout === "image-only" && (
+                <div className="mt-2 bg-rk-tint-blue border border-[#D8E4F4] text-rk-info text-[13px] px-3 py-2 rounded leading-[1.55]">
+                  🖼 <b>이미지 전용 모드</b> — 텍스트/CTA 없이 이미지만 풀-블리드 노출됩니다. 이미지에 카피·로고가 이미 들어있는 본사 캠페인 시안용입니다. 클릭 시 이동 링크만 별도 설정 가능.
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-2 text-[13px] mt-2">
-                <Field label="제목 *">
-                  <input value={draft.title} onChange={e => setDraft({ ...draft, title: e.target.value })} className="border border-rk-line rounded px-2 py-1 text-[14px]" />
+                <Field label={draft.layout === "image-only" ? "관리용 제목 (선택)" : "제목 *"}>
+                  <input
+                    value={draft.title}
+                    onChange={e => setDraft({ ...draft, title: e.target.value })}
+                    disabled={draft.layout === "image-only"}
+                    placeholder={draft.layout === "image-only" ? "이미지 전용 모드에선 표시되지 않음" : ""}
+                    className="border border-rk-line rounded px-2 py-1 text-[14px] disabled:bg-rk-soft disabled:text-rk-faint disabled:cursor-not-allowed"
+                  />
                 </Field>
                 <Field label="보조 카피">
-                  <input value={draft.subtitle} onChange={e => setDraft({ ...draft, subtitle: e.target.value })} className="border border-rk-line rounded px-2 py-1 text-[14px]" />
+                  <input
+                    value={draft.subtitle}
+                    onChange={e => setDraft({ ...draft, subtitle: e.target.value })}
+                    disabled={draft.layout === "image-only"}
+                    placeholder={draft.layout === "image-only" ? "이미지 전용 모드에선 표시되지 않음" : ""}
+                    className="border border-rk-line rounded px-2 py-1 text-[14px] disabled:bg-rk-soft disabled:text-rk-faint disabled:cursor-not-allowed"
+                  />
                 </Field>
 
                 {draft.layout !== "html" && (
@@ -592,8 +613,14 @@ export default function BannerSchedule() {
                 <Field label="종료일 *">
                   <input type="datetime-local" value={draft.endsAt} onChange={e => setDraft({ ...draft, endsAt: e.target.value })} className="border border-rk-line rounded px-2 py-1 text-[14px]" />
                 </Field>
-                <Field label="CTA 버튼">
-                  <input value={draft.ctaLabel} onChange={e => setDraft({ ...draft, ctaLabel: e.target.value })} placeholder="예: 지금 신청" className="border border-rk-line rounded px-2 py-1 text-[14px]" />
+                <Field label={draft.layout === "image-only" ? "CTA 버튼 (이미지 전용 모드에선 숨김)" : "CTA 버튼"}>
+                  <input
+                    value={draft.ctaLabel}
+                    onChange={e => setDraft({ ...draft, ctaLabel: e.target.value })}
+                    disabled={draft.layout === "image-only"}
+                    placeholder={draft.layout === "image-only" ? "표시되지 않음" : "예: 지금 신청"}
+                    className="border border-rk-line rounded px-2 py-1 text-[14px] disabled:bg-rk-soft disabled:text-rk-faint disabled:cursor-not-allowed"
+                  />
                 </Field>
                 <Field label="CTA 링크 (상품 상세 등)">
                   <input value={draft.ctaHref} onChange={e => setDraft({ ...draft, ctaHref: e.target.value })} placeholder="/p/.../products/..." className="border border-rk-line rounded px-2 py-1 text-[14px]" />
