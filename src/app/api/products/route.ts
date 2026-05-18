@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { BASE_COMMISSION_DEFAULT, INSTALL_SUBSIDY_DEFAULT } from "@/lib/constants/pricing";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -104,9 +105,9 @@ export async function POST(req: Request) {
   }
 
   // Defaults
-  const baseCommission = b.baseCommission != null ? Math.max(0, Math.floor(b.baseCommission)) : 30000;
+  const baseCommission = b.baseCommission != null ? Math.max(0, Math.floor(b.baseCommission)) : BASE_COMMISSION_DEFAULT;
   const monthIncentive = b.monthIncentive != null ? Math.max(0, Math.floor(b.monthIncentive)) : 0;
-  const installSubsidy = b.installSubsidy != null ? Math.max(0, Math.floor(b.installSubsidy)) : 30000;
+  const installSubsidy = b.installSubsidy != null ? Math.max(0, Math.floor(b.installSubsidy)) : INSTALL_SUBSIDY_DEFAULT;
 
   try {
     const created = await prisma.$transaction(async tx => {

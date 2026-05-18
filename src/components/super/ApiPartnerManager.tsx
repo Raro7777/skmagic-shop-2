@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { SITE_URL } from "@/lib/constants/site";
 
 type ApiPartner = {
   id: string;
@@ -118,7 +119,7 @@ export default function ApiPartnerManager() {
             </div>
             <div className="mt-3 bg-rk-tint-blue text-rk-info text-[13px] p-2.5 rounded leading-[1.55]">
               <b>사용법</b>:<br />
-              <code className="font-mono">curl -H &quot;Authorization: Bearer {keyReveal.apiKey.slice(0, 16)}…&quot; https://rentking-next.vercel.app/api/external/products</code>
+              <code className="font-mono">curl -H &quot;Authorization: Bearer {keyReveal.apiKey.slice(0, 16)}…&quot; {SITE_URL}/api/external/products</code>
             </div>
             <div className="flex gap-2 mt-3 justify-end">
               <button onClick={() => navigator.clipboard?.writeText(keyReveal.apiKey)} className="bg-rk-soft hover:bg-rk-line text-rk-text px-3 py-1.5 rounded text-[14px] cursor-pointer border-0">복사</button>

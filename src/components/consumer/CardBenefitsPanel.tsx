@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { CARD_DISCOUNT_MAX } from "@/lib/constants/pricing";
 
 /**
  * SK인텔릭스 제휴 카드 혜택 — 매직몰 (2026-05 기준) 정책 반영.
@@ -37,13 +38,10 @@ const MAY_2026_BONUSES = [
 
 const fmt = (n: number) => n.toLocaleString("ko-KR");
 
-// 본사 매직몰 공식 표시상의 카드할인 최대 금액. CARDS 디테일엔 일부 25k 도 있지만
-// 광고 노출은 본사와 맞춰 23k 로 cap (민원 방지용).
-const MAGICMALL_MAX_DISCOUNT = 23000;
-
 export default function CardBenefitsPanel() {
   const [open, setOpen] = useState(false);
-  const maxAmount = Math.min(MAGICMALL_MAX_DISCOUNT, Math.max(...CARDS.map(c => c.maxKr)));
+  // 본사 매직몰 공식 표시상의 카드할인 최대 금액 cap (민원 방지용 — CARDS 일부는 25k 도 있음)
+  const maxAmount = Math.min(CARD_DISCOUNT_MAX, Math.max(...CARDS.map(c => c.maxKr)));
 
   return (
     <div className="bg-white border border-rk-line rounded-md text-[12px] mt-2">

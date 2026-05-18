@@ -21,6 +21,7 @@ loadEnv({ path: ".env.local" });
 import * as XLSX from "xlsx";
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
+import { VAT_RATE, REFUND_LIMIT_RATIO, INSTALL_SUBSIDY_DEFAULT } from "@/lib/constants/pricing";
 
 const url = process.env.DATABASE_URL;
 if (!url) throw new Error("DATABASE_URL not set");
@@ -29,7 +30,6 @@ const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: url 
 const PATH = "/Users/woozoo/.cokacdir/workspace/obnqnoho/SK매직_인증점_2026년_5월_제품_수수료표_0429_수정_v4_복호화.xlsx";
 const SHEET = "판매수수료_5월";
 const DATA_START_ROW = 12;
-const VAT_RATE = 1.1;
 const APPLY = process.argv.includes("--apply");
 
 type Opt = {
@@ -159,8 +159,8 @@ async function main() {
               visitInterval: o.visitInterval || null,
               baseCommission: commVatExcl,
               monthIncentive: 0,
-              installSubsidy: 30000,
-              refundLimitRatio: 0.6667,
+              installSubsidy: INSTALL_SUBSIDY_DEFAULT,
+              refundLimitRatio: REFUND_LIMIT_RATIO,
             },
           });
         }

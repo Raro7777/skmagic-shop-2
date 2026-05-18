@@ -91,7 +91,7 @@ export function sanitizeBannerHtml(input: string | null | undefined): string {
     transformTags: {
       a: (tag, attribs) => {
         const href = attribs.href ?? "";
-        const isExternal = /^https?:\/\//.test(href) && !href.includes("skmagic-shop.com") && !href.includes("rentking-next.vercel.app");
+        const isExternal = /^https?:\/\//.test(href) && !href.includes("skmagic-shop.com");
         return {
           tagName: "a",
           attribs: {

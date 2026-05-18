@@ -10,12 +10,13 @@ import { config as loadEnv } from "dotenv";
 loadEnv({ path: ".env.local" });
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
+import { CARD_DISCOUNT_MAX } from "@/lib/constants/pricing";
 
 const url = process.env.DATABASE_URL;
 if (!url) throw new Error("DATABASE_URL not set");
 const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: url }) });
 
-const CARD = 23000;
+const CARD = CARD_DISCOUNT_MAX;
 type Opt = {
   mode?: string | null;
   contractPeriod?: number;

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { authenticateApiPartner, apiHeaders } from "@/lib/apiPartnerAuth";
 import { rateLimit } from "@/lib/rateLimit";
+import { SITE_URL } from "@/lib/constants/site";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -103,7 +104,7 @@ export async function GET(req: Request) {
           isFeatured: p.isFeatured,
           // 정책 (수수료 정보는 외부에 노출하지 않음 — 본사 영업 비밀)
           // 외부 사이트에는 가격/사은품/스펙만 노출
-          consultUrl: `https://rentking-next.vercel.app/api/external/leads`, // POST endpoint
+          consultUrl: `${SITE_URL}/api/external/leads`, // POST endpoint
         };
       }),
     }),

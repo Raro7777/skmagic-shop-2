@@ -1,8 +1,7 @@
 import type { MetadataRoute } from "next";
 import { prisma } from "@/lib/prisma";
 import { listAllRegionSlugs } from "@/lib/regionSeo";
-
-const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://skmagic-shop.com";
+import { SITE_URL as SITE } from "@/lib/constants/site";
 
 export const revalidate = 3600; // 1시간
 

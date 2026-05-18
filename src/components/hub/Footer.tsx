@@ -5,23 +5,34 @@ import { HQ_HOTLINE } from "@/lib/constants/hq";
 /**
  * 운영용 공통 푸터 — 허브 + legal 페이지에서 사용.
  *
- * 사업자 정보는 본사가 운영하는 협력점(현재 인터넷끝판왕)의 Partner 데이터를
- * 그대로 노출. 본사 콘솔에서 협력점 정보 수정 시 자동 반영.
- *   ENV: `HQ_FOOTER_PARTNER_CODE` 로 변경 가능 (기본: partner-7714c0)
+ * 사업자 정보는 본사가 운영하는 협력점의 Partner 데이터를 노출.
+ * 우선순위: ENV `HQ_FOOTER_PARTNER_CODE` → 그게 없으면 첫 active 협력점 → 그것도 없으면 hardcoded "㈜렌트왕".
  */
 
-const HQ_FOOTER_PARTNER_CODE = process.env.HQ_FOOTER_PARTNER_CODE ?? "partner-7714c0";
+const HQ_FOOTER_PARTNER_CODE = process.env.HQ_FOOTER_PARTNER_CODE;
 
 export default async function Footer() {
-  const partner = await prisma.partner.findUnique({
-    where: { partnerCode: HQ_FOOTER_PARTNER_CODE },
-    select: {
-      partnerName: true, ownerName: true, address: true,
-      hotlineNumber: true, phone: true,
-      businessNumber: true, commerceNumber: true,
-      kakaoChannelUrl: true,
-    },
-  }).catch(() => null);
+  const partner = await (HQ_FOOTER_PARTNER_CODE
+    ? prisma.partner.findUnique({
+        where: { partnerCode: HQ_FOOTER_PARTNER_CODE },
+        select: {
+          partnerName: true, ownerName: true, address: true,
+          hotlineNumber: true, phone: true,
+          businessNumber: true, commerceNumber: true,
+          kakaoChannelUrl: true,
+        },
+      })
+    : prisma.partner.findFirst({
+        where: { status: "active" },
+        orderBy: { createdAt: "asc" },
+        select: {
+          partnerName: true, ownerName: true, address: true,
+          hotlineNumber: true, phone: true,
+          businessNumber: true, commerceNumber: true,
+          kakaoChannelUrl: true,
+        },
+      })
+  ).catch(() => null);
 
   return (
     <footer className="bg-rk-ink text-white/85 mt-16 text-[12px]">

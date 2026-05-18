@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { BASE_COMMISSION_DEFAULT, INSTALL_SUBSIDY_DEFAULT } from "@/lib/constants/pricing";
 
 const CATEGORIES = [
   { v: "water",    l: "정수기" },
@@ -30,9 +31,9 @@ export default function NewProductForm() {
   const [keyFeaturesText, setKeyFeaturesText] = useState("");
   const [specsText, setSpecsText] = useState("");
   const [imageUrls, setImageUrls] = useState("");
-  const [baseCommission, setBaseCommission] = useState(30000);
+  const [baseCommission, setBaseCommission] = useState(BASE_COMMISSION_DEFAULT);
   const [monthIncentive, setMonthIncentive] = useState(0);
-  const [installSubsidy, setInstallSubsidy] = useState(30000);
+  const [installSubsidy, setInstallSubsidy] = useState(INSTALL_SUBSIDY_DEFAULT);
   const [isFeatured, setIsFeatured] = useState(false);
 
   const [error, setError] = useState<string | null>(null);

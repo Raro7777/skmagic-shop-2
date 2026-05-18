@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { INSTALL_SUBSIDY_DEFAULT, REFUND_LIMIT_RATIO } from "@/lib/constants/pricing";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -61,11 +62,11 @@ export async function PATCH(
   const monthIncentive =
     b.monthIncentive != null ? Math.max(0, Math.floor(b.monthIncentive)) : existing?.monthIncentive ?? 0;
   const installSubsidy =
-    b.installSubsidy != null ? Math.max(0, Math.floor(b.installSubsidy)) : existing?.installSubsidy ?? 30000;
+    b.installSubsidy != null ? Math.max(0, Math.floor(b.installSubsidy)) : existing?.installSubsidy ?? INSTALL_SUBSIDY_DEFAULT;
   const refundLimitRatio =
     b.refundLimitRatio != null
       ? Math.max(0, Math.min(1, b.refundLimitRatio))
-      : existing?.refundLimitRatio ?? 0.6667;
+      : existing?.refundLimitRatio ?? REFUND_LIMIT_RATIO;
 
   if (baseCommission === 0) {
     return NextResponse.json({ error: "본사 기본 수수료는 0원 이상이어야 합니다." }, { status: 400 });

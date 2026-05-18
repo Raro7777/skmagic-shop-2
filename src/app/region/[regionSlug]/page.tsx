@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import ProductThumb from "@/components/consumer/ProductThumb";
 import { findRegion, listRegionRecommendedProducts, categoryLabel } from "@/lib/regionSeo";
+import { SITE_URL } from "@/lib/constants/site";
 
 export const dynamic = "force-dynamic";
 
@@ -75,7 +76,7 @@ export default async function RegionPage({
     name: `렌트왕 ${region.label}`,
     description: `${region.label} 지역의 SK매직 렌탈 분양 사이트 — 협력점 ${region.partners.length}곳`,
     address: { "@type": "PostalAddress", addressRegion: region.shortLabel, addressCountry: "KR" },
-    url: `https://rentking-next.vercel.app/region/${regionSlug}`,
+    url: `${SITE_URL}/region/${regionSlug}`,
     areaServed: region.label,
     telephone: region.partners[0].partnerName,
     serviceArea: region.label,

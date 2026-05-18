@@ -8,13 +8,14 @@ import { config as loadEnv } from "dotenv";
 loadEnv({ path: ".env.local" });
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
+import { VAT_RATE } from "@/lib/constants/pricing";
 
 const url = process.env.DATABASE_URL;
 if (!url) throw new Error("DATABASE_URL not set");
 const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: url }) });
 
 const fmt = (n: number | null | undefined) => n == null ? "—" : n.toLocaleString("ko-KR");
-const VAT = 1.1;
+const VAT = VAT_RATE;
 
 type MatrixOpt = {
   mode: string | null;

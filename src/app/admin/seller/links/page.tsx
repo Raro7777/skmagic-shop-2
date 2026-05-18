@@ -2,6 +2,7 @@ import Link from "next/link";
 import { auth } from "@/auth";
 import { getSellerDashboard } from "@/lib/sellerDashboard";
 import CopyLink from "@/components/seller/CopyLink";
+import { SITE_URL } from "@/lib/constants/site";
 
 export const metadata = { title: "공유 링크 · 영업자" };
 export const dynamic = "force-dynamic";
@@ -13,10 +14,8 @@ export default async function SellerLinksPage() {
   if (!data) return null;
   const { profile } = data;
 
-  // production base URL — env에 없으면 fallback
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://rentking-next.vercel.app";
-  const personalUrl = `${baseUrl}/p/${profile.partnerCode}/s/${profile.sellerCode}`;
-  const partnerUrl = `${baseUrl}/p/${profile.partnerCode}`;
+  const personalUrl = `${SITE_URL}/p/${profile.partnerCode}/s/${profile.sellerCode}`;
+  const partnerUrl = `${SITE_URL}/p/${profile.partnerCode}`;
   const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(personalUrl)}`;
 
   // 카톡 공유 문구
