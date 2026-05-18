@@ -29,6 +29,24 @@ export default async function VerifyPage() {
     where: { status: { in: ["verify_failed", "verify_revise"] } },
   });
 
+  // 협력점이 회신/재제출 시 남긴 메모 — 가장 최근 revise_resubmit/apply_submitted 로의 status log 에서 추출
+  const allLeadIds = [...pending.map(p => p.id), ...responded.map(r => r.id)];
+  const replyLogs = allLeadIds.length > 0 ? await prisma.leadStatusLog.findMany({
+    where: {
+      leadId: { in: allLeadIds },
+      newStatus: { in: ["revise_resubmit", "apply_submitted"] },
+      memo: { not: null },
+    },
+    orderBy: { createdAt: "desc" },
+    select: { leadId: true, memo: true, newStatus: true, createdAt: true },
+  }) : [];
+  const partnerReplyByLead = new Map<string, string>();
+  for (const log of replyLogs) {
+    if (!partnerReplyByLead.has(log.leadId) && log.memo) {
+      partnerReplyByLead.set(log.leadId, log.memo);
+    }
+  }
+
   const rows = pending.map(l => {
     const ageMs = Date.now() - l.updatedAt.getTime();
     const ageHours = Math.floor(ageMs / (60 * 60 * 1000));
@@ -47,6 +65,7 @@ export default async function VerifyPage() {
       selectedContractPeriod: l.selectedContractPeriod,
       verifyAttempts: l.verifyAttempts,
       lastReason: l.verifyLastReason,
+      partnerReply: partnerReplyByLead.get(l.id) ?? null,
     };
   });
 
@@ -78,14 +97,31 @@ export default async function VerifyPage() {
           <p className="text-[13px] text-rk-muted mb-2">
             영업점이 회신을 작성했지만 아직 재제출이 안 된 상태. 협력점 콘솔에서 재제출 처리하면 인증대기로 다시 들어옵니다.
           </p>
-          <ul className="text-[14px] flex flex-col gap-1">
-            {responded.map(l => (
-              <li key={l.id} className="border-b border-rk-line-2 pb-1 last:border-0">
-                <b className="text-rk-ink">{l.customerName}</b>
-                <span className="text-rk-muted"> · {l.partner?.partnerName ?? "—"} · {l.productInterest}</span>
-                <span className="text-rk-faint text-[12px] ml-2">{l.updatedAt.toISOString().slice(0, 10)}</span>
-              </li>
-            ))}
+          <ul className="text-[14px] flex flex-col gap-2">
+            {responded.map(l => {
+              const reply = partnerReplyByLead.get(l.id);
+              return (
+                <li key={l.id} className="border-b border-rk-line-2 pb-2 last:border-0">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <b className="text-rk-ink">{l.customerName}</b>
+                    <span className="text-rk-muted">· {l.partner?.partnerName ?? "—"} · {l.productInterest}</span>
+                    <span className="text-rk-faint text-[12px] ml-auto">{l.updatedAt.toISOString().slice(0, 10)}</span>
+                  </div>
+                  {l.verifyLastReason && (
+                    <div className="mt-1 text-[12px] bg-rk-tint-orange text-rk-orange-deep px-2 py-1 rounded">
+                      🚩 본사 회송 사유: {l.verifyLastReason}
+                    </div>
+                  )}
+                  {reply ? (
+                    <div className="mt-1 text-[12px] bg-rk-tint-blue text-rk-info px-2 py-1 rounded whitespace-pre-wrap">
+                      💬 협력점 회신: {reply}
+                    </div>
+                  ) : (
+                    <div className="mt-1 text-[12px] text-rk-faint">협력점 회신 메모 없음 (신청서 수정만)</div>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         </section>
       )}

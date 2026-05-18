@@ -117,7 +117,9 @@ export default function PriceConfigurator({
   const optionPromo = currentOption?.promoPrice ?? null;
   const baseRental = optionPromo ?? optionOperational;
   const promoApplied = optionPromo != null && optionPromo < optionOperational;
-  const baseCard = currentOption?.cardDiscountPrice ?? defaultCard;
+  const baseCardRaw = currentOption?.cardDiscountPrice ?? defaultCard;
+  // cardDiscountPrice = 0 은 "카드할인 없음" 의미 (정책상 0 허용). null/0 동일 취급.
+  const baseCard = baseCardRaw != null && baseCardRaw > 0 ? baseCardRaw : null;
   const contractPeriod = currentOption?.contractPeriod ?? defaultContract;
   const ownership = currentOption?.ownershipPeriod ?? null;
   const visitInterval = currentOption?.visitInterval ?? "";

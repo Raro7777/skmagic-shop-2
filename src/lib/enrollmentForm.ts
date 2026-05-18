@@ -49,10 +49,18 @@ export type EnrollmentFormInput = {
   // 설치
   installSchedule?: string | null;
   installPreferredDate?: Date | null;
-  // 자동이체 / 사은계좌 (사은계좌 null이면 자동이체와 동일로 간주)
-  autoDebitBank: string;
-  autoDebitAccount: string;
-  autoDebitHolder: string;
+  // 결제수단 — 자동이체 또는 카드 (둘 중 하나 필수)
+  paymentMethod?: "auto_debit" | "card";
+  // 자동이체 (paymentMethod=auto_debit)
+  autoDebitBank?: string | null;
+  autoDebitAccount?: string | null;
+  autoDebitHolder?: string | null;
+  // 신용카드 (paymentMethod=card)
+  cardCompany?: string | null;
+  cardNumber?: string | null;
+  cardHolder?: string | null;
+  cardExpiry?: string | null;
+  // 사은계좌 (자동이체와 다를 경우만 입력) — null 이면 자동이체와 동일
   giftBank?: string | null;
   giftAccount?: string | null;
   giftHolder?: string | null;
@@ -71,7 +79,15 @@ function validateInput(b: EnrollmentFormInput): string | null {
   if (!b.productCode?.trim()) return "상품 누락";
   if (!Number.isInteger(b.contractPeriod) || b.contractPeriod <= 0) return "약정기간 오류";
   if (!Number.isFinite(b.monthlyPrice) || b.monthlyPrice <= 0) return "월요금 오류";
-  if (!b.autoDebitBank?.trim() || !b.autoDebitAccount?.trim() || !b.autoDebitHolder?.trim()) return "자동이체 계좌 정보 누락";
+  const method = b.paymentMethod ?? "auto_debit";
+  if (method === "auto_debit") {
+    if (!b.autoDebitBank?.trim() || !b.autoDebitAccount?.trim() || !b.autoDebitHolder?.trim()) return "자동이체 계좌 정보 누락";
+  } else if (method === "card") {
+    if (!b.cardCompany?.trim() || !b.cardNumber?.trim() || !b.cardHolder?.trim() || !b.cardExpiry?.trim()) return "카드 정보 누락";
+    if (!/^\d{2}\/?\d{2}$/.test(b.cardExpiry.replace(/[\s-]/g, ""))) return "카드 유효기간 형식 오류 (MM/YY)";
+  } else {
+    return "결제수단 선택 오류";
+  }
   if (!["month_end","day_10","day_15","day_20","day_25","weekly_friday","custom"].includes(b.paymentDayType)) return "결제일 타입 오류";
   if (b.paymentDayType === "custom" && !b.paymentDayValue?.trim()) return "직접 입력 결제일 누락";
   return null;
@@ -93,7 +109,9 @@ const TRACKED_FIELDS = [
   "giftAmount", "giftLabel",
   "paymentDayType", "paymentDayValue",
   "installSchedule", "installPreferredDate",
+  "paymentMethod",
   "autoDebitBank", "autoDebitAccount", "autoDebitHolder",
+  "cardCompany", "cardNumber", "cardHolder", "cardExpiry",
   "giftBank", "giftAccount", "giftHolder",
   "memo",
 ] as const;
@@ -138,6 +156,7 @@ export async function upsertEnrollmentForm(input: {
   }
 
   const d = input.data;
+  const method: "auto_debit" | "card" = d.paymentMethod ?? "auto_debit";
   const payload = {
     customerName: d.customerName.trim().slice(0, 32),
     residentRegNumber: normalizeRRN(d.residentRegNumber),
@@ -160,9 +179,14 @@ export async function upsertEnrollmentForm(input: {
     paymentDayValue: d.paymentDayValue ?? null,
     installSchedule: d.installSchedule ?? null,
     installPreferredDate: d.installPreferredDate ?? null,
-    autoDebitBank: d.autoDebitBank.trim(),
-    autoDebitAccount: d.autoDebitAccount.trim(),
-    autoDebitHolder: d.autoDebitHolder.trim(),
+    paymentMethod: method,
+    autoDebitBank: method === "auto_debit" ? (d.autoDebitBank?.trim() ?? null) : null,
+    autoDebitAccount: method === "auto_debit" ? (d.autoDebitAccount?.trim() ?? null) : null,
+    autoDebitHolder: method === "auto_debit" ? (d.autoDebitHolder?.trim() ?? null) : null,
+    cardCompany: method === "card" ? (d.cardCompany?.trim() ?? null) : null,
+    cardNumber: method === "card" ? (d.cardNumber?.replace(/\s|-/g, "").trim() ?? null) : null,
+    cardHolder: method === "card" ? (d.cardHolder?.trim() ?? null) : null,
+    cardExpiry: method === "card" ? (d.cardExpiry?.replace(/\s|-/g, "").trim() ?? null) : null,
     giftBank: d.giftBank?.trim() || null,
     giftAccount: d.giftAccount?.trim() || null,
     giftHolder: d.giftHolder?.trim() || null,
@@ -267,6 +291,13 @@ export function maskAccount(acct: string, role: ActorRole, isOwnRecord: boolean)
   return acct.slice(0, 4) + "*".repeat(Math.max(0, acct.length - 6)) + acct.slice(-2);
 }
 
+export function maskCardNumber(num: string, role: ActorRole, isOwnRecord: boolean): string {
+  if (role === "hq" || role === "partner_admin") return num;
+  if (role === "seller" && isOwnRecord) return num;
+  if (num.length < 8) return num;
+  return num.slice(0, 4) + "*".repeat(Math.max(0, num.length - 8)) + num.slice(-4);
+}
+
 /** 단일 신청서를 actorRole 기준 가시 형태로 변환 */
 export type EnrollmentView = ReturnType<typeof viewForRole>;
 export function viewForRole(
@@ -278,7 +309,8 @@ export function viewForRole(
   return {
     ...form,
     residentRegNumber: maskRRN(form.residentRegNumber, ctx.actorRole, isOwn),
-    autoDebitAccount: maskAccount(form.autoDebitAccount, ctx.actorRole, isOwn),
+    autoDebitAccount: form.autoDebitAccount ? maskAccount(form.autoDebitAccount, ctx.actorRole, isOwn) : null,
+    cardNumber: form.cardNumber ? maskCardNumber(form.cardNumber, ctx.actorRole, isOwn) : null,
     giftAccount: form.giftAccount ? maskAccount(form.giftAccount, ctx.actorRole, isOwn) : null,
   };
 }

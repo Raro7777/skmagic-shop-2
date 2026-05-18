@@ -18,6 +18,7 @@ export type VerifyRow = {
   selectedContractPeriod: number | null;
   verifyAttempts: number;
   lastReason: string | null;
+  partnerReply: string | null;
 };
 
 type Decision = "pass" | "fail" | "revise";
@@ -122,7 +123,8 @@ export default function VerifyQueueList({ rows }: { rows: VerifyRow[] }) {
                   {r.verifyAttempts > 0 ? (
                     <>
                       <b className="text-rk-orange-deep rk-num">{r.verifyAttempts}회</b>
-                      {r.lastReason && <small className="block text-[12px] text-rk-muted">직전: {r.lastReason}</small>}
+                      {r.lastReason && <small className="block text-[12px] text-rk-muted">🚩 본사: {r.lastReason}</small>}
+                      {r.partnerReply && <small className="block text-[12px] text-rk-info whitespace-pre-wrap mt-0.5">💬 회신: {r.partnerReply}</small>}
                     </>
                   ) : (
                     <span className="text-rk-muted">—</span>

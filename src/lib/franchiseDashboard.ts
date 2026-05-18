@@ -93,8 +93,10 @@ function actionFor(status: LeadStatus): PipelineRow["action"] {
     case "consult_active":  return { label: "📝 신청서 작성",   toStatus: "form_ready",      tone: "navy"   };
     // form_ready 단계는 본사 제출 (자동 chain → verify_pending)
     case "form_ready":      return { label: "📤 본사 제출",     toStatus: "apply_submitted", tone: "orange" };
-    case "verify_failed":   return { label: "↩ 회신 작성",     toStatus: "revise_resubmit", tone: "sale"   };
-    case "verify_revise":   return { label: "↩ 보완 회신",     toStatus: "revise_resubmit", tone: "sale"   };
+    // 본사 회송 (verify_failed/verify_revise) → 모달 직행 → 저장 시 enrollment route 가
+    // 자동으로 apply_submitted 로 전이 (→ verify_pending 큐 재투입).
+    case "verify_failed":   return { label: "📝 수정 후 재제출", toStatus: "form_ready",      tone: "orange" };
+    case "verify_revise":   return { label: "📝 수정 후 재제출", toStatus: "form_ready",      tone: "orange" };
     case "revise_resubmit": return { label: "📝 신청서 보완",   toStatus: "form_ready",      tone: "navy"   };
     default: return null;
   }
@@ -107,6 +109,10 @@ function secondaryFor(status: LeadStatus): PipelineRow["secondaryAction"] {
   // form_ready 행에 "✎ 수정" 보조 액션 — 같은 status 로 유지(모달만 다시 열기)
   if (status === "form_ready") {
     return { label: "✎ 신청서 수정", toStatus: "form_ready", tone: "ghost" };
+  }
+  // 본사 회송 상태에서 "회신만" 옵션 — 신청서 수정 없이 메모만 (revise_resubmit 로 전이)
+  if (status === "verify_failed" || status === "verify_revise") {
+    return { label: "↩ 회신만", toStatus: "revise_resubmit", tone: "ghost" };
   }
   return null;
 }

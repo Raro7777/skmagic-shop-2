@@ -476,10 +476,17 @@ model EnrollmentForm {
   installSchedule      String?
   installPreferredDate DateTime?
 
-  // 자동이체 계좌
-  autoDebitBank        String
-  autoDebitAccount     String
-  autoDebitHolder      String
+  // 결제수단 — auto_debit (자동이체) | card (신용카드)
+  paymentMethod        String   @default("auto_debit")
+  // 자동이체 계좌 (paymentMethod=auto_debit 필수)
+  autoDebitBank        String?
+  autoDebitAccount     String?
+  autoDebitHolder      String?
+  // 신용카드 (paymentMethod=card 필수) — PII 평문 저장, 역할별 마스킹
+  cardCompany          String?
+  cardNumber           String?
+  cardHolder           String?
+  cardExpiry           String?  // MM/YY
   // 사은계좌 (자동이체와 다를 경우만 입력) — null 이면 자동이체와 동일
   giftBank             String?
   giftAccount          String?

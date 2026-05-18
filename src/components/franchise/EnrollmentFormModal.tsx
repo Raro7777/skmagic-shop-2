@@ -51,6 +51,11 @@ const KOREAN_BANKS = [
   "케이뱅크", "토스뱅크", "수협", "부산", "대구", "광주", "전북", "경남", "제주", "산업",
 ];
 
+const KOREAN_CARDS = [
+  "BC", "KB국민", "신한", "우리", "하나", "삼성", "현대", "롯데", "NH농협",
+  "씨티", "광주", "전북", "수협", "카카오뱅크", "토스뱅크",
+];
+
 export type EnrollmentFormModalProps = {
   leadId: string;
   /** lead 에서 prefill 할 기본값 */
@@ -93,9 +98,14 @@ export type ExistingFormData = {
   paymentDayType: string;
   paymentDayValue: string | null;
   installSchedule: string | null;
-  autoDebitBank: string;
-  autoDebitAccount: string;
-  autoDebitHolder: string;
+  paymentMethod?: string | null;
+  autoDebitBank: string | null;
+  autoDebitAccount: string | null;
+  autoDebitHolder: string | null;
+  cardCompany?: string | null;
+  cardNumber?: string | null;
+  cardHolder?: string | null;
+  cardExpiry?: string | null;
   giftBank: string | null;
   giftAccount: string | null;
   giftHolder: string | null;
@@ -129,9 +139,16 @@ export default function EnrollmentFormModal({
 
   const [installSchedule, setInstallSchedule] = useState(existing?.installSchedule ?? "");
 
+  const [paymentMethod, setPaymentMethod] = useState<"auto_debit" | "card">(
+    (existing?.paymentMethod === "card" ? "card" : "auto_debit") as "auto_debit" | "card"
+  );
   const [autoDebitBank, setAutoDebitBank] = useState(existing?.autoDebitBank ?? "");
   const [autoDebitAccount, setAutoDebitAccount] = useState(existing?.autoDebitAccount ?? "");
   const [autoDebitHolder, setAutoDebitHolder] = useState(existing?.autoDebitHolder ?? prefill.customerName);
+  const [cardCompany, setCardCompany] = useState(existing?.cardCompany ?? "");
+  const [cardNumber, setCardNumber] = useState(existing?.cardNumber ?? "");
+  const [cardHolder, setCardHolder] = useState(existing?.cardHolder ?? prefill.customerName);
+  const [cardExpiry, setCardExpiry] = useState(existing?.cardExpiry ?? "");
 
   // 사은계좌 — null 이면 자동이체와 동일
   const initialSameAccount = !existing?.giftBank;
@@ -213,7 +230,7 @@ export default function EnrollmentFormModal({
     setProductCode(p.productCode);
     setProductName(p.name);
     setContractPeriod(p.contractPeriod);
-    setMonthlyPrice(p.cardDiscountPrice ?? p.rentalPrice);
+    setMonthlyPrice((p.cardDiscountPrice && p.cardDiscountPrice > 0) ? p.cardDiscountPrice : p.rentalPrice);
     setProductOpen(false);
     setProductSearch("");
     setProductDetail(null); // 새 detail fetch 트리거
@@ -292,7 +309,7 @@ export default function EnrollmentFormModal({
     if (!productDetail) return;
     if (currentMatrixOption) {
       const opt = currentMatrixOption;
-      const base = opt.cardDiscountPrice ?? opt.rentalPrice;
+      const base = (opt.cardDiscountPrice && opt.cardDiscountPrice > 0) ? opt.cardDiscountPrice : opt.rentalPrice;
       if (rivalApplied) {
         const rentalNow = opt.rivalCompensationPrice && opt.rivalCompensationPrice > 0 ? opt.rivalCompensationPrice : base;
         const halfMonths = opt.rivalCompensationHalfPriceMonths ?? 0;
@@ -307,7 +324,7 @@ export default function EnrollmentFormModal({
         setMonthlyPrice(base);
       }
     } else if (productDetail.priceMatrix.length === 0) {
-      setMonthlyPrice(productDetail.cardDiscountPrice ?? productDetail.rentalPrice);
+      setMonthlyPrice((productDetail.cardDiscountPrice && productDetail.cardDiscountPrice > 0) ? productDetail.cardDiscountPrice : productDetail.rentalPrice);
     }
   }, [productDetail, currentMatrixOption, rivalApplied, contractPeriod]);
 
@@ -349,9 +366,14 @@ export default function EnrollmentFormModal({
           paymentDayType,
           paymentDayValue: paymentDayType === "custom" ? paymentDayValue.trim() : null,
           installSchedule: installSchedule.trim() || null,
-          autoDebitBank: autoDebitBank.trim(),
-          autoDebitAccount: autoDebitAccount.trim(),
-          autoDebitHolder: autoDebitHolder.trim(),
+          paymentMethod,
+          autoDebitBank: paymentMethod === "auto_debit" ? autoDebitBank.trim() : null,
+          autoDebitAccount: paymentMethod === "auto_debit" ? autoDebitAccount.trim() : null,
+          autoDebitHolder: paymentMethod === "auto_debit" ? autoDebitHolder.trim() : null,
+          cardCompany: paymentMethod === "card" ? cardCompany.trim() : null,
+          cardNumber: paymentMethod === "card" ? cardNumber.replace(/[\s-]/g, "").trim() : null,
+          cardHolder: paymentMethod === "card" ? cardHolder.trim() : null,
+          cardExpiry: paymentMethod === "card" ? cardExpiry.replace(/[\s-]/g, "").trim() : null,
           giftBank: sameAccount ? null : giftBank.trim(),
           giftAccount: sameAccount ? null : giftAccount.trim(),
           giftHolder: sameAccount ? null : (giftHolder.trim() || autoDebitHolder.trim()),
@@ -729,13 +751,38 @@ export default function EnrollmentFormModal({
             <Field label="" value={installSchedule} onChange={setInstallSchedule} placeholder="최대한 빠른 일정 / 5월 셋째 주 / 평일 오후 등" />
           </Section>
 
-          {/* 자동이체 계좌 */}
-          <Section title="자동이체 계좌">
-            <div className="grid grid-cols-[1fr_2fr_1fr] gap-2">
-              <Select label="은행" value={autoDebitBank} onChange={setAutoDebitBank} options={KOREAN_BANKS} required />
-              <Field label="계좌번호" value={autoDebitAccount} onChange={setAutoDebitAccount} placeholder="92391020289807" required />
-              <Field label="예금주" value={autoDebitHolder} onChange={setAutoDebitHolder} required />
+          {/* 결제수단 — 자동이체 vs 신용카드 */}
+          <Section title="결제수단">
+            <div className="flex gap-2 mb-2">
+              <button
+                type="button"
+                onClick={() => setPaymentMethod("auto_debit")}
+                className={"px-3 py-1.5 rounded text-[13px] border cursor-pointer " + (paymentMethod === "auto_debit" ? "bg-rk-navy text-white border-rk-navy" : "bg-white text-rk-text border-rk-line")}
+              >
+                자동이체
+              </button>
+              <button
+                type="button"
+                onClick={() => setPaymentMethod("card")}
+                className={"px-3 py-1.5 rounded text-[13px] border cursor-pointer " + (paymentMethod === "card" ? "bg-rk-navy text-white border-rk-navy" : "bg-white text-rk-text border-rk-line")}
+              >
+                신용카드
+              </button>
             </div>
+            {paymentMethod === "auto_debit" ? (
+              <div className="grid grid-cols-[1fr_2fr_1fr] gap-2">
+                <Select label="은행" value={autoDebitBank} onChange={setAutoDebitBank} options={KOREAN_BANKS} required />
+                <Field label="계좌번호" value={autoDebitAccount} onChange={setAutoDebitAccount} placeholder="92391020289807" required />
+                <Field label="예금주" value={autoDebitHolder} onChange={setAutoDebitHolder} required />
+              </div>
+            ) : (
+              <div className="grid grid-cols-[1fr_2fr_1fr_1fr] gap-2">
+                <Select label="카드사" value={cardCompany} onChange={setCardCompany} options={KOREAN_CARDS} required />
+                <Field label="카드번호" value={cardNumber} onChange={setCardNumber} placeholder="0000-0000-0000-0000" required />
+                <Field label="명의자" value={cardHolder} onChange={setCardHolder} required />
+                <Field label="유효기간 MM/YY" value={cardExpiry} onChange={setCardExpiry} placeholder="12/27" required />
+              </div>
+            )}
           </Section>
 
           {/* 사은계좌 */}
