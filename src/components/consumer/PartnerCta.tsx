@@ -17,7 +17,10 @@ export default function PartnerCta({
 
   // sticky: 항상 뷰포트 하단에 고정 (항목 11)
   return (
-    <div className="sticky bottom-0 px-3 py-2.5 bg-white border-t border-rk-line flex gap-1.5 items-center z-30 shadow-[0_-2px_8px_rgba(0,0,0,0.06)]">
+    <div
+      className="sticky bottom-0 px-3 py-2.5 bg-white border-t border-rk-line flex gap-1.5 items-center z-40 shadow-[0_-4px_12px_rgba(0,0,0,0.08)]"
+      style={{ paddingBottom: "calc(0.625rem + env(safe-area-inset-bottom, 0px))" }}
+    >
       {/* 전화 상담 */}
       <a
         href={telHref}

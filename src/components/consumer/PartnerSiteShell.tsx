@@ -1,5 +1,7 @@
 import Link from "next/link";
 import HeroCarousel from "@/components/consumer/HeroCarousel";
+import LiveActivityStrip from "@/components/consumer/LiveActivityStrip";
+import ReviewCarousel from "@/components/consumer/ReviewCarousel";
 import NavTabs from "@/components/consumer/NavTabs";
 import RankingTabs from "@/components/consumer/RankingTabs";
 import ConsultForm from "@/components/consumer/ConsultForm";
@@ -131,7 +133,7 @@ export default async function PartnerSiteShell({
       </aside>
 
       {/* Device frame */}
-      <div className="w-full md:w-[390px] bg-white md:rounded-[32px] md:shadow-[0_8px_24px_rgba(20,25,40,.08)] overflow-hidden md:border-8 md:border-[#1A1D24]">
+      <div className="w-full md:w-[390px] bg-white md:rounded-[32px] md:shadow-[0_8px_24px_rgba(20,25,40,.08)] max-md:overflow-visible md:overflow-hidden md:border-8 md:border-[#1A1D24]">
         <div className="hidden md:flex bg-white h-9 items-center justify-between px-[22px] text-[14px] font-semibold">
           <span className="rk-num">9:41</span>
           <span>● ●</span>
@@ -182,6 +184,11 @@ export default async function PartnerSiteShell({
           </div>
           <NavTabs partnerCode={partner.partnerCode} />
         </header>
+
+        {/* 실시간 접수 현황 띠배너 — hero 위 1줄 자동 롤링 */}
+        {data.liveActivities.length > 0 && (
+          <LiveActivityStrip items={data.liveActivities} />
+        )}
 
         {/* Seller-specific banner */}
         {seller && (
@@ -287,25 +294,10 @@ export default async function PartnerSiteShell({
           </div>
         </section>
 
-        <section className="bg-white px-4 pt-4.5 pb-4">
-          <div className="flex justify-between items-baseline mb-3">
-            <div>
-              <h2 className="text-[17px] font-bold tracking-[-.02em] m-0 text-rk-ink">최근 가입 후기</h2>
-              <small className="text-[13px] text-rk-muted block mt-0.5">{partner.partnerName}</small>
-            </div>
-            <Link href={`/p/${partner.partnerCode}/reviews`} className="text-[14px] text-rk-muted no-underline cursor-pointer">전체 →</Link>
-          </div>
-          <div className="flex flex-col gap-2">
-            <div className="bg-white border border-rk-line rounded-lg p-3 flex flex-col gap-1.5">
-              <div className="text-rk-warn text-[14px]">★★★★★ <span className="text-rk-muted text-[13px]">5.0</span></div>
-              <h5 className="text-[13px] font-semibold m-0 text-rk-ink">설치기사님 친절하시고 가격도 좋아요</h5>
-              <p className="text-[14px] text-rk-text m-0 leading-[1.5]">다른 매장 견적도 받아봤는데 카드할인가가 제일 좋았어요. 사은품도 잘 챙겨주셨습니다.</p>
-              <div className="text-[13px] text-rk-muted flex gap-1.5 mt-0.5">
-                <span>김**</span><span>·</span><span>2일 전</span><span>·</span><span>{ranking[0]?.modelName ?? "—"}</span>
-              </div>
-            </div>
-          </div>
-        </section>
+        {/* 후기 캐러셀 + 신뢰 요소 + 듀얼 CTA — 동적 후기 데이터 기반 */}
+        {data.reviews.length > 0 && (
+          <ReviewCarousel reviews={data.reviews} partnerCode={partner.partnerCode} />
+        )}
 
         <footer className="bg-rk-soft px-3.5 py-4 text-[13px] text-rk-muted leading-[1.7]">
           <div className="flex gap-2.5 flex-wrap mb-2.5 text-[13px]">
@@ -336,7 +328,7 @@ export default async function PartnerSiteShell({
               rel="noreferrer"
               className="flex-1 bg-[#FEE500] hover:bg-[#F4DC00] text-[#1A1D24] py-3 rounded-lg font-bold text-[13px] text-center flex gap-1.5 items-center justify-center no-underline cursor-pointer"
             >
-              💬 30분내 카톡 답변
+              💬 카톡 문의
             </a>
           ) : (
             <a

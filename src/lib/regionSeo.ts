@@ -79,10 +79,18 @@ export function regionToSlug(region: string): string {
 
 /** slug → 협력점 매칭. exact 우선, fallback은 시·도 부분 매칭 */
 export async function findRegion(regionSlug: string): Promise<RegionEntry | null> {
-  const partners = await prisma.partner.findMany({
+  const rawPartners = await prisma.partner.findMany({
     where: { status: "active" },
     select: { partnerCode: true, partnerName: true, region: true, brandLabel: true },
   });
+  // 컨슈머 사이트 단일 브랜드 — 협력점 고유명 노출 X
+  const { CONSUMER_BRAND_NAME } = await import("@/lib/partnerSite");
+  const partners = rawPartners.map(p => ({
+    partnerCode: p.partnerCode,
+    partnerName: CONSUMER_BRAND_NAME,
+    brandLabel: CONSUMER_BRAND_NAME,
+    region: p.region,
+  }));
 
   // 정확 매칭
   const exact = partners.filter(p => p.region && regionToSlug(p.region) === regionSlug);
@@ -122,10 +130,17 @@ export async function findRegion(regionSlug: string): Promise<RegionEntry | null
 
 /** 모든 활성 region slug (sitemap용) */
 export async function listAllRegionSlugs(): Promise<RegionEntry[]> {
-  const partners = await prisma.partner.findMany({
+  const rawPartners = await prisma.partner.findMany({
     where: { status: "active" },
     select: { partnerCode: true, partnerName: true, region: true, brandLabel: true },
   });
+  const { CONSUMER_BRAND_NAME } = await import("@/lib/partnerSite");
+  const partners = rawPartners.map(p => ({
+    partnerCode: p.partnerCode,
+    partnerName: CONSUMER_BRAND_NAME,
+    brandLabel: CONSUMER_BRAND_NAME,
+    region: p.region,
+  }));
   const map = new Map<string, RegionEntry>();
   for (const p of partners) {
     if (!p.region) continue;

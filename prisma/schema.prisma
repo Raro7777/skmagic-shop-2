@@ -238,6 +238,25 @@ model ProductChangeLog {
 // ----------------------------------------------------------------
 // Broadcast — 본사 → 협력점 공지 (긴급 정책·이벤트·마스터 업데이트)
 // ----------------------------------------------------------------
+// LiveActivity — 본사 admin 이 등록하는 데모 활동 (실시간 접수/상담 띠배너용).
+// 모든 협력점 사이트 hero 위에 자동 롤링 노출 → 신뢰감 강화.
+// ----------------------------------------------------------------
+model LiveActivity {
+  id           String   @id @default(cuid())
+  customerName String   // 마스킹된 이름 (예: "김**")
+  productName  String   // 상품명 (자유 텍스트, 본사 정책서와 무관)
+  region       String?  // 지역 (예: "강남구")
+  status       String   @default("접수완료") // 접수완료 | 상담대기 | 설치완료
+  minutesAgo   Int      @default(5) // "N분 전" 표시용
+  priority     Int      @default(0) // 큰 값 우선 노출
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([isActive, priority])
+}
+
+// ----------------------------------------------------------------
 // ----------------------------------------------------------------
 // Banner — 협력점이 자기 사이트에 게시하는 이벤트/프로모션 배너
 // ----------------------------------------------------------------

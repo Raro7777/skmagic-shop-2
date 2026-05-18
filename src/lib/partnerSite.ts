@@ -4,6 +4,13 @@ import { computeHqMargin } from "@/lib/marginFlow";
 import { rentalSupportFor } from "@/lib/rentalSupport";
 import { sanitizeBannerHtml } from "@/lib/sanitizeBannerHtml";
 
+/**
+ * 컨슈머 사이트 브랜드 통일 — 모든 협력점을 "SK매직 공식인증점" 단일 브랜드로 노출.
+ * 협력점 고유명 (인터넷끝판왕 등) 은 admin/franchise 콘솔에서만 사용.
+ * 본사 정책 결정사항 — 브랜드 일관성 + 협력점간 위계 평준화.
+ */
+export const CONSUMER_BRAND_NAME = "SK매직 공식인증점";
+
 /** 상품의 옵션별 렌탈지원금 중 최대값 계산. enabled=false면 0. */
 function computeMaxRentalSupport(args: {
   hqPolicies: Array<{ baseCommission: number; monthIncentive: number; marginType: string | null; marginAmount: number | null; marginPercent: number | null }>;
@@ -219,6 +226,30 @@ export type CategoryEntry = {
   isHot: boolean;       // QUICK nav 강조 여부
 };
 
+export type ReviewListItem = {
+  id: string;
+  customerName: string;
+  rating: number;
+  title: string | null;
+  body: string;
+  productName: string | null;
+  modelName: string | null;
+  region: string | null;
+  isVerified: boolean;
+  installPhotoUrl: string | null;
+  photos: string[];
+  daysAgo: number;
+};
+
+export type LiveActivityItem = {
+  id: string;
+  customerName: string;
+  productName: string;
+  region: string | null;
+  status: string; // 접수완료 / 상담대기 / 설치완료
+  minutesAgo: number;
+};
+
 export type PartnerSiteData = {
   partner: {
     partnerCode: string;
@@ -243,6 +274,10 @@ export type PartnerSiteData = {
   // hero 캐러셀의 자동 상품 슬라이드 — displayConfig.heroAutoSlidesEnabled (default true).
   // false 면 협력점이 등록한 DB 배너만 노출.
   heroAutoSlidesEnabled: boolean;
+  // 실시간 접수 현황 띠배너용 데이터 (본사 admin 등록).
+  liveActivities: LiveActivityItem[];
+  // 최근 후기 (메인 페이지 캐러셀 노출용).
+  reviews: ReviewListItem[];
 };
 
 // 안마의자(massage)/건조기(dryer)는 일시 비활성 — 컨슈머 노출 안 함.
@@ -449,11 +484,47 @@ export async function getPartnerSite(partnerCode: string): Promise<PartnerSiteDa
     htmlContent: b.htmlContent ? sanitizeBannerHtml(b.htmlContent) : null,
   }));
 
+  // 실시간 접수 현황 (본사 admin 등록 데모 데이터) — 모든 협력점 공통
+  const liveActivities = await prisma.liveActivity.findMany({
+    where: { isActive: true },
+    orderBy: [{ priority: "desc" }, { createdAt: "desc" }],
+    take: 12,
+    select: { id: true, customerName: true, productName: true, region: true, status: true, minutesAgo: true },
+  });
+
+  // 최근 후기 (협력점 자체 + 본사 공통) — 캐러셀용 최대 6건
+  const reviewRows = await prisma.review.findMany({
+    where: {
+      status: "published",
+      approvalStatus: "approved",
+      OR: [{ partnerId: partner.partnerCode }, { partnerId: null }],
+    },
+    orderBy: { createdAt: "desc" },
+    take: 6,
+    include: { product: { select: { name: true, modelName: true } } },
+  });
+  const nowMs = Date.now();
+  const reviews: ReviewListItem[] = reviewRows.map(r => ({
+    id: r.id,
+    customerName: r.customerName,
+    rating: r.rating,
+    title: r.title,
+    body: r.body,
+    productName: r.product?.name ?? null,
+    modelName: r.product?.modelName ?? null,
+    region: r.region,
+    isVerified: r.isVerified,
+    installPhotoUrl: r.installPhotoUrl,
+    photos: r.photos ?? [],
+    daysAgo: Math.max(0, Math.floor((nowMs - r.createdAt.getTime()) / (1000 * 60 * 60 * 24))),
+  }));
+
   return {
     partner: {
       partnerCode: partner.partnerCode,
-      partnerName: partner.partnerName,
-      brandLabel: partner.brandLabel,
+      // 본사 정책: 컨슈머 사이트에서는 모든 협력점을 "SK매직 공식인증점" 단일 브랜드로 노출
+      partnerName: CONSUMER_BRAND_NAME,
+      brandLabel: CONSUMER_BRAND_NAME,
       region: partner.region,
       address: partner.address,
       businessNumber: partner.businessNumber,
@@ -476,6 +547,8 @@ export async function getPartnerSite(partnerCode: string): Promise<PartnerSiteDa
       const cfg = partner.displayConfig as { heroAutoSlidesEnabled?: boolean } | null;
       return cfg?.heroAutoSlidesEnabled !== false; // 명시적 false 일 때만 끔
     })(),
+    liveActivities,
+    reviews,
   };
 }
 
@@ -603,7 +676,13 @@ export async function listActivePartners(): Promise<{
     select: { partnerCode: true, partnerName: true, brandLabel: true, region: true },
     orderBy: { createdAt: "asc" },
   });
-  return partners;
+  // 컨슈머 사이트에서는 모든 협력점을 단일 브랜드로 노출 (협력점 식별은 URL/지역으로)
+  return partners.map(p => ({
+    partnerCode: p.partnerCode,
+    partnerName: CONSUMER_BRAND_NAME,
+    brandLabel: CONSUMER_BRAND_NAME,
+    region: p.region,
+  }));
 }
 
 export type PriceOption = {
@@ -787,8 +866,9 @@ export async function getPartnerProductDetail(
     },
     partner: {
       partnerCode: partner.partnerCode,
-      partnerName: partner.partnerName,
-      brandLabel: partner.brandLabel,
+      // 컨슈머 사이트 단일 브랜드 노출
+      partnerName: CONSUMER_BRAND_NAME,
+      brandLabel: CONSUMER_BRAND_NAME,
       region: partner.region,
       address: partner.address,
       businessNumber: partner.businessNumber,

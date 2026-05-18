@@ -58,6 +58,7 @@ export async function POST(req: Request) {
     region: string;
     selectedMode: string;
     selectedContractPeriod: number;
+    photos: string[];
   }>;
 
   if (!b.customerName?.trim() || !b.body?.trim()) {
@@ -71,6 +72,10 @@ export async function POST(req: Request) {
     productId = p?.id ?? null;
   }
 
+  const validPhotos = Array.isArray(b.photos)
+    ? b.photos.filter((u): u is string => typeof u === "string" && u.trim().length > 0 && u.length < 2048).slice(0, 6)
+    : [];
+
   const created = await prisma.review.create({
     data: {
       productId,
@@ -81,6 +86,7 @@ export async function POST(req: Request) {
       body: b.body.trim().slice(0, 2000),
       installPhotoUrl: b.installPhotoUrl?.trim() || null,
       region: b.region?.trim().slice(0, 32) || null,
+      photos: validPhotos,
       selectedMode: b.selectedMode === "방문형" || b.selectedMode === "셀프형" ? b.selectedMode : null,
       selectedContractPeriod: typeof b.selectedContractPeriod === "number" ? Math.floor(b.selectedContractPeriod) : null,
       approvalStatus: "pending",

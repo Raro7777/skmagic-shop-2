@@ -37,7 +37,9 @@ export default function ReviewEditorClient() {
   const [body, setBody] = useState("");
   const [region, setRegion] = useState("");
   const [installPhotoUrl, setInstallPhotoUrl] = useState("");
+  const [photos, setPhotos] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [uploadingPhotos, setUploadingPhotos] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
@@ -65,6 +67,25 @@ export default function ReviewEditorClient() {
     } finally { setUploading(false); }
   };
 
+  // 다중 후기 이미지 업로드 (사용자 요청) — photos 배열에 추가
+  const uploadMultiplePhotos = async (files: FileList) => {
+    setUploadingPhotos(true); setError(null);
+    const uploaded: string[] = [];
+    try {
+      for (const file of Array.from(files).slice(0, 6 - photos.length)) {
+        const fd = new FormData();
+        fd.append("file", file);
+        const res = await fetch("/api/franchise/banners/upload-image", { method: "POST", body: fd });
+        const j = await res.json();
+        if (!res.ok) { setError(j.error ?? "업로드 실패"); break; }
+        uploaded.push(j.url);
+      }
+      if (uploaded.length > 0) setPhotos(p => [...p, ...uploaded]);
+    } catch { setError("네트워크 오류"); }
+    finally { setUploadingPhotos(false); }
+  };
+  const removePhoto = (idx: number) => setPhotos(p => p.filter((_, i) => i !== idx));
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -81,6 +102,7 @@ export default function ReviewEditorClient() {
           body: body.trim(),
           region: region.trim() || undefined,
           installPhotoUrl: installPhotoUrl || undefined,
+          photos,
         }),
       });
       const j = await res.json();
@@ -88,7 +110,7 @@ export default function ReviewEditorClient() {
       setToast("등록 완료 — 본사 승인 후 컨슈머 사이트에 노출됩니다.");
       setTimeout(() => setToast(null), 5000);
       setShowForm(false);
-      setCustomerName(""); setProductCode(""); setRating(5); setTitle(""); setBody(""); setRegion(""); setInstallPhotoUrl("");
+      setCustomerName(""); setProductCode(""); setRating(5); setTitle(""); setBody(""); setRegion(""); setInstallPhotoUrl(""); setPhotos([]);
       await load();
     } finally { setSubmitting(false); }
   };
@@ -156,6 +178,29 @@ export default function ReviewEditorClient() {
               />
               {uploading && <small className="text-rk-info">⏳ 업로드 중…</small>}
             </div>
+          </label>
+          <label>
+            <span className="text-rk-muted block mb-1">추가 사진 (선택, 최대 6장)</span>
+            <div className="flex flex-wrap items-center gap-2">
+              {photos.map((p, i) => (
+                <div key={i} className="relative">
+                  <img src={p} alt="" className="w-[60px] h-[60px] object-cover rounded border border-rk-line" />
+                  <button type="button" onClick={() => removePhoto(i)} className="absolute -top-1 -right-1 bg-rk-sale text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center border-0 cursor-pointer leading-none">×</button>
+                </div>
+              ))}
+              {photos.length < 6 && (
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  disabled={uploadingPhotos}
+                  onChange={e => { const fs = e.target.files; if (fs && fs.length > 0) void uploadMultiplePhotos(fs); e.target.value = ""; }}
+                  className="text-[12px]"
+                />
+              )}
+              {uploadingPhotos && <small className="text-rk-info">⏳ 업로드 중…</small>}
+            </div>
+            <small className="text-rk-faint text-[11px]">상세 후기에 노출됩니다. WebP 자동 변환.</small>
           </label>
           {error && <div className="text-rk-sale">⚠ {error}</div>}
           <div className="flex gap-2 mt-1">
