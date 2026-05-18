@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
+import { SK_MAGIC_LOGO } from "@/lib/constants/assets";
 
 type NavItem = { href: string; ico: string; label: string; badge?: number };
 
@@ -65,7 +66,7 @@ export default function Sidebar({ user, partnerName }: SidebarProps) {
   return (
     <aside className="bg-rk-navy text-white/[.85] p-3.5 sticky top-0 h-screen overflow-y-auto flex flex-col gap-2.5">
       <div className="flex items-center gap-2.5 p-1.5">
-        <img src="/sk-magic-logo.png" alt="SK인텔릭스" className="h-[24px] w-auto" />
+        <img src={SK_MAGIC_LOGO} alt="SK magic" className="h-[24px] w-auto" />
 
         <div>
           <div className="font-semibold text-sm text-white leading-tight">{partnerName ?? "협력점 콘솔"}</div>

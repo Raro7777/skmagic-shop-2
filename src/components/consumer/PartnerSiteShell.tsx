@@ -7,6 +7,7 @@ import RankingTabs from "@/components/consumer/RankingTabs";
 import ConsultForm from "@/components/consumer/ConsultForm";
 import UtmTracker from "@/components/consumer/UtmTracker";
 import { listActivePartners, type ConsumerProduct, type PartnerSiteData } from "@/lib/partnerSite";
+import { SK_MAGIC_LOGO } from "@/lib/constants/assets";
 
 const fmt = (n: number) => n.toLocaleString("ko-KR");
 
@@ -148,7 +149,7 @@ export default async function PartnerSiteShell({
               style={{ color: "inherit" }}
               aria-label="홈으로"
             >
-              <img src="/sk-magic-logo.png" alt="SK magic" className="h-[36px] w-auto" />
+              <img src={SK_MAGIC_LOGO} alt="SK magic" className="h-[36px] w-auto" />
 
               <div>
                 <div className="font-bold text-[16px] text-rk-ink tracking-[-.02em] leading-tight">{partner.partnerName}</div>

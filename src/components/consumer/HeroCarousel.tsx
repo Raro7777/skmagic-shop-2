@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { ConsumerProduct, ActiveBanner } from "@/lib/partnerSite";
+import { SK_MAGIC_LOGO } from "@/lib/constants/assets";
 
 const fmt = (n: number) => n.toLocaleString("ko-KR");
 const ROTATE_MS = 4500;
@@ -95,7 +96,7 @@ export default function HeroCarousel({
     >
       {/* SK magic 인증 배지 — 우측 상단 고정 */}
       <div className="absolute top-3 right-3 z-[5] flex items-center gap-1.5 bg-white px-2 py-1 rounded-md shadow-sm">
-        <img src="/sk-magic-logo.png" alt="SK magic 공식" className="h-[18px] w-auto" />
+        <img src={SK_MAGIC_LOGO} alt="SK magic 공식" className="h-[18px] w-auto" />
         <span className="text-[10px] font-bold text-rk-ink leading-none">공식 인증</span>
       </div>
 

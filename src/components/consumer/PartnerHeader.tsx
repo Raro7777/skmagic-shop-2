@@ -1,6 +1,7 @@
 import Link from "next/link";
 import NavTabs from "@/components/consumer/NavTabs";
 import type { PartnerSiteData } from "@/lib/partnerSite";
+import { SK_MAGIC_LOGO } from "@/lib/constants/assets";
 
 export type SellerInfo = { sellerCode: string; name: string };
 
@@ -29,7 +30,7 @@ export default function PartnerHeader({
         <>
           <div className="px-4 py-3 flex items-center gap-2.5">
             <Link href={`/p/${partner.partnerCode}`} className="flex items-center gap-2 no-underline text-inherit">
-              <img src="/sk-magic-logo.png" alt="SK magic" className="h-[36px] w-auto" />
+              <img src={SK_MAGIC_LOGO} alt="SK magic" className="h-[36px] w-auto" />
 
               <div>
                 <div className="font-bold text-[16px] text-rk-ink tracking-[-.02em] leading-tight">{partner.partnerName}</div>
@@ -80,7 +81,7 @@ export default function PartnerHeader({
             href={`/p/${partner.partnerCode}`}
             className="flex items-center gap-2 flex-1 min-w-0 no-underline text-inherit"
           >
-            <img src="/sk-magic-logo.png" alt="SK인텔릭스" className="h-[28px] w-auto shrink-0" />
+            <img src={SK_MAGIC_LOGO} alt="SK magic" className="h-[28px] w-auto shrink-0" />
             <div className="min-w-0">
               <div className="font-bold text-[13px] text-rk-ink leading-tight truncate">
                 {partner.partnerName}

@@ -4,6 +4,7 @@ import PartnerHeader from "@/components/consumer/PartnerHeader";
 import PartnerFooter from "@/components/consumer/PartnerFooter";
 import PartnerCta from "@/components/consumer/PartnerCta";
 import { getPartnerHeader } from "@/lib/partnerSite";
+import { SK_MAGIC_HOTLINE } from "@/lib/constants/hq";
 
 export async function generateMetadata({
   params,
@@ -38,7 +39,7 @@ const FAQS = [
     items: [
       { q: "설치는 언제 가능한가요?", a: "신청 일정에 따라 다음 영업일 또는 협의된 날짜에 SK매직㈜ 직영 기사가 방문 설치합니다." },
       { q: "이사 시 이전설치는 어떻게 하나요?", a: "이전설치는 가능합니다. 이사 1주일 전 고객센터로 연락 주시면 이전 일정을 잡아드립니다 (자가관리는 무료, 방문관리는 일부 비용 발생)." },
-      { q: "고장 시 어디로 연락하나요?", a: "본 협력점 또는 SK매직㈜ 본사 콜센터(1588-1588)로 직접 연락하시면 신속히 출동해드립니다." },
+      { q: "고장 시 어디로 연락하나요?", a: `본 협력점 또는 SK매직㈜ 본사 콜센터(${SK_MAGIC_HOTLINE})로 직접 연락하시면 신속히 출동해드립니다.` },
       { q: "필터 교체는 어떻게 하나요?", a: "자가관리 모델은 정기 교체 키트를 발송해드리며, 방문관리 모델은 매니저가 정기 방문하여 교체합니다." },
     ],
   },
