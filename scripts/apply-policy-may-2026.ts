@@ -1,16 +1,19 @@
 /**
- * SK매직 5월 정책 엑셀 (2026-05) 을 DB에 적용한다.
- *   - Product.rentalPrice         ← 운영가 [col 8]
- *   - Product.cardDiscountPrice   ← 5월 판촉가 [col 9]
- *   - HqPolicy.baseCommission     ← 수수료 합계 [col 15]
- *   - 변경된 필드는 ProductChangeLog 에 source="hq_policy_may2026" 기록
+ * SK매직 2026-05 정책 (xlsx) → HqPolicy 다중행 스키마 적용.
  *
- * 5월 시트 (판매수수료_5월) 구조:
- *   row 13+ 이 데이터. 각 row 가 (productCode, 컬러/모드, 의무기간) 단위.
- *   60개월 (의무기간=60) row 만 대표값으로 채택 — 4월 스크립트와 같은 룰.
- *   * 방문형 * / * 셀프형 * / * Lite * 라벨이 col[3] 에 들어옴 (없으면 직전 모드 상속).
+ *   목표: HqPolicy 테이블의 모든 (mode × contractPeriod) 행을 xlsx 기반 정확값으로 덮어쓰기.
+ *   - HqPolicy.baseCommission ← xlsx col15 ÷ 1.1 (VAT 제외 / 공급가액)
+ *   - HqPolicy.monthIncentive ← 0 (5월 정책에는 분리된 인센티브 없음, 합계만 col15)
+ *   - HqPolicy.installSubsidy ← 30,000 (기본값, 신규 행 생성 시)
+ *   - 마진 필드 (marginType / marginAmount / marginPercent) 는 이미 운영 중인 값 보존.
  *
- *   비고 / 운영중지 컬럼 (col 17, 18) 에 "운영종료" 등이 있으면 스킵.
+ *   Product top-level (rentalPrice / baseRentalPrice / promoRentalPrice / cardDiscountPrice) 는
+ *   scripts/apply-price-tiers-may-2026.ts 가 담당. 이 스크립트는 손대지 않는다.
+ *
+ *   xlsx 시트: "판매수수료_5월" — row 13+ 데이터.
+ *   col 2=productCode, col 3=mode 라벨, col 4=의무기간, col 15=수수료 합계.
+ *
+ *   --apply 없으면 dry-run.
  */
 import { config as loadEnv } from "dotenv";
 loadEnv({ path: ".env.local" });
@@ -25,17 +28,20 @@ const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: url 
 
 const PATH = "/Users/woozoo/.cokacdir/workspace/obnqnoho/SK매직_인증점_2026년_5월_제품_수수료표_0429_수정_v4_복호화.xlsx";
 const SHEET = "판매수수료_5월";
-const DATA_START_ROW = 12; // 0-indexed → row 13
+const DATA_START_ROW = 12;
+const VAT_RATE = 1.1;
+const APPLY = process.argv.includes("--apply");
 
 type Opt = {
   productCode: string;
-  managementMode: "방문형" | "셀프형" | "Lite" | null;
+  mode: "방문형" | "셀프형" | null;
   contractPeriod: number;
-  operationPrice: number | null;
-  promotionPrice: number | null;
-  commissionTotal: number | null;
+  visitInterval: string;
+  commissionTotal: number | null;  // xlsx col 15 (VAT 포함)
   discontinued: boolean;
 };
+
+const fmt = (n: number | null | undefined) => n == null ? "—" : n.toLocaleString("ko-KR");
 
 function parseNumber(s: string | null | undefined): number | null {
   if (s == null) return null;
@@ -45,10 +51,9 @@ function parseNumber(s: string | null | undefined): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-function detectMode(label: string): "방문형" | "셀프형" | "Lite" | null {
+function detectMode(label: string): "방문형" | "셀프형" | null {
   if (/방문/.test(label)) return "방문형";
-  if (/셀프|자가/.test(label)) return "셀프형";
-  if (/Lite|라이트/i.test(label)) return "Lite";
+  if (/셀프|자가|Lite/i.test(label)) return "셀프형";
   return null;
 }
 
@@ -59,183 +64,183 @@ function parseSheet(): Opt[] {
   const rows = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1, defval: null, raw: false });
 
   const out: Opt[] = [];
-  let lastMode: Opt["managementMode"] = null;
+  const lastModeForCode: Record<string, "방문형" | "셀프형" | null> = {};
   let lastCode = "";
+
   for (let i = DATA_START_ROW; i < rows.length; i++) {
     const r = rows[i] ?? [];
-    const codeCell = String(r[2] ?? "").trim();
-    const code = codeCell || lastCode;
-    if (codeCell) lastCode = codeCell;
+    const codeRaw = String(r[2] ?? "").trim();
+    const code = codeRaw || lastCode;
+    if (codeRaw) {
+      lastCode = codeRaw;
+      if (!(code in lastModeForCode)) lastModeForCode[code] = null;
+    }
     if (!/^[A-Z][A-Z0-9]{6,}$/.test(code)) continue;
 
-    // 컬러/모드 라벨 — 모드 표기는 새로 등장할 때만. 이전 mode 유지 룰.
     const variantLabel = String(r[3] ?? "").trim();
     const detected = detectMode(variantLabel);
-    if (detected !== null) lastMode = detected;
-    // 새 productCode 의 첫 row 인데 모드 라벨이 없으면 초기화
-    if (codeCell && detected === null && !variantLabel) lastMode = null;
+    if (detected) lastModeForCode[code] = detected;
+    const mode = detected ?? lastModeForCode[code] ?? null;
 
     const period = parseNumber(String(r[4] ?? ""));
     if (!period) continue;
 
-    const opPrice    = parseNumber(String(r[8]  ?? ""));   // 운영가
-    const promo      = parseNumber(String(r[9]  ?? ""));   // 5월 판촉가
-    // 수수료 합계 (col 15) 는 VAT 10% 포함값. DB 저장은 VAT 제외 (공급가액) 으로 보정.
-    const commRaw    = parseNumber(String(r[15] ?? ""));
-    const comm       = commRaw != null ? Math.round(commRaw / 1.1) : null;
+    const commRaw = parseNumber(String(r[15] ?? ""));
     const discontText = `${r[17] ?? ""}${r[18] ?? ""}${r[19] ?? ""}`;
-    const discontinued = /단종|운영종료|운영중지|미운영/.test(discontText);
+    const discontinued =
+      /단종|운영중지|미운영/.test(discontText) ||
+      (/운영종료/.test(discontText) && !/통합운영/.test(discontText));
 
     out.push({
       productCode: code,
-      managementMode: lastMode,
+      mode,
       contractPeriod: period,
-      operationPrice: opPrice,
-      promotionPrice: promo,
-      commissionTotal: comm,
+      visitInterval: String(r[6] ?? "").trim(),
+      commissionTotal: commRaw,
       discontinued,
     });
   }
   return out;
 }
 
+function managementTypeToMode(mt: string): "방문형" | "셀프형" {
+  if (mt.includes("자가") || mt.includes("셀프")) return "셀프형";
+  return "방문형"; // 방문 관리 / 미정 / 기본 — HqPolicy 의 mode 는 NOT NULL 이라 fallback 필요
+}
+
 async function main() {
+  console.log(`▶ ${APPLY ? "APPLY" : "DRY-RUN"} : 본사 정책 → HqPolicy 다중행 스키마 적용 (VAT 제외)\n`);
   const opts = parseSheet();
-  console.log(`📋 시트 파싱 — ${opts.length} 옵션 / 고유 productCode ${new Set(opts.map(o => o.productCode)).size}개`);
+  const productCodes = new Set(opts.map(o => o.productCode));
+  console.log(`📋 xlsx 파싱 — 옵션 ${opts.length}건 / 고유 productCode ${productCodes.size}개`);
 
-  // productCode + 모드별 60개월 대표값 추출
-  type Rep = { 방문형?: Opt; 셀프형?: Opt; Lite?: Opt; 단일?: Opt };
-  const repByCode = new Map<string, Rep>();
+  // productCode 기준 옵션 그룹화 (단종 / 수수료 누락 제외)
+  const byCode = new Map<string, Opt[]>();
   for (const o of opts) {
-    if (o.contractPeriod !== 60) continue;
     if (o.discontinued) continue;
-    if (!repByCode.has(o.productCode)) repByCode.set(o.productCode, {});
-    const rec = repByCode.get(o.productCode)!;
-    if (o.managementMode === "방문형") rec.방문형 = o;
-    else if (o.managementMode === "셀프형") rec.셀프형 = o;
-    else if (o.managementMode === "Lite") rec.Lite = o;
-    else rec.단일 = o;
+    if (o.commissionTotal == null) continue;
+    if (!byCode.has(o.productCode)) byCode.set(o.productCode, []);
+    byCode.get(o.productCode)!.push(o);
   }
-  console.log(`📋 60개월 대표값 — ${repByCode.size} productCode`);
+  console.log(`📋 유효 옵션 (단종 제외 · 수수료 있음): ${[...byCode.values()].reduce((s, a) => s + a.length, 0)}건\n`);
 
-  const products = await prisma.product.findMany({ include: { hqPolicy: true } });
+  const products = await prisma.product.findMany({
+    select: { id: true, productCode: true, managementType: true, contractPeriod: true },
+  });
   console.log(`📦 DB Product ${products.length}개\n`);
 
-  let updatedRental = 0;
-  let updatedCard = 0;
-  let updatedCommission = 0;
-  let createdHqPolicy = 0;
-  let logsCreated = 0;
-  let touched = 0;
+  let upsertsExpected = 0;
+  let creates = 0;
+  let updates = 0;
+  let unchanged = 0;
   let unmatched = 0;
+  const fixed36m: string[] = [];
 
   for (const p of products) {
-    const rec = repByCode.get(p.productCode);
-    if (!rec) { unmatched++; continue; }
+    const sheetOpts = byCode.get(p.productCode);
+    if (!sheetOpts) { unmatched++; continue; }
 
-    let chosen: Opt | undefined;
-    if (p.managementType.includes("자가") || p.managementType.includes("셀프")) {
-      chosen = rec.셀프형 ?? rec.단일 ?? rec.방문형 ?? rec.Lite;
-    } else if (p.managementType.includes("방문")) {
-      chosen = rec.방문형 ?? rec.단일 ?? rec.셀프형 ?? rec.Lite;
-    } else {
-      chosen = rec.단일 ?? rec.방문형 ?? rec.셀프형 ?? rec.Lite;
-    }
-    if (!chosen) continue;
+    for (const o of sheetOpts) {
+      const mode = o.mode ?? managementTypeToMode(p.managementType);
+      const commVatExcl = Math.round((o.commissionTotal ?? 0) / VAT_RATE);
+      upsertsExpected++;
 
-    await prisma.$transaction(async tx => {
-      const updates: Record<string, unknown> = {};
-      const logs: Array<{ fieldName: string; oldValue: string | null; newValue: string }> = [];
+      const existing = await prisma.hqPolicy.findUnique({
+        where: { productId_mode_contractPeriod: { productId: p.id, mode, contractPeriod: o.contractPeriod } },
+      });
 
-      if (chosen.operationPrice != null && p.rentalPrice !== chosen.operationPrice) {
-        updates.rentalPrice = chosen.operationPrice;
-        logs.push({ fieldName: "rentalPrice", oldValue: String(p.rentalPrice), newValue: String(chosen.operationPrice) });
-        updatedRental++;
-      }
-      if (chosen.promotionPrice != null && p.cardDiscountPrice !== chosen.promotionPrice) {
-        updates.cardDiscountPrice = chosen.promotionPrice;
-        logs.push({ fieldName: "cardDiscountPrice", oldValue: p.cardDiscountPrice == null ? null : String(p.cardDiscountPrice), newValue: String(chosen.promotionPrice) });
-        updatedCard++;
-      }
-
-      if (Object.keys(updates).length > 0) {
-        await tx.product.update({ where: { id: p.id }, data: updates });
-        for (const l of logs) {
-          await tx.productChangeLog.create({
+      if (!existing) {
+        if (APPLY) {
+          await prisma.hqPolicy.create({
             data: {
               productId: p.id,
-              fieldName: l.fieldName,
-              oldValue: l.oldValue,
-              newValue: l.newValue,
-              source: "hq_policy_may2026",
-              triggeredById: null,
-            },
-          });
-          logsCreated++;
-        }
-        touched++;
-      }
-
-      if (chosen.commissionTotal != null) {
-        if (p.hqPolicy) {
-          if (p.hqPolicy.baseCommission !== chosen.commissionTotal) {
-            await tx.hqPolicy.update({
-              where: { productId: p.id },
-              data: { baseCommission: chosen.commissionTotal },
-            });
-            await tx.productChangeLog.create({
-              data: {
-                productId: p.id,
-                fieldName: "hqPolicy.baseCommission",
-                oldValue: String(p.hqPolicy.baseCommission),
-                newValue: String(chosen.commissionTotal),
-                source: "hq_policy_may2026",
-              },
-            });
-            updatedCommission++;
-            logsCreated++;
-          }
-        } else {
-          await tx.hqPolicy.create({
-            data: {
-              productId: p.id,
-              baseCommission: chosen.commissionTotal,
+              mode,
+              contractPeriod: o.contractPeriod,
+              visitInterval: o.visitInterval || null,
+              baseCommission: commVatExcl,
               monthIncentive: 0,
               installSubsidy: 30000,
+              refundLimitRatio: 0.6667,
             },
           });
-          await tx.productChangeLog.create({
-            data: {
-              productId: p.id,
-              fieldName: "hqPolicy.created",
-              oldValue: null,
-              newValue: `baseCommission=${chosen.commissionTotal}`,
-              source: "hq_policy_may2026",
-            },
-          });
-          createdHqPolicy++;
-          logsCreated++;
         }
+        creates++;
+        continue;
       }
-    });
+
+      if (existing.baseCommission === commVatExcl && (existing.monthIncentive ?? 0) === 0) {
+        unchanged++;
+        continue;
+      }
+
+      // 36m 오염 행 추적용 — 변경 폭이 큰 케이스 일부 샘플
+      if (o.contractPeriod === 36 && Math.abs(existing.baseCommission - commVatExcl) > 50000) {
+        fixed36m.push(
+          `  ${p.productCode.padEnd(14)} ${mode.padEnd(4)} ${String(o.contractPeriod).padStart(2)}m : ` +
+          `${fmt(existing.baseCommission).padStart(9)} → ${fmt(commVatExcl).padStart(9)}`,
+        );
+      }
+
+      if (APPLY) {
+        await prisma.hqPolicy.update({
+          where: { id: existing.id },
+          data: {
+            baseCommission: commVatExcl,
+            monthIncentive: 0,
+            visitInterval: o.visitInterval || existing.visitInterval,
+            // 마진 필드 (marginType/marginAmount/marginPercent) 보존 — 손대지 않음.
+          },
+        });
+        await prisma.productChangeLog.create({
+          data: {
+            productId: p.id,
+            fieldName: `hqPolicy(${mode},${o.contractPeriod}m).baseCommission`,
+            oldValue: String(existing.baseCommission),
+            newValue: String(commVatExcl),
+            source: "hq_policy_may2026_multirow",
+            triggeredById: null,
+          },
+        });
+      }
+      updates++;
+    }
   }
 
-  console.log(`✅ 적용 결과`);
-  console.log(`  Product 갱신                : ${touched}건`);
-  console.log(`    rentalPrice 변경          : ${updatedRental}건`);
-  console.log(`    cardDiscountPrice 변경    : ${updatedCard}건`);
-  console.log(`  HqPolicy 갱신                : ${updatedCommission}건`);
-  console.log(`  HqPolicy 신규 생성           : ${createdHqPolicy}건`);
-  console.log(`  ProductChangeLog 기록       : ${logsCreated}건`);
-  console.log(`  매칭 안된 DB Product         : ${unmatched}건 (시트에 없음)`);
+  console.log(`══ ${APPLY ? "APPLY 결과" : "DRY-RUN 결과"} ══`);
+  console.log(`  upsert 예상 행 수   : ${upsertsExpected}`);
+  console.log(`  새로 생성            : ${creates}`);
+  console.log(`  기존 행 갱신         : ${updates}`);
+  console.log(`  변경 없음            : ${unchanged}`);
+  console.log(`  xlsx 에 없는 Product : ${unmatched}`);
 
-  const totalProducts = await prisma.product.count();
-  const totalHqPolicy = await prisma.hqPolicy.count();
-  const totalLogs = await prisma.productChangeLog.count({ where: { source: "hq_policy_may2026" } });
-  console.log(`\n📊 현재 상태`);
-  console.log(`  Product 총 ${totalProducts}개`);
-  console.log(`  HqPolicy 총 ${totalHqPolicy}개 (커버리지 ${Math.round(totalHqPolicy / totalProducts * 100)}%)`);
-  console.log(`  hq_policy_may2026 변경 이력 누적 ${totalLogs}건`);
+  if (fixed36m.length > 0) {
+    console.log(`\n  ✏ 36개월 행 보정 샘플 (변경 폭 5만원 이상 · 최대 20건 표시):`);
+    for (const s of fixed36m.slice(0, 20)) console.log(s);
+    if (fixed36m.length > 20) console.log(`     ... +${fixed36m.length - 20}건 추가`);
+  }
+
+  // 적용 후 검증 — 3개 샘플 모델 방문형 36m 행이 xlsx 값과 일치하는지
+  if (APPLY) {
+    console.log(`\n══ 검증 — 샘플 3종의 방문형 36m 행 ══`);
+    for (const code of ["WPUMAC306SWH", "WPUIAC425SNS", "WPUJAC125SVB"]) {
+      const prod = await prisma.product.findUnique({
+        where: { productCode: code },
+        select: {
+          productCode: true,
+          hqPolicies: { where: { mode: "방문형", contractPeriod: 36 }, select: { baseCommission: true } },
+        },
+      });
+      const hq = prod?.hqPolicies[0];
+      const expected = byCode.get(code)?.find(o => o.mode === "방문형" && o.contractPeriod === 36);
+      const exp = expected?.commissionTotal != null ? Math.round(expected.commissionTotal / VAT_RATE) : null;
+      const ok = hq != null && exp != null && hq.baseCommission === exp;
+      console.log(`  ${code.padEnd(14)} 방문형 36m : DB=${fmt(hq?.baseCommission)} / 예상(xlsx÷1.1)=${fmt(exp)}  ${ok ? "✓" : "❌"}`);
+    }
+  }
+
+  if (!APPLY) {
+    console.log(`\n  💡 --apply 플래그로 실제 갱신 (변경 ${creates + updates}건 예상)`);
+  }
 }
 
 main().catch(e => { console.error(e); process.exit(1); }).finally(() => prisma.$disconnect());
