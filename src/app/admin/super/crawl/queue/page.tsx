@@ -107,9 +107,13 @@ export default async function CrawlQueuePage() {
         <Link href="/admin/super/crawl" className="text-rk-info text-[14px] no-underline">← 크롤 소스</Link>
       </div>
       <h1 className="text-[20px] font-bold tracking-[-.02em]">검토 대기 큐</h1>
-      <p className="text-rk-muted text-[14px] mb-[18px]">
+      <p className="text-rk-muted text-[14px] mb-2">
         총 {cards.length}건 · 신규 {newCount} · 변경 {updatedCount} — 승인 시 상품 마스터에 즉시 반영되며, 변경 이력은 ProductChangeLog에 기록됩니다.
       </p>
+      <div className="bg-rk-tint-orange text-rk-orange-deep text-[13px] px-3 py-2 rounded mb-[18px]">
+        ⓘ <b>가격 필드 (월 렌탈료 · 카드할인가)는 본사 정책표(xlsx) 단독 출처</b>입니다. 크롤가는 SK매직 매직몰 소매가라서 협력점 정책가와 다릅니다.
+        승인해도 가격은 덮어쓰지 않습니다 — 참고용으로만 표시됩니다.
+      </div>
 
       <CrawlReviewQueue cards={cards} />
     </>

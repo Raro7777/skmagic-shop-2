@@ -25,13 +25,11 @@ function diffAgainstProduct(
 ): { changeType: "new" | "updated" | "unchanged"; previousData: Record<string, unknown> | null } {
   if (!existing) return { changeType: "new", previousData: null };
 
+  // 가격 필드 (rentalPrice / cardDiscountPrice) 는 본사 정책표(xlsx) 가 단독 출처.
+  // SK매직 매직몰의 소매가는 B2C 채널 가격이라 협력점 정책가와 다르므로 비교에서 제외.
   const changes: Record<string, unknown> = {};
   if (existing.name !== payload.name) changes.name = existing.name;
   if (existing.modelName !== payload.modelName) changes.modelName = existing.modelName;
-  if (existing.rentalPrice !== payload.rentalPrice) changes.rentalPrice = existing.rentalPrice;
-  if ((existing.cardDiscountPrice ?? null) !== (payload.cardDiscountPrice ?? null)) {
-    changes.cardDiscountPrice = existing.cardDiscountPrice;
-  }
   if (existing.contractPeriod !== payload.contractPeriod) changes.contractPeriod = existing.contractPeriod;
   if (existing.managementType !== payload.managementType) changes.managementType = existing.managementType;
   if (existing.category !== payload.category) changes.category = existing.category;
@@ -249,6 +247,8 @@ export async function approveCrawledProduct(opts: {
 
   await prisma.$transaction(async tx => {
     if (crawled.changeType === "new") {
+      // 신규 상품 — 가격은 크롤가로 임시 채우고 status=discontinued 로 비공개.
+      // 본사 정책표(xlsx) import 후 가격 정확값이 들어왔을 때 관리자가 status=active 로 전환.
       await tx.product.create({
         data: {
           productCode: crawled.productCode!,
@@ -265,6 +265,7 @@ export async function approveCrawledProduct(opts: {
           keyFeatures: enrichedKeyFeatures.length > 0 ? (enrichedKeyFeatures as never) : undefined,
           specs: Object.keys(enrichedSpecs).length > 0 ? (enrichedSpecs as never) : undefined,
           warrantyMonths: enrichedWarranty ?? 60,
+          status: "discontinued", // 정책표 적용 전까지 소비자 노출 차단
         },
       });
     } else if (crawled.changeType === "updated") {
@@ -292,8 +293,7 @@ export async function approveCrawledProduct(opts: {
       compare("name", existing.name, crawled.name);
       compare("modelName", existing.modelName, crawled.modelName ?? existing.modelName);
       compare("category", existing.category, crawled.category ?? existing.category);
-      compare("rentalPrice", existing.rentalPrice, crawled.rentalPrice ?? existing.rentalPrice);
-      compare("cardDiscountPrice", existing.cardDiscountPrice, crawled.cardDiscountPrice ?? null);
+      // 가격 (rentalPrice / cardDiscountPrice) 은 본사 정책표 단독 출처 — 크롤은 덮어쓰지 않는다.
       compare("contractPeriod", existing.contractPeriod, crawled.contractPeriod ?? existing.contractPeriod);
       compare("managementType", existing.managementType, crawled.managementType ?? existing.managementType);
       compare("description", existing.description, crawled.description ?? null);
