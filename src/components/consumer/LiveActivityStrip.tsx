@@ -49,16 +49,15 @@ export default function LiveActivityStrip({ items }: { items: LiveActivityItem[]
         <span className="text-rk-line-2 shrink-0">|</span>
         <div className="flex-1 overflow-hidden">
           <div key={cur.id} className="live-fade flex items-center gap-2 whitespace-nowrap">
-            <b className="text-white">{cur.customerName}</b>
-            <span className="text-rk-line">·</span>
-            <span className="opacity-85 truncate">{cur.productName}</span>
+            <span className={`shrink-0 text-[10.5px] px-1.5 py-0.5 rounded font-semibold ${statusColor}`}>{cur.status}</span>
             {cur.region && (
               <>
-                <span className="text-rk-line">·</span>
-                <span className="opacity-85">📍 {cur.region}</span>
+                <span className="text-rk-line shrink-0">·</span>
+                <span className="opacity-85 shrink-0">📍 {cur.region}</span>
               </>
             )}
-            <span className={`shrink-0 text-[10.5px] px-1.5 py-0.5 rounded font-semibold ${statusColor}`}>{cur.status}</span>
+            <span className="text-rk-line shrink-0">·</span>
+            <b className="text-white">{cur.customerName}</b>
             <span className="text-rk-line shrink-0">·</span>
             <span className="text-[11px] opacity-65 shrink-0">{cur.minutesAgo}분 전</span>
           </div>

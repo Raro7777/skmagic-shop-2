@@ -188,11 +188,6 @@ export default async function PartnerSiteShell({
           <NavTabs partnerCode={partner.partnerCode} />
         </header>
 
-        {/* 실시간 접수 현황 띠배너 — hero 위 1줄 자동 롤링 */}
-        {data.liveActivities.length > 0 && (
-          <LiveActivityStrip items={data.liveActivities} />
-        )}
-
         {/* Seller-specific banner */}
         {seller && (
           <div className="bg-rk-tint-orange px-4 py-2.5 border-b border-[#F4DCC9] flex items-center gap-2 text-[14px]">
@@ -264,6 +259,11 @@ export default async function PartnerSiteShell({
           <span className="text-sm">🚚</span>
           <span><b className="font-semibold">오늘 신청 → 최단 {nextInstallLabel()} 설치 가능</b> · {partner.region} 한정</span>
         </div>
+
+        {/* 실시간 접수 현황 띠배너 — 설치 가능 띠 아래에 배치 (혜택 → 설치 가능 → 실시간 접수 순) */}
+        {data.liveActivities.length > 0 && (
+          <LiveActivityStrip items={data.liveActivities} />
+        )}
 
         {/* 카테고리 랭킹 — 탭 클릭 시 즉시 변경 (RankingTabs가 내부에서 처리) */}
         <RankingTabs

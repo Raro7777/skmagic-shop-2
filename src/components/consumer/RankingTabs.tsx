@@ -85,7 +85,7 @@ export default function RankingTabs({
             <Link
               key={p.productCode}
               href={`/p/${partnerCode}/products/${p.productCode}`}
-              className="grid grid-cols-[64px_1fr_auto] gap-3 items-center no-underline text-inherit cursor-pointer p-2 rounded hover:bg-rk-soft-2 transition-colors"
+              className="grid grid-cols-[64px_minmax(0,1fr)_148px] gap-3 items-center no-underline text-inherit cursor-pointer p-2 rounded hover:bg-rk-soft-2 transition-colors"
             >
               <div className="relative">
                 <ProductThumb
@@ -114,22 +114,23 @@ export default function RankingTabs({
                   )}
                 </div>
               </div>
-              <div className="text-right shrink-0">
+              <div className="text-right shrink-0 leading-tight">
                 {p.baseRentalPrice != null && p.baseRentalPrice > p.rentalPrice && (
-                  <div className="text-[11px] text-rk-faint line-through rk-num">월 {fmt(p.baseRentalPrice)}원</div>
+                  <div className="text-[11px] text-rk-faint line-through rk-num whitespace-nowrap">월 {fmt(p.baseRentalPrice)}원</div>
                 )}
-                <div className="text-[11px] text-rk-muted">{p.promoApplied ? "🏷️ 전사할인가" : "월"}</div>
-                <b className="text-[15px] font-bold tracking-[-.02em] text-rk-ink rk-num">{fmt(p.rentalPrice)}원~</b>
+                <div className="text-[11px] text-rk-muted whitespace-nowrap">{p.promoApplied ? "🏷️ 전사할인가" : "월"}</div>
+                <b className="text-[15px] font-bold tracking-[-.02em] text-rk-ink rk-num whitespace-nowrap block">{fmt(p.rentalPrice)}원~</b>
                 {p.cardDiscountPrice != null && (
-                  <div className="text-[12px] text-rk-sale font-medium">카드 최대 {fmt(p.cardDiscountPrice)}원~</div>
+                  <div className="text-[12px] text-rk-sale font-medium whitespace-nowrap">카드 최대 {fmt(p.cardDiscountPrice)}원~</div>
                 )}
                 {p.minRivalPrice != null && p.minRivalPrice > 0 && (
                   p.rivalHalfPrice != null && p.rivalHalfMonths > 0 ? (
-                    <div className="text-[11px] text-rk-orange-deep font-medium leading-tight">
-                      🔥 첫 {p.rivalHalfMonths}개월 반값 월 {fmt(p.rivalHalfPrice)}원~ <span className="text-rk-faint font-normal">· 이후 {fmt(p.minRivalPrice)}원 (카드 별도)</span>
+                    <div className="text-[11px] text-rk-orange-deep font-medium mt-0.5">
+                      🔥 {p.rivalHalfMonths}개월 반값 {fmt(p.rivalHalfPrice)}원
+                      <span className="text-rk-faint font-normal block">이후 {fmt(p.minRivalPrice)}원</span>
                     </div>
                   ) : (
-                    <div className="text-[11px] text-rk-orange-deep font-medium">🔄 타사 월 {fmt(p.minRivalPrice)}원~ <span className="text-rk-faint font-normal">(카드 별도)</span></div>
+                    <div className="text-[11px] text-rk-orange-deep font-medium whitespace-nowrap mt-0.5">🔄 타사 {fmt(p.minRivalPrice)}원~</div>
                   )
                 )}
               </div>

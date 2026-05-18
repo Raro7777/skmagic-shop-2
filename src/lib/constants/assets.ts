@@ -5,5 +5,5 @@
  * 여기 한 곳만 수정.
  */
 
-/** SK매직 로고 — 헤더/푸터/카드 등 다용도 */
-export const SK_MAGIC_LOGO = "/sk-magic-logo.png";
+/** SK매직 로고 — 헤더/푸터/카드 등 다용도. SVG 로 선명도 개선 (PNG fallback 보존). */
+export const SK_MAGIC_LOGO = "/sk-magic-logo.svg";
