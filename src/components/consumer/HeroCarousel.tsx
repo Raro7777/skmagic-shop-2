@@ -239,21 +239,21 @@ function BannerSlideContent({ banner }: { banner: ActiveBanner }) {
     const hasOverlay = (banner.title?.trim().length ?? 0) > 0;
     return (
       <Wrap>
-        <div className="relative flex-1 min-h-[320px]">
+        <div className="relative flex-1 min-h-[320px] w-full">
           {banner.imageUrl && (
             <img src={banner.imageUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
           )}
           {hasOverlay && (
             <>
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-black/10" />
-              <div className="relative flex-1 flex flex-col h-full" style={{ color: banner.textColor }}>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-black/10 pointer-events-none" />
+              <div className="absolute inset-0 flex flex-col" style={{ color: banner.textColor }}>
                 {/* 상단 — 타이틀 */}
                 <div className="pt-[22px] px-4">
                   <h2 className="text-[22px] font-bold leading-[1.25] tracking-[-.03em] m-0 line-clamp-2" style={{ textShadow: "0 2px 6px rgba(0,0,0,.4)", color: "inherit" }}>
                     {banner.title}
                   </h2>
                   {banner.subtitle && (
-                    <p className="text-[13px] opacity-95 mt-1.5 m-0 leading-[1.4] line-clamp-1">{banner.subtitle}</p>
+                    <p className="text-[13px] opacity-95 mt-1.5 m-0 leading-[1.4] line-clamp-1" style={{ textShadow: "0 1px 4px rgba(0,0,0,.4)" }}>{banner.subtitle}</p>
                   )}
                 </div>
                 {/* 중단 — flex spacer (이미지 부분 자연 노출) */}
@@ -261,7 +261,7 @@ function BannerSlideContent({ banner }: { banner: ActiveBanner }) {
                 {/* 하단 — CTA */}
                 {banner.ctaLabel && (
                   <div className="px-4 pb-12">
-                    <span className="inline-block px-3 py-1.5 rounded-full text-[14px] font-semibold bg-white text-rk-ink">
+                    <span className="inline-block px-3.5 py-1.5 rounded-full text-[14px] font-semibold bg-white text-rk-ink shadow-md">
                       {banner.ctaLabel} →
                     </span>
                   </div>

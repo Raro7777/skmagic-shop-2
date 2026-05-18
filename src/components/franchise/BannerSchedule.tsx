@@ -150,6 +150,12 @@ export default function BannerSchedule() {
   // hero 캐러셀의 자동 상품 슬라이드 (협력점 등록 배너와 함께 도는 5장) 노출 토글
   const [heroAutoEnabled, setHeroAutoEnabled] = useState<boolean>(true);
   const [heroAutoSaving, setHeroAutoSaving] = useState(false);
+  // 협력점 코드 — ctaHref 자동 생성 시 사용 (api/franchise/banners GET 에서 반환)
+  const [partnerCode, setPartnerCode] = useState<string>("");
+  // 활성 상품 목록 — 상품 코드로 자동 채우기 picker 용
+  const [products, setProducts] = useState<Array<{ productCode: string; name: string; modelName: string }>>([]);
+  const [productPickerOpen, setProductPickerOpen] = useState(false);
+  const [productSearch, setProductSearch] = useState("");
 
   const load = useCallback(async () => {
     try {
@@ -164,11 +170,13 @@ export default function BannerSchedule() {
       }
       const j = await resBanners.json();
       setBanners(j.banners);
+      if (j.partnerCode) setPartnerCode(j.partnerCode);
       setError(null);
       if (resConfig.ok) {
         const c = await resConfig.json();
         setFlagshipEnabled(c.config?.flagshipBannerEnabled !== false);
         setHeroAutoEnabled(c.config?.heroAutoSlidesEnabled !== false);
+        if (Array.isArray(c.products)) setProducts(c.products);
       }
     } catch {
       setError("배너 로드 실패");
@@ -422,6 +430,69 @@ export default function BannerSchedule() {
       </div>
 
 
+      {/* 상품 연결 picker — 클릭 시 ctaHref 자동 채움 */}
+      {productPickerOpen && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-start justify-center overflow-y-auto py-8" onClick={() => setProductPickerOpen(false)}>
+          <div onClick={e => e.stopPropagation()} className="bg-white rounded-lg max-w-[560px] w-full mx-4 shadow-xl p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-[15px] font-semibold">🛒 연결할 상품 선택</h3>
+              <button type="button" onClick={() => setProductPickerOpen(false)} className="text-rk-muted text-[20px] bg-transparent border-0 cursor-pointer leading-none">×</button>
+            </div>
+            <input
+              type="text"
+              autoFocus
+              placeholder="상품명·모델명 검색"
+              value={productSearch}
+              onChange={e => setProductSearch(e.target.value)}
+              className="w-full border border-rk-line rounded px-3 py-2 text-[14px] mb-3"
+            />
+            <div className="max-h-[60vh] overflow-y-auto flex flex-col gap-1">
+              {products.length === 0 ? (
+                <div className="text-center py-8 text-rk-muted text-[14px]">상품 목록 로딩 중…</div>
+              ) : (
+                products
+                  .filter(p => {
+                    const q = productSearch.toLowerCase().trim();
+                    if (!q) return true;
+                    return p.productCode.toLowerCase().includes(q)
+                      || p.name.toLowerCase().includes(q)
+                      || (p.modelName ?? "").toLowerCase().includes(q);
+                  })
+                  .map(p => (
+                    <button
+                      key={p.productCode}
+                      type="button"
+                      onClick={() => {
+                        if (!draft) return;
+                        const href = partnerCode ? `/p/${partnerCode}/products/${p.productCode}` : `/products/${p.productCode}`;
+                        setDraft({
+                          ...draft,
+                          ctaHref: href,
+                          // 자세히 보기 라벨 자동 (이미지 전용 모드 아닐 때만)
+                          ctaLabel: draft.ctaLabel || (draft.layout !== "image-only" ? "자세히 보기" : ""),
+                          // spotlightProductCode 도 같이 채움 (product-spotlight 레이아웃에서 활용)
+                          spotlightProductCode: draft.spotlightProductCode || p.productCode,
+                        });
+                        setProductPickerOpen(false);
+                      }}
+                      className="bg-white border border-rk-line rounded p-2.5 text-left cursor-pointer hover:bg-rk-soft-2 hover:border-rk-navy transition-colors"
+                    >
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <b className="text-[13px] text-rk-ink truncate flex-1">{p.name}</b>
+                        <span className="text-[10px] text-rk-faint font-mono">{p.productCode}</span>
+                      </div>
+                      <small className="text-[11px] text-rk-muted truncate block">{p.modelName}</small>
+                    </button>
+                  ))
+              )}
+            </div>
+            <div className="mt-3 text-[12px] text-rk-muted">
+              선택 시 ctaHref 가 <code className="bg-rk-soft px-1.5 py-0.5 rounded font-mono">/p/{partnerCode || "{partnerCode}"}/products/[productCode]</code> 형식으로 자동 채워집니다.
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 본사 템플릿 가져오기 모달 */}
       {templateModalOpen && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-start justify-center overflow-y-auto py-8" onClick={() => setTemplateModalOpen(false)}>
@@ -622,8 +693,23 @@ export default function BannerSchedule() {
                     className="border border-rk-line rounded px-2 py-1 text-[14px] disabled:bg-rk-soft disabled:text-rk-faint disabled:cursor-not-allowed"
                   />
                 </Field>
-                <Field label="CTA 링크 (상품 상세 등)">
-                  <input value={draft.ctaHref} onChange={e => setDraft({ ...draft, ctaHref: e.target.value })} placeholder="/p/.../products/..." className="border border-rk-line rounded px-2 py-1 text-[14px]" />
+                <Field label="CTA 링크 — 클릭 시 이동 (배너 전체 영역 + 버튼 공통)">
+                  <div className="flex gap-1.5 items-stretch">
+                    <input
+                      value={draft.ctaHref}
+                      onChange={e => setDraft({ ...draft, ctaHref: e.target.value })}
+                      placeholder={partnerCode ? `/p/${partnerCode}/products/...` : "/p/.../products/..."}
+                      className="flex-1 border border-rk-line rounded px-2 py-1 text-[14px]"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => { setProductSearch(""); setProductPickerOpen(true); }}
+                      className="bg-rk-tint-blue border border-[#D8E4F4] text-rk-info rounded px-2.5 text-[12px] font-semibold hover:bg-[#E5EDF8] whitespace-nowrap cursor-pointer"
+                      title="상품을 선택하면 URL이 자동 채워집니다"
+                    >
+                      🛒 상품 연결
+                    </button>
+                  </div>
                 </Field>
                 <Field label="우선순위 (큰 값 우선)">
                   <input type="number" value={draft.priority} onChange={e => setDraft({ ...draft, priority: Math.max(0, parseInt(e.target.value) || 0) })} className="border border-rk-line rounded px-2 py-1 text-[14px]" />

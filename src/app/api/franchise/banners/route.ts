@@ -33,6 +33,7 @@ export async function GET() {
   });
 
   return NextResponse.json({
+    partnerCode: eff.partnerId,
     banners: banners.map(b => ({
       id: b.id,
       title: b.title,
