@@ -80,7 +80,9 @@ function parseSheet(): Opt[] {
 
     const opPrice    = parseNumber(String(r[8]  ?? ""));   // 운영가
     const promo      = parseNumber(String(r[9]  ?? ""));   // 5월 판촉가
-    const comm       = parseNumber(String(r[15] ?? ""));   // 수수료 합계
+    // 수수료 합계 (col 15) 는 VAT 10% 포함값. DB 저장은 VAT 제외 (공급가액) 으로 보정.
+    const commRaw    = parseNumber(String(r[15] ?? ""));
+    const comm       = commRaw != null ? Math.round(commRaw / 1.1) : null;
     const discontText = `${r[17] ?? ""}${r[18] ?? ""}${r[19] ?? ""}`;
     const discontinued = /단종|운영종료|운영중지|미운영/.test(discontText);
 
