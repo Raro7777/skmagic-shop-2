@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { prisma } from "../prisma";
 import type { CrawlAdapter, CrawledProductPayload } from "./types";
 import { skmagicAdapter } from "./skmagic";
@@ -139,8 +140,8 @@ export async function runCrawl(opts: {
           contractPeriod: payload.contractPeriod,
           managementType: payload.managementType,
           description: payload.description ?? null,
-          rawData: enriched as never,
-          previousData: (previousData ?? undefined) as never,
+          rawData: enriched as Prisma.InputJsonValue,
+          previousData: (previousData ?? Prisma.JsonNull) as Prisma.InputJsonValue | typeof Prisma.JsonNull,
           changeType,
           approvalStatus: "pending",
         },
@@ -262,8 +263,8 @@ export async function approveCrawledProduct(opts: {
           contractPeriod: crawled.contractPeriod ?? 60,
           managementType: crawled.managementType ?? "자가관리",
           description: crawled.description ?? null,
-          keyFeatures: enrichedKeyFeatures.length > 0 ? (enrichedKeyFeatures as never) : undefined,
-          specs: Object.keys(enrichedSpecs).length > 0 ? (enrichedSpecs as never) : undefined,
+          keyFeatures: enrichedKeyFeatures.length > 0 ? (enrichedKeyFeatures as Prisma.InputJsonValue) : undefined,
+          specs: Object.keys(enrichedSpecs).length > 0 ? (enrichedSpecs as Prisma.InputJsonValue) : undefined,
           warrantyMonths: enrichedWarranty ?? 60,
           status: "discontinued", // 정책표 적용 전까지 소비자 노출 차단
         },

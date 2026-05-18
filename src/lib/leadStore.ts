@@ -5,6 +5,7 @@
  * don't change.
  */
 
+import { Prisma } from "@prisma/client";
 import { prisma } from "./prisma";
 import { rentalSupportFor } from "./rentalSupport";
 import {
@@ -538,7 +539,7 @@ async function buildSettlementPayload(
     enrollmentIsRival:        !!form?.isRivalCompensation,
     enrollmentHalfMonths:     form?.isHalfPriceMonths ?? null,
     enrollmentGiftLabel:      form?.giftLabel ?? null,
-    enrollmentSnapshotJson:   (form ? (form as unknown as object) : null) as never,
+    enrollmentSnapshotJson:   form ? (form as unknown as Prisma.InputJsonValue) : Prisma.JsonNull,
   };
 }
 

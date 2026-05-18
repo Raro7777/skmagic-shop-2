@@ -1,11 +1,10 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { pickRepresentativeHqPolicy } from "@/lib/hqPolicy";
+import { fmtKr as fmt, formatMonthly } from "@/lib/format";
 
 export const metadata = { title: "상품 마스터 · 슈퍼관리자" };
 export const dynamic = "force-dynamic";
-
-const fmt = (n: number) => n.toLocaleString("ko-KR");
 
 const CATEGORY_LABEL: Record<string, string> = {
   water: "정수기", bidet: "비데", air: "공기청정기",
@@ -57,9 +56,9 @@ export default async function ProductMasterPage() {
                 <td className="px-1.5 py-2.5 border-b border-rk-line-2 text-rk-text">
                   {CATEGORY_LABEL[p.category] ?? p.category}
                 </td>
-                <td className="px-1.5 py-2.5 border-b border-rk-line-2 rk-num">월 {fmt(p.rentalPrice)}원</td>
+                <td className="px-1.5 py-2.5 border-b border-rk-line-2 rk-num">{formatMonthly(p.rentalPrice)}</td>
                 <td className="px-1.5 py-2.5 border-b border-rk-line-2 rk-num text-rk-sale">
-                  {p.cardDiscountPrice != null ? `월 ${fmt(p.cardDiscountPrice)}원` : "—"}
+                  {p.cardDiscountPrice != null ? formatMonthly(p.cardDiscountPrice) : "—"}
                 </td>
                 <td className="px-1.5 py-2.5 border-b border-rk-line-2 rk-num text-rk-success">
                   {rep ? `+₩${fmt(rep.baseCommission + rep.monthIncentive)}` : "—"}

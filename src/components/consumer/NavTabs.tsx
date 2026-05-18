@@ -5,17 +5,13 @@ import { usePathname } from "next/navigation";
 
 type Tab = { label: string; href: (partner: string) => string; match: (path: string, partner: string) => boolean };
 
-// 비활성 카테고리(안마의자/건조기) + 이벤트 메뉴는 일시 hide. 추후 다시 켤 때 주석만 풀면 됨.
 const TABS: Tab[] = [
-  { label: "홈",       href: p => `/p/${p}`,                  match: (path, p) => path === `/p/${p}` || path === `/p/${p}/` },
-  { label: "정수기",   href: p => `/p/${p}/category/water`,    match: path => path.endsWith("/category/water") },
-  { label: "비데",     href: p => `/p/${p}/category/bidet`,    match: path => path.endsWith("/category/bidet") },
-  { label: "공기청정기", href: p => `/p/${p}/category/air`,     match: path => path.endsWith("/category/air") },
-  { label: "매트리스", href: p => `/p/${p}/category/mattress`,  match: path => path.endsWith("/category/mattress") },
-  // { label: "안마의자", href: p => `/p/${p}/category/massage`,   match: path => path.endsWith("/category/massage") },
-  // { label: "건조기",   href: p => `/p/${p}/category/dryer`,     match: path => path.endsWith("/category/dryer") },
-  // { label: "이벤트",   href: p => `/p/${p}/events`,             match: path => path.endsWith("/events") },
-  { label: "후기",     href: p => `/p/${p}/reviews`,            match: path => path.endsWith("/reviews") },
+  { label: "홈",         href: p => `/p/${p}`,                   match: (path, p) => path === `/p/${p}` || path === `/p/${p}/` },
+  { label: "정수기",     href: p => `/p/${p}/category/water`,    match: path => path.endsWith("/category/water") },
+  { label: "비데",       href: p => `/p/${p}/category/bidet`,    match: path => path.endsWith("/category/bidet") },
+  { label: "공기청정기", href: p => `/p/${p}/category/air`,      match: path => path.endsWith("/category/air") },
+  { label: "매트리스",   href: p => `/p/${p}/category/mattress`, match: path => path.endsWith("/category/mattress") },
+  { label: "후기",       href: p => `/p/${p}/reviews`,           match: path => path.endsWith("/reviews") },
 ];
 
 export default function NavTabs({ partnerCode }: { partnerCode: string }) {

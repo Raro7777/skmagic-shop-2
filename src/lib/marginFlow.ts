@@ -22,10 +22,13 @@ export type MarginConfig = {
   percent: number;  // type=percent 일 때 (0~1)
 };
 
+/** computeHqMargin 가 실제로 읽는 필드만 — 호출처에서 좁은 타입 전달 가능. */
+export type HqMarginInput = Pick<HqPolicy, "marginType" | "marginAmount" | "marginPercent">;
+
 /** 본사 마진을 계산. HqPolicy.margin* 가 있으면 우선, 없으면 티어 기본값. */
 export function computeHqMargin(
   baseCommission: number,
-  hqPolicy: HqPolicy | null,
+  hqPolicy: HqMarginInput | null,
   tierDefault: MarginConfig | null,
 ): number {
   if (hqPolicy?.marginType === "fixed" && hqPolicy.marginAmount != null) {

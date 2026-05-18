@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { canUseFeature } from "@/lib/tier";
 import { gatePartnerOrHq } from "@/lib/effectivePartner";
@@ -105,7 +106,7 @@ export async function PATCH(req: Request) {
 
   await prisma.partner.update({
     where: { partnerCode: eff.partnerId },
-    data: { displayConfig: merged as never },
+    data: { displayConfig: merged as Prisma.InputJsonValue },
   });
 
   return NextResponse.json({ ok: true, config: merged });

@@ -17,10 +17,10 @@ function ageLabel(iso: string): string {
 
 export default function LiveFeed({ initial }: { initial: LandingFeedItem[] }) {
   const [items, setItems] = useState(initial);
-  const [tick, setTick] = useState(0);
+  // tick: ageLabel() 이 Date.now() 를 호출하므로 1분마다 재계산 트리거. 값 자체는 안 씀.
+  const [, setTick] = useState(0);
 
   useEffect(() => {
-    // 시간 라벨 1분마다 재계산
     const t = setInterval(() => setTick(x => x + 1), 60_000);
     return () => clearInterval(t);
   }, []);
@@ -40,7 +40,6 @@ export default function LiveFeed({ initial }: { initial: LandingFeedItem[] }) {
     return () => { stop = true; clearInterval(t); };
   }, []);
 
-  void tick;
   return (
     <div className="bg-white border border-rk-line rounded-xl p-4 h-[420px] overflow-hidden flex flex-col">
       <div className="flex items-center gap-2 mb-2">

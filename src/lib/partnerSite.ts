@@ -24,7 +24,7 @@ function computeMaxRentalSupport(args: {
   let max = 0;
   for (const opt of args.hqPolicies) {
     const base = opt.baseCommission + opt.monthIncentive;
-    const hqMargin = computeHqMargin(base, opt as never, args.tierMargin);
+    const hqMargin = computeHqMargin(base, opt, args.tierMargin);
     const partnerCommission = base - hqMargin;
     const s = rentalSupportFor(partnerCommission, args.partnerSupportAmount, args.giftAmount, args.installAmount);
     if (s > max) max = s;

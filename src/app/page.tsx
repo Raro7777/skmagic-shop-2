@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { listActivePartners } from "@/lib/partnerSite";
 import { listAllRegionSlugs } from "@/lib/regionSeo";
 import Footer from "@/components/hub/Footer";
+import { formatMonthly, formatKrw } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 export const metadata = {
@@ -117,9 +118,9 @@ export default async function HubPage() {
                       <small className="text-[11px] text-rk-faint font-mono">{CATEGORY_LABEL[p.category] ?? p.category}</small>
                       <b className="block text-[14px] text-rk-ink mt-0.5 leading-[1.3]">{p.name}</b>
                       <div className="mt-1.5 flex items-baseline gap-1.5 flex-wrap">
-                        <b className="text-[15px] text-rk-orange-deep rk-num">월 {p.rentalPrice.toLocaleString("ko-KR")}원</b>
+                        <b className="text-[15px] text-rk-orange-deep rk-num">{formatMonthly(p.rentalPrice)}</b>
                         {card && (
-                          <small className="text-[11px] text-rk-sale rk-num">카드 {card.toLocaleString("ko-KR")}원~</small>
+                          <small className="text-[11px] text-rk-sale rk-num">카드 {formatKrw(card)}~</small>
                         )}
                       </div>
                     </Link>

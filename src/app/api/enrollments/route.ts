@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
+import type { Prisma } from "@prisma/client";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { viewForRole } from "@/lib/enrollmentForm";
@@ -39,13 +40,7 @@ export async function GET(req: Request) {
   const limit = Math.min(200, Math.max(1, Number(url.searchParams.get("limit") ?? "50")));
   const offset = Math.max(0, Number(url.searchParams.get("offset") ?? "0"));
 
-  type WhereLead = {
-    partnerId?: string;
-    sellerId?: string;
-    status?: { in: string[] };
-    customerName?: { contains: string };
-  };
-  const where: WhereLead = {};
+  const where: Prisma.LeadWhereInput = {};
 
   if (actorRole === "partner_admin") {
     if (!session.user.partnerId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -74,7 +69,7 @@ export async function GET(req: Request) {
 
   // EnrollmentForm 이 있는 lead 만 노출
   const forms = await prisma.enrollmentForm.findMany({
-    where: { lead: where as never },
+    where: { lead: where },
     orderBy: { updatedAt: "desc" },
     take: limit,
     skip: offset,
@@ -89,7 +84,7 @@ export async function GET(req: Request) {
     },
   });
 
-  const total = await prisma.enrollmentForm.count({ where: { lead: where as never } });
+  const total = await prisma.enrollmentForm.count({ where: { lead: where } });
 
   const items = forms.map(f => {
     const masked = viewForRole(f, { actorRole, actorId: session.user.id ?? null });
