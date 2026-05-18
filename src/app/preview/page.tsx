@@ -5,6 +5,7 @@ import KoreaMap from "@/components/landing/KoreaMap";
 import LiveFeed from "@/components/landing/LiveFeed";
 import ROICalculator from "@/components/landing/ROICalculator";
 import ApplyInline from "@/components/landing/ApplyInline";
+import { HQ_HOTLINE } from "@/lib/constants/hq";
 
 export const metadata = { title: "협력점 분양 — 렌트왕 (Preview)" };
 export const dynamic = "force-dynamic";
@@ -147,7 +148,7 @@ export default async function PreviewLanding() {
               role="시나리오 3"
               title="고객이 가입한다면?"
               desc="협력점 매장 사이트에서 상품 선택 → 옵션(약정/모드/타사보상) → 상담 신청 1탭."
-              href={topPoint ? `/p/${topPoint.partnerCode}` : "/p/gangnam-skmagic"}
+              href={topPoint ? `/p/${topPoint.partnerCode}` : "/"}
               cta="매장 사이트 보기 →"
               hint={`예: ${topName}`}
             />
@@ -173,7 +174,7 @@ export default async function PreviewLanding() {
             </ul>
             <div className="mt-4 bg-rk-tint-blue text-rk-info px-3.5 py-2.5 rounded text-[11px] flex gap-1.5 items-center">
               <span>📞</span>
-              <span>상담 전화: <b>1600-2434</b> · 평일 9-18시</span>
+              <span>상담 전화: <b>{HQ_HOTLINE}</b> · 평일 9-18시</span>
             </div>
           </div>
           <ApplyInline />

@@ -67,10 +67,8 @@ export function decideOwnership(input: OwnershipInput): OwnershipResult {
   if (input.landingType === "consumer_seller" && input.partnerId && input.sellerCode) {
     return { partnerId: input.partnerId, ownerType: "partner", reason: "seller_landing" };
   }
-  if (input.landingType === "region" && input.region) {
-    return { partnerId: "gangnam-skmagic", ownerType: "partner", reason: "region_default" };
-  }
-  return { partnerId: null, ownerType: "hq_pool", reason: "main_or_unmatched" };
+  // region 진입은 본사 풀로 — 향후 region → partner 매칭 테이블 도입 시 갱신
+  return { partnerId: null, ownerType: "hq_pool", reason: input.landingType === "region" && input.region ? "region_to_pool" : "main_or_unmatched" };
 }
 
 /* =====================================================================

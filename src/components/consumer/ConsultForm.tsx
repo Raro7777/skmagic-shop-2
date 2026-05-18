@@ -16,7 +16,7 @@ import { getUtm } from "@/components/consumer/UtmTracker";
 type Submitted = { leadId: string; assignedPartnerId: string | null; message: string };
 
 export default function ConsultForm({
-  partnerCode = "gangnam-skmagic",
+  partnerCode,
   partnerName,
   sellerCode,
   sellerName,

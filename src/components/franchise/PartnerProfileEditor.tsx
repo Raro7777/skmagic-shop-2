@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { HQ_HOTLINE } from "@/lib/constants/hq";
 
 type InitialProfile = {
   partnerCode: string;
@@ -145,7 +146,7 @@ export default function PartnerProfileEditor({ initial }: { initial: InitialProf
           type="text"
           value={hotlineNumber}
           onChange={e => setHotlineNumber(e.target.value)}
-          placeholder="예: 1600-2434"
+          placeholder={`예: ${HQ_HOTLINE}`}
           maxLength={24}
           disabled={busy}
           className="border border-rk-line rounded px-2.5 py-1.5 text-[13px] focus:outline-none focus:border-rk-navy disabled:opacity-50 rk-num"

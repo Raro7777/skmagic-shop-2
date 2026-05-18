@@ -84,7 +84,7 @@ export async function POST(req: Request) {
     region: b.region ?? "",
     ownership: {
       landingType: b.landingType ?? "consumer_partner",
-      partnerId: b.partnerId ?? "gangnam-skmagic",
+      partnerId: b.partnerId ?? undefined,
       sellerCode: b.sellerCode,
     },
     utm: b.utm,

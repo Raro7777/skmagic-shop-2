@@ -1,6 +1,7 @@
 "use client";
 
 import type { ThemePreset } from "@/lib/themes";
+import { HQ_HOTLINE } from "@/lib/constants/hq";
 
 export default function ThemePresetCard({
   preset,
@@ -90,7 +91,7 @@ export default function ThemePresetCard({
         </div>
 
         <div className="bg-rk-soft px-3 py-2 text-[10px] text-rk-muted border-t border-rk-line">
-          고객센터 <span className="rk-num text-rk-ink font-semibold">1600-2434</span> · 평일 09–22시
+          고객센터 <span className="rk-num text-rk-ink font-semibold">{HQ_HOTLINE}</span> · 평일 09–22시
         </div>
 
         <div className="bg-white border-t border-rk-line px-2 py-2 flex gap-1.5">

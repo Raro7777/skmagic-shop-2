@@ -36,7 +36,7 @@ export default async function HubPage() {
     }),
   ]);
 
-  const defaultPartner = partners[0]?.partnerCode ?? "gangnam-skmagic";
+  const defaultPartner = partners[0]?.partnerCode ?? null;
   const counts: Record<string, number> = {};
   for (const r of categoryCounts) counts[r.category] = r._count._all;
   const activeCategories = Object.keys(CATEGORY_LABEL).filter(k => (counts[k] ?? 0) > 0);
@@ -77,7 +77,7 @@ export default async function HubPage() {
 
             {/* 카테고리 진입 그리드 — 기본 협력점 사이트의 카테고리 라우트로 */}
             <div className="grid grid-cols-3 md:grid-cols-6 gap-2 md:gap-3 mt-6">
-              {activeCategories.map(k => (
+              {defaultPartner && activeCategories.map(k => (
                 <Link
                   key={k}
                   href={`/p/${defaultPartner}/category/${k}`}
@@ -92,7 +92,7 @@ export default async function HubPage() {
           </section>
 
           {/* ─────────────────────── 인기 상품 ─────────────────────── */}
-          {featuredProducts.length > 0 && (
+          {defaultPartner && featuredProducts.length > 0 && (
             <section className="mb-10">
               <div className="flex items-baseline gap-2 mb-3">
                 <h2 className="text-[18px] font-bold text-rk-ink">🌟 추천 인기 모델</h2>

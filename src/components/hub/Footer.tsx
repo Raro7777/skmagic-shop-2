@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { HQ_HOTLINE } from "@/lib/constants/hq";
 
 /**
  * 운영용 공통 푸터 — 허브 + legal 페이지에서 사용.
@@ -56,7 +57,7 @@ export default async function Footer() {
         <div>
           <b className="block text-white mb-2">고객센터</b>
           <ul className="space-y-1.5 text-white/60">
-            <li>대표 전화 <b className="text-white">{partner?.hotlineNumber ?? "1600-2434"}</b></li>
+            <li>대표 전화 <b className="text-white">{partner?.hotlineNumber ?? HQ_HOTLINE}</b></li>
             <li>운영시간 평일 09–22시</li>
             {partner?.phone && <li>휴대폰 <span className="text-white/80 rk-num">{formatPhone(partner.phone)}</span></li>}
             {partner?.kakaoChannelUrl && (

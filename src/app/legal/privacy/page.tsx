@@ -1,3 +1,5 @@
+import { HQ_HOTLINE, HQ_HOTLINE_HOURS } from "@/lib/constants/hq";
+
 export const metadata = { title: "개인정보처리방침 · 렌트왕" };
 
 export default function PrivacyPage() {
@@ -91,14 +93,14 @@ export default function PrivacyPage() {
           <li>마케팅 수신 동의 철회</li>
           <li>회원 탈퇴 (회원 시스템 도입 시)</li>
         </ol>
-        <p>요청은 회사 고객센터(1600-2434) 또는 협력점 담당자에게 문의하시면 즉시 처리해 드립니다.</p>
+        <p>요청은 회사 고객센터({HQ_HOTLINE}) 또는 협력점 담당자에게 문의하시면 즉시 처리해 드립니다.</p>
       </Article>
 
       <Article num="8" title="개인정보 보호책임자">
         <p>회사는 개인정보 처리에 관한 업무를 총괄하는 책임자를 다음과 같이 지정합니다.</p>
         <ul>
           <li>책임자: 본사 운영팀장</li>
-          <li>연락처: 1600-2434 (평일 09:00–22:00)</li>
+          <li>연락처: {HQ_HOTLINE} ({HQ_HOTLINE_HOURS})</li>
           <li>이메일: privacy@rentking.kr</li>
         </ul>
       </Article>

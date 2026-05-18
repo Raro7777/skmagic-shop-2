@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { HQ_HOTLINE } from "@/lib/constants/hq";
 
 export const metadata = { title: "페이지를 찾을 수 없습니다 · 렌트왕" };
 
@@ -20,16 +21,10 @@ export default function NotFound() {
           >
             ← 허브로 돌아가기
           </Link>
-          <Link
-            href="/p/gangnam-skmagic"
-            className="bg-white border border-rk-line hover:border-rk-navy text-rk-text py-2.5 rounded text-[12px] no-underline transition-colors"
-          >
-            데모 협력점 사이트 (강남센터 SK매직) →
-          </Link>
         </div>
 
         <div className="mt-6 pt-4 border-t border-rk-line-2 text-[11px] text-rk-faint">
-          문제가 계속되면 1600-2434로 연락 주세요.
+          문제가 계속되면 {HQ_HOTLINE}로 연락 주세요.
         </div>
       </div>
     </div>

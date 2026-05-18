@@ -26,6 +26,13 @@ export default async function ProductEditPage({
   // Lead count separately (leads reference productCode string, not relational FK)
   const leadCount = await prisma.lead.count({ where: { productCode: product.productCode } });
 
+  // 미리보기 링크용 — 첫 active 협력점. 없으면 미리보기 링크 자체를 숨김.
+  const previewPartner = await prisma.partner.findFirst({
+    where: { status: "active" },
+    orderBy: { createdAt: "asc" },
+    select: { partnerCode: true, partnerName: true },
+  });
+
   const contentImageRows = product.contentImages.map(ci => ({
     id: ci.id, url: ci.url, sourceUrl: ci.sourceUrl, order: ci.order,
     sizeBytes: ci.sizeBytes, width: ci.width, height: ci.height,
@@ -79,14 +86,20 @@ export default async function ProductEditPage({
             {product._count.partnerPolicies}개 협력점이 이 상품에 사은품 정책을 운영 중이며, 누적 lead {leadCount}건이 연결되어 있습니다.
           </span>
         </div>
-        <Link
-          href={`/p/gangnam-skmagic/products/${product.productCode}`}
-          target="_blank"
-          className="bg-white border border-rk-line rounded p-3 hover:border-rk-navy no-underline transition-colors"
-        >
-          <b className="block text-rk-ink">🔗 소비자 화면 미리보기</b>
-          <span className="text-rk-muted text-[13px]">강남센터 SK매직 사이트로 새 탭 열기</span>
-        </Link>
+        {previewPartner ? (
+          <Link
+            href={`/p/${previewPartner.partnerCode}/products/${product.productCode}`}
+            target="_blank"
+            className="bg-white border border-rk-line rounded p-3 hover:border-rk-navy no-underline transition-colors"
+          >
+            <b className="block text-rk-ink">🔗 소비자 화면 미리보기</b>
+            <span className="text-rk-muted text-[13px]">{previewPartner.partnerName} 사이트로 새 탭 열기</span>
+          </Link>
+        ) : (
+          <div className="bg-rk-soft-2 border border-rk-line-2 rounded p-3 text-rk-faint text-[13px]">
+            미리보기 가능한 활성 협력점이 없습니다.
+          </div>
+        )}
       </div>
 
       <ProductEditForm initial={initial} />

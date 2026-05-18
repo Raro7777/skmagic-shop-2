@@ -1,6 +1,7 @@
 import Link from "next/link";
 import ApplyForm from "./ApplyForm";
 import { listActivePartners } from "@/lib/partnerSite";
+import { HQ_HOTLINE } from "@/lib/constants/hq";
 
 export const metadata = {
   title: "분양 신청 · 렌트왕 협력점 모집",
@@ -249,7 +250,7 @@ export default async function ApplyPage() {
             <Link href="/" className="text-rk-text no-underline">허브</Link>
           </div>
           <p className="m-0 text-[10px] text-rk-faint">
-            © ㈜렌트왕 · 분양형 렌탈 플랫폼 · 통신판매중개자 · 1600-2434
+            © ㈜렌트왕 · 분양형 렌탈 플랫폼 · 통신판매중개자 · {HQ_HOTLINE}
           </p>
         </div>
       </footer>

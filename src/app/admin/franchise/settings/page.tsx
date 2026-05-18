@@ -4,6 +4,7 @@ import KakaoChannelInput from "@/components/franchise/KakaoChannelInput";
 import PartnerProfileEditor from "@/components/franchise/PartnerProfileEditor";
 import RentalSupportInput from "@/components/franchise/RentalSupportInput";
 import SellerMarginInput from "@/components/franchise/SellerMarginInput";
+import { HQ_HOTLINE } from "@/lib/constants/hq";
 
 export const metadata = { title: "사이트 설정 · 협력점 콘솔" };
 export const dynamic = "force-dynamic";
@@ -99,7 +100,7 @@ export default async function SettingsPage() {
       <KakaoChannelInput initial={partner.kakaoChannelUrl} />
 
       <div className="bg-rk-tint-blue text-rk-info text-[14px] p-3 rounded-md leading-[1.6]">
-        ⓘ <b>상호</b>만 본사 슈퍼관리자 승인이 필요합니다. 변경이 필요하면 본사(1600-2434)로 문의하세요.
+        ⓘ <b>상호</b>만 본사 슈퍼관리자 승인이 필요합니다. 변경이 필요하면 본사({HQ_HOTLINE})로 문의하세요.
         그 외 항목(사업자번호 · 통신판매번호 · 브랜드 라벨 · 지역 · 대표자명 · 연락처 · 주소 · 카카오 채널)은 위에서 자율 편집 가능하며 저장 시 소비자 사이트에 즉시 반영됩니다.
       </div>
     </>

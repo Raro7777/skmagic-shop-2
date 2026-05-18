@@ -132,7 +132,7 @@ export default function PartnerDomainAction({
                     type="text"
                     value={input}
                     onChange={e => setInput(e.target.value)}
-                    placeholder="예: gangnam-skmagic.com"
+                    placeholder="예: yourshop.co.kr"
                     className="flex-1 border border-rk-line rounded px-2.5 py-1.5 text-[14px] focus:outline-none focus:border-rk-navy"
                     disabled={busy}
                   />
