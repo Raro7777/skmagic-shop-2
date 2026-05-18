@@ -38,7 +38,8 @@ export default function PartnerCta({
           className="flex-1 bg-[#FEE500] hover:bg-[#F4DC00] text-[#1A1D24] py-3 rounded-lg font-semibold text-[13px] no-underline cursor-pointer flex items-center justify-center gap-1.5 transition-colors"
           title={`${partner.partnerName} 카톡채널`}
         >
-          💬 카톡상담
+          <img src="https://internet-king.kr/gaeun_landing/kakao.png" alt="" className="w-[18px] h-[18px] shrink-0" />
+          카톡상담
         </a>
       ) : (
         <a
@@ -46,7 +47,8 @@ export default function PartnerCta({
           className="flex-1 bg-[#FEE500] text-[#1A1D24] py-3 rounded-lg font-semibold text-[13px] no-underline cursor-pointer flex items-center justify-center gap-1.5"
           title="카톡 채널 미설정 — 전화로 연결"
         >
-          💬 카톡상담
+          <img src="https://internet-king.kr/gaeun_landing/kakao.png" alt="" className="w-[18px] h-[18px] shrink-0" />
+          카톡상담
         </a>
       )}
       {/* 상담 신청 (폼 열림) */}

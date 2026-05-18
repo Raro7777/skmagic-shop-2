@@ -151,10 +151,10 @@ export default async function PartnerSiteShell({
             >
               <img src={SK_MAGIC_LOGO} alt="SK magic" className="h-[36px] w-auto" />
 
-              <div>
-                <div className="font-bold text-[16px] text-rk-ink tracking-[-.02em] leading-tight">{partner.partnerName}</div>
+              <div className="min-w-0">
+                <div className="font-bold text-[16px] text-rk-ink tracking-[-.02em] leading-tight whitespace-nowrap">{partner.partnerName}</div>
                 {partner.brandLabel && partner.brandLabel !== partner.partnerName && (
-                  <div className="text-[13px] text-rk-muted">{formatBrandLabel(partner.brandLabel)}</div>
+                  <div className="text-[13px] text-rk-muted whitespace-nowrap truncate">{formatBrandLabel(partner.brandLabel)}</div>
                 )}
               </div>
             </Link>

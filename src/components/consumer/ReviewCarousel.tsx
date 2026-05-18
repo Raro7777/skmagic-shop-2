@@ -54,19 +54,44 @@ export default function ReviewCarousel({
         <Link href={`/p/${partnerCode}/reviews`} className="text-[13px] text-rk-muted no-underline cursor-pointer">전체 →</Link>
       </div>
 
-      {/* 후기 카드 — 캐러셀 */}
+      {/* 후기 카드 — 캐러셀. 좌측 텍스트 + 우측 설치사진 썸네일 */}
       <article key={cur.id} className="review-fade bg-white border border-rk-line rounded-[14px] px-4 py-4 shadow-[0_2px_8px_rgba(20,25,40,0.04)]">
-        {/* 별점 (강조) */}
-        <div className="flex items-center gap-2 mb-3">
-          <span className="text-rk-warn text-[18px] tracking-[0.1em] leading-none">{fmtRating}</span>
-          <span className="text-[13px] font-bold text-rk-ink">{cur.rating.toFixed(1)}</span>
-          {cur.isVerified && (
-            <span className="ml-auto text-[10px] px-1.5 py-0.5 bg-rk-tint-green text-rk-success font-bold rounded">✓ 가입 인증</span>
-          )}
+        <div className="flex gap-3">
+          {/* 좌측 텍스트 영역 */}
+          <div className="flex-1 min-w-0">
+            {/* 별점 (강조) */}
+            <div className="flex items-center gap-2 mb-2.5">
+              <span className="text-rk-warn text-[18px] tracking-[0.1em] leading-none">{fmtRating}</span>
+              <span className="text-[13px] font-bold text-rk-ink">{cur.rating.toFixed(1)}</span>
+              {cur.isVerified && (
+                <span className="ml-auto text-[10px] px-1.5 py-0.5 bg-rk-tint-green text-rk-success font-bold rounded shrink-0">✓ 가입 인증</span>
+              )}
+            </div>
+            {/* 후기 본문 */}
+            {cur.title && <h4 className="text-[14px] font-semibold m-0 mb-1 text-rk-ink leading-[1.4] line-clamp-1">{cur.title}</h4>}
+            <p className="text-[13.5px] text-rk-text m-0 leading-[1.55] line-clamp-3">{cur.body}</p>
+          </div>
+
+          {/* 우측 설치사진 썸네일 — installPhotoUrl 또는 photos[0]. 없으면 컬럼 자체 미노출 */}
+          {(() => {
+            const thumb = cur.installPhotoUrl || cur.photos?.[0] || null;
+            if (!thumb) return null;
+            return (
+              <div className="shrink-0">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={thumb}
+                  alt="설치 후기 사진"
+                  className="w-[96px] h-[96px] object-cover rounded-md border border-rk-line"
+                  loading="lazy"
+                />
+                {cur.photos && cur.photos.length > 1 && (
+                  <div className="text-[10px] text-rk-faint mt-1 text-center">+{cur.photos.length - 1}장</div>
+                )}
+              </div>
+            );
+          })()}
         </div>
-        {/* 후기 본문 */}
-        {cur.title && <h4 className="text-[15px] font-semibold m-0 mb-1.5 text-rk-ink leading-[1.4] line-clamp-1">{cur.title}</h4>}
-        <p className="text-[14px] text-rk-text m-0 leading-[1.55] line-clamp-3">{cur.body}</p>
 
         {/* 신뢰 요소 — 지역·최근 설치 */}
         <div className="flex gap-1.5 flex-wrap mt-3 mb-2">
