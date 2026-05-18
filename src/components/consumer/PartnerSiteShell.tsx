@@ -11,6 +11,20 @@ const fmt = (n: number) => n.toLocaleString("ko-KR");
 // 메인 카드 관리방식 라벨 — pickLowestPrice 가 채택한 옵션의 mode 기준으로 안내.
 // 셀프형이 채택되면 "자가관리" 로 (방문형보다 저렴해서 헤드라인이 셀프형으로 잡힐 때),
 // 방문형이면 "방문관리" 로. mode 정보 없으면 Product.managementType 그대로.
+// picks/ranking 등 카드 묶음에서 공통 조건 추출 — 의무기간·관리방식이 모두 동일하면
+// 섹션 헤더에 1줄로 노출하고 각 카드의 의무/관리 칩은 제거해 공간 절약.
+function commonCondition(items: ConsumerProduct[]): string | null {
+  if (items.length === 0) return null;
+  const firstPeriod = items[0].contractPeriod;
+  const firstMode = managementLabel(items[0]);
+  const samePeriod = items.every(p => p.contractPeriod === firstPeriod);
+  const sameMode = items.every(p => managementLabel(p) === firstMode);
+  if (samePeriod && sameMode) return `의무 ${firstPeriod}개월 · ${firstMode} 기준`;
+  if (samePeriod) return `의무 ${firstPeriod}개월 기준`;
+  if (sameMode) return `${firstMode} 기준`;
+  return null;
+}
+
 function managementLabel(p: ConsumerProduct): string {
   if (p.lowestMode === "셀프형") return "자가관리형";
   if (p.lowestMode === "방문형") return "방문관리형";
@@ -254,7 +268,10 @@ export default async function PartnerSiteShell({
           <div className="flex justify-between items-baseline mb-3">
             <div>
               <h2 className="text-[17px] font-bold tracking-[-.02em] m-0 text-rk-ink">매니저 추천 상품</h2>
-              <small className="text-[13px] text-rk-muted block mt-0.5">{seller?.name ?? partner.partnerName}이(가) 직접 큐레이션 · 5월</small>
+              <small className="text-[13px] text-rk-muted block mt-0.5">
+                {seller?.name ?? partner.partnerName}이(가) 직접 큐레이션 · 5월
+                {(() => { const c = commonCondition(picks); return c ? ` · ${c}` : ""; })()}
+              </small>
             </div>
             <Link href={`/p/${partner.partnerCode}/products`} className="text-[14px] text-rk-muted no-underline cursor-pointer">전체 →</Link>
           </div>
@@ -492,11 +509,8 @@ function PickCard({ product, bg, href }: { product: ConsumerProduct; bg: string;
           </div>
         )
       )}
-      <div className="flex gap-0.5 flex-wrap mt-1.5">
-        <span className="text-[9px] px-1 py-px rounded bg-rk-soft text-rk-muted">의무 {product.contractPeriod}</span>
-        <span className="text-[9px] px-1 py-px rounded bg-rk-soft text-rk-muted truncate max-w-[80px]">{managementLabel(product)}</span>
-      </div>
-      {product.giftLabel && <div className="text-[12px] text-rk-orange-deep font-medium mt-1 truncate">🎁 {product.giftLabel}</div>}
+      {/* 의무·관리방식 칩은 섹션 헤더로 통합 → 카드 공간 절약 */}
+      {product.giftLabel && <div className="text-[12px] text-rk-orange-deep font-medium mt-1.5 truncate">🎁 {product.giftLabel}</div>}
     </Link>
   );
 }
