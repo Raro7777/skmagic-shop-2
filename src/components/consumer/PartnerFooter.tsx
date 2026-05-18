@@ -12,9 +12,7 @@ export default function PartnerFooter({ partner }: { partner: PartnerSiteData["p
       </div>
       <dl className="grid grid-cols-[auto_1fr] gap-x-2 gap-y-1 m-0">
         <dt className="text-rk-faint m-0">상호</dt>
-        <dd className="m-0">
-          {partner.partnerName} ({partner.brandLabel})
-        </dd>
+        <dd className="m-0">우성종합통신</dd>
         {partner.ownerName && (
           <>
             <dt className="text-rk-faint m-0">대표</dt>
@@ -42,9 +40,6 @@ export default function PartnerFooter({ partner }: { partner: PartnerSiteData["p
         <dt className="text-rk-faint m-0">고객센터</dt>
         <dd className="m-0 rk-num">{partner.hotlineNumber} (평일 09:00–22:00)</dd>
       </dl>
-      <p className="text-[12px] text-rk-faint mt-3 pt-2.5 border-t border-rk-line">
-        본 사이트는 ㈜렌트왕 분양형 렌탈 플랫폼의 가맹사이트이며, 통신판매중개자는 ㈜렌트왕입니다. 실제 상품 공급 및 설치는 SK매직㈜에서 담당합니다.
-      </p>
     </footer>
   );
 }
