@@ -800,6 +800,13 @@ export default function EnrollmentFormModal({
             )}
           </Section>
 
+          {/* 첨부 서류 — 신청서가 이미 저장된 경우(isEdit)만 활성. 신규는 먼저 저장 후 다시 열어 첨부. */}
+          {isEdit && (
+            <Section title="첨부 서류">
+              <DocumentsPanel leadId={leadId} locked={isLocked} />
+            </Section>
+          )}
+
           {/* 메모 */}
           <Section title="비고">
             <textarea
@@ -826,6 +833,134 @@ export default function EnrollmentFormModal({
           </button>
         </div>
       </form>
+    </div>
+  );
+}
+
+type DocItem = {
+  id: string;
+  kind: string;
+  label: string | null;
+  url: string;
+  fileName: string;
+  contentType: string | null;
+  sizeBytes: number | null;
+  createdAt: string;
+};
+
+const KIND_LABEL: Record<string, string> = {
+  id_card: "신분증",
+  rival_payment: "타사 납부확인증",
+  bank_book: "통장 사본",
+  other: "기타",
+};
+const KIND_OPTIONS = ["id_card", "rival_payment", "bank_book", "other"] as const;
+
+function DocumentsPanel({ leadId, locked }: { leadId: string; locked: boolean }) {
+  const [docs, setDocs] = useState<DocItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [kind, setKind] = useState<string>("id_card");
+  const [label, setLabel] = useState<string>("");
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const r = await fetch(`/api/leads/${leadId}/documents`, { cache: "no-store" });
+      const j = await r.json();
+      if (r.ok) setDocs(j.documents ?? []);
+    } finally { setLoading(false); }
+  };
+  useEffect(() => { void load(); /* eslint-disable-next-line */ }, [leadId]);
+
+  const onUpload = async (file: File) => {
+    setErr(null);
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("kind", kind);
+      if (label.trim()) fd.append("label", label.trim());
+      const r = await fetch(`/api/leads/${leadId}/documents`, { method: "POST", body: fd });
+      const j = await r.json();
+      if (!r.ok) { setErr(j.error ?? "업로드 실패"); return; }
+      setDocs(prev => [...prev, j.document]);
+      setLabel("");
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "네트워크 오류");
+    } finally { setUploading(false); }
+  };
+
+  const onDelete = async (docId: string) => {
+    if (!window.confirm("이 문서를 삭제할까요?")) return;
+    const r = await fetch(`/api/leads/${leadId}/documents/${docId}`, { method: "DELETE" });
+    if (r.ok) setDocs(prev => prev.filter(d => d.id !== docId));
+  };
+
+  return (
+    <div className="flex flex-col gap-2 text-[13px]">
+      <p className="text-[12px] text-rk-muted m-0">
+        신분증·타사 납부확인증 등 본사 인증에 필요한 서류. 이미지(PNG/JPG/WebP) 또는 PDF, 최대 12MB.
+      </p>
+      <div className="flex gap-2 items-end flex-wrap">
+        <label className="flex flex-col gap-1">
+          <span className="text-rk-muted text-[12px]">종류</span>
+          <select value={kind} onChange={e => setKind(e.target.value)} disabled={locked || uploading} className="border border-rk-line rounded px-2 py-1 bg-white text-[14px]">
+            {KIND_OPTIONS.map(k => <option key={k} value={k}>{KIND_LABEL[k]}</option>)}
+          </select>
+        </label>
+        <label className="flex flex-col gap-1 flex-1 min-w-[180px]">
+          <span className="text-rk-muted text-[12px]">라벨 (선택)</span>
+          <input type="text" value={label} onChange={e => setLabel(e.target.value)} placeholder="예: 주민등록증 앞면" disabled={locked || uploading} className="border border-rk-line rounded px-2 py-1 text-[14px]" />
+        </label>
+        <label className={"flex items-center gap-1.5 px-3 py-1.5 rounded cursor-pointer text-[13px] font-medium " + (locked || uploading ? "bg-rk-soft text-rk-faint" : "bg-rk-navy hover:bg-rk-navy-deep text-white")}>
+          {uploading ? "업로드 중…" : "📎 파일 선택"}
+          <input
+            type="file"
+            accept="image/*,application/pdf"
+            disabled={locked || uploading}
+            onChange={e => { const f = e.target.files?.[0]; if (f) void onUpload(f); e.target.value = ""; }}
+            className="hidden"
+          />
+        </label>
+      </div>
+      {err && <div className="text-rk-sale text-[12px]">⚠ {err}</div>}
+
+      {loading ? (
+        <div className="text-rk-muted">로딩 중…</div>
+      ) : docs.length === 0 ? (
+        <div className="text-rk-faint text-[12px]">첨부된 서류가 없습니다.</div>
+      ) : (
+        <ul className="m-0 p-0 list-none flex flex-col gap-1.5">
+          {docs.map(d => {
+            const isImage = (d.contentType ?? "").startsWith("image/");
+            return (
+              <li key={d.id} className="flex items-center gap-2.5 bg-white border border-rk-line rounded px-2 py-1.5">
+                {isImage ? (
+                  <img src={d.url} alt={d.fileName} className="w-[44px] h-[44px] object-cover rounded border border-rk-line" />
+                ) : (
+                  <div className="w-[44px] h-[44px] rounded bg-rk-tint-red text-rk-sale flex items-center justify-center text-[11px] font-bold">PDF</div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-[11px] px-1.5 py-0.5 rounded bg-rk-tint-blue text-rk-info">{KIND_LABEL[d.kind] ?? d.kind}</span>
+                    {d.label && <b className="text-rk-ink">{d.label}</b>}
+                  </div>
+                  <a href={d.url} target="_blank" rel="noreferrer" className="text-[12px] text-rk-info no-underline truncate block hover:underline">
+                    {d.fileName}
+                  </a>
+                </div>
+                {!locked && (
+                  <button type="button" onClick={() => onDelete(d.id)} className="text-rk-sale text-[12px] bg-transparent border-0 cursor-pointer hover:underline">
+                    삭제
+                  </button>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
     </div>
   );
 }

@@ -507,6 +507,32 @@ model EnrollmentForm {
   @@index([lockedAt])
 
   histories            EnrollmentFormHistory[]
+  documents            EnrollmentDocument[]
+}
+
+// ----------------------------------------------------------------
+// EnrollmentDocument — 신청서 첨부 서류 (신분증·타사납부확인증·기타).
+// 파일 자체는 Vercel Blob 등 외부 스토리지. 여기엔 url + 메타만.
+// ----------------------------------------------------------------
+model EnrollmentDocument {
+  id          String         @id @default(cuid())
+  formId      String
+  form        EnrollmentForm @relation(fields: [formId], references: [id], onDelete: Cascade)
+  leadId      String         // 조회 편의를 위해 비정규화
+
+  kind        String         // id_card | rival_payment | bank_book | other
+  label       String?        // 사용자 자유 입력 라벨 (예: "주민등록증 앞면")
+  url         String         // Blob URL
+  fileName    String
+  contentType String?
+  sizeBytes   Int?
+
+  uploadedById   String?     // User.id
+  uploadedByRole String      // seller | partner_admin | hq
+  createdAt      DateTime    @default(now())
+
+  @@index([formId])
+  @@index([leadId])
 }
 
 // ----------------------------------------------------------------

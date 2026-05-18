@@ -97,7 +97,8 @@ function actionFor(status: LeadStatus): PipelineRow["action"] {
     // 자동으로 apply_submitted 로 전이 (→ verify_pending 큐 재투입).
     case "verify_failed":   return { label: "📝 수정 후 재제출", toStatus: "form_ready",      tone: "orange" };
     case "verify_revise":   return { label: "📝 수정 후 재제출", toStatus: "form_ready",      tone: "orange" };
-    case "revise_resubmit": return { label: "📝 신청서 보완",   toStatus: "form_ready",      tone: "navy"   };
+    // 회신만 보낸 뒤에는 곧장 재제출 가능 (apply_submitted → 자동 chain verify_pending).
+    case "revise_resubmit": return { label: "📤 재제출",         toStatus: "apply_submitted", tone: "orange" };
     default: return null;
   }
 }
@@ -113,6 +114,10 @@ function secondaryFor(status: LeadStatus): PipelineRow["secondaryAction"] {
   // 본사 회송 상태에서 "회신만" 옵션 — 신청서 수정 없이 메모만 (revise_resubmit 로 전이)
   if (status === "verify_failed" || status === "verify_revise") {
     return { label: "↩ 회신만", toStatus: "revise_resubmit", tone: "ghost" };
+  }
+  // 회신 작성한 뒤에도 신청서 수정 가능 (form_ready 모달 → 저장 시 apply_submitted 자동 전이)
+  if (status === "revise_resubmit") {
+    return { label: "📝 신청서 보완", toStatus: "form_ready", tone: "ghost" };
   }
   return null;
 }

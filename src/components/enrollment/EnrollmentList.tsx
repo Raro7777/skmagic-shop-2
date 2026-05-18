@@ -43,9 +43,14 @@ export type EnrollmentItem = {
   installSchedule: string | null;
   installPreferredDate: string | null;
   memo: string | null;
-  autoDebitBank: string;
-  autoDebitAccount: string;
-  autoDebitHolder: string;
+  paymentMethod: string | null;
+  autoDebitBank: string | null;
+  autoDebitAccount: string | null;
+  autoDebitHolder: string | null;
+  cardCompany: string | null;
+  cardNumber: string | null;
+  cardHolder: string | null;
+  cardExpiry: string | null;
   giftBank: string | null;
   giftAccount: string | null;
   giftHolder: string | null;
@@ -286,7 +291,9 @@ const FIELD_LABEL: Record<string, string> = {
   selectedColor: "색상", giftAmount: "사은품금액", giftLabel: "사은품라벨",
   paymentDayType: "결제일타입", paymentDayValue: "결제일값",
   installSchedule: "설치일정메모", installPreferredDate: "설치희망일",
+  paymentMethod: "결제수단",
   autoDebitBank: "자동이체은행", autoDebitAccount: "자동이체계좌", autoDebitHolder: "자동이체예금주",
+  cardCompany: "카드사", cardNumber: "카드번호", cardHolder: "카드명의자", cardExpiry: "카드유효기간",
   giftBank: "사은은행", giftAccount: "사은계좌", giftHolder: "사은예금주",
   memo: "기타비고",
 };
@@ -363,12 +370,23 @@ function DetailPanel({ item }: { item: EnrollmentItem }) {
         </dl>
       </div>
       <div>
-        <h4 className="text-[12px] uppercase tracking-[.06em] text-rk-muted font-semibold mb-1">자동이체</h4>
-        <dl className="grid grid-cols-[80px_1fr] gap-y-0.5">
-          <dt className="text-rk-muted">은행</dt><dd className="text-rk-ink">{item.autoDebitBank}</dd>
-          <dt className="text-rk-muted">계좌번호</dt><dd className="font-mono text-rk-ink">{item.autoDebitAccount}</dd>
-          <dt className="text-rk-muted">예금주</dt><dd className="text-rk-ink">{item.autoDebitHolder}</dd>
-        </dl>
+        <h4 className="text-[12px] uppercase tracking-[.06em] text-rk-muted font-semibold mb-1">
+          결제수단 {item.paymentMethod === "card" ? "(신용카드)" : "(자동이체)"}
+        </h4>
+        {item.paymentMethod === "card" ? (
+          <dl className="grid grid-cols-[80px_1fr] gap-y-0.5">
+            <dt className="text-rk-muted">카드사</dt><dd className="text-rk-ink">{item.cardCompany ?? "—"}</dd>
+            <dt className="text-rk-muted">카드번호</dt><dd className="font-mono text-rk-ink">{item.cardNumber ?? "—"}</dd>
+            <dt className="text-rk-muted">명의자</dt><dd className="text-rk-ink">{item.cardHolder ?? "—"}</dd>
+            <dt className="text-rk-muted">유효기간</dt><dd className="font-mono text-rk-ink">{item.cardExpiry ?? "—"}</dd>
+          </dl>
+        ) : (
+          <dl className="grid grid-cols-[80px_1fr] gap-y-0.5">
+            <dt className="text-rk-muted">은행</dt><dd className="text-rk-ink">{item.autoDebitBank ?? "—"}</dd>
+            <dt className="text-rk-muted">계좌번호</dt><dd className="font-mono text-rk-ink">{item.autoDebitAccount ?? "—"}</dd>
+            <dt className="text-rk-muted">예금주</dt><dd className="text-rk-ink">{item.autoDebitHolder ?? "—"}</dd>
+          </dl>
+        )}
       </div>
       <div>
         <h4 className="text-[12px] uppercase tracking-[.06em] text-rk-muted font-semibold mb-1">사은계좌</h4>
@@ -406,9 +424,69 @@ function DetailPanel({ item }: { item: EnrollmentItem }) {
       )}
 
       <div className="col-span-3 pt-2 mt-1 border-t border-rk-line-2">
+        <h4 className="text-[12px] uppercase tracking-[.06em] text-rk-muted font-semibold mb-1.5">첨부 서류</h4>
+        <DocumentsView leadId={item.leadId} />
+      </div>
+
+      <div className="col-span-3 pt-2 mt-1 border-t border-rk-line-2">
         <h4 className="text-[12px] uppercase tracking-[.06em] text-rk-muted font-semibold mb-1.5">변경 이력 (감사 로그)</h4>
         <HistoryTimeline leadId={item.leadId} />
       </div>
     </div>
+  );
+}
+
+const DOC_KIND_LABEL: Record<string, string> = {
+  id_card: "신분증",
+  rival_payment: "타사 납부확인증",
+  bank_book: "통장 사본",
+  other: "기타",
+};
+
+type DocumentItem = {
+  id: string;
+  kind: string;
+  label: string | null;
+  url: string;
+  fileName: string;
+  contentType: string | null;
+};
+
+function DocumentsView({ leadId }: { leadId: string }) {
+  const [docs, setDocs] = useState<DocumentItem[] | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`/api/leads/${leadId}/documents`)
+      .then(r => r.json())
+      .then(j => { if (!cancelled) setDocs(j.documents ?? []); })
+      .catch(() => { if (!cancelled) setDocs([]); });
+    return () => { cancelled = true; };
+  }, [leadId]);
+
+  if (!docs) return <div className="text-rk-muted text-[12px]">로딩 중…</div>;
+  if (docs.length === 0) return <div className="text-rk-faint text-[12px]">첨부된 서류 없음</div>;
+
+  return (
+    <ul className="m-0 p-0 list-none grid grid-cols-2 md:grid-cols-3 gap-1.5">
+      {docs.map(d => {
+        const isImage = (d.contentType ?? "").startsWith("image/");
+        return (
+          <li key={d.id} className="bg-white border border-rk-line rounded px-2 py-1.5 flex items-center gap-2">
+            {isImage ? (
+              <img src={d.url} alt={d.fileName} className="w-[36px] h-[36px] object-cover rounded border border-rk-line" />
+            ) : (
+              <div className="w-[36px] h-[36px] rounded bg-rk-tint-red text-rk-sale flex items-center justify-center text-[10px] font-bold">PDF</div>
+            )}
+            <div className="flex-1 min-w-0">
+              <span className="text-[11px] px-1 py-px rounded bg-rk-tint-blue text-rk-info">{DOC_KIND_LABEL[d.kind] ?? d.kind}</span>
+              {d.label && <b className="ml-1 text-[12px] text-rk-ink">{d.label}</b>}
+              <a href={d.url} target="_blank" rel="noreferrer" className="text-[11px] text-rk-info no-underline block truncate hover:underline">
+                {d.fileName}
+              </a>
+            </div>
+          </li>
+        );
+      })}
+    </ul>
   );
 }

@@ -142,6 +142,10 @@ export const TRANSITIONS: readonly Transition[] = [
   { from: "revise_resubmit", to: "form_ready",       actors: ["seller", "partner_admin", "hq"] },
   // (호환) 본사가 빠르게 통과시키고 싶을 때 form_ready 안 거치고 직접 제출도 허용
   { from: "revise_resubmit", to: "apply_submitted",  actors: ["seller", "partner_admin", "hq"] },
+  // 본사가 협력점 회신에 답변하며 다시 회송하거나 직접 결정 — 회신 받은 항목 큐에서 사용
+  { from: "revise_resubmit", to: "verify_revise",    actors: ["hq"] },
+  { from: "revise_resubmit", to: "verify_failed",    actors: ["hq"] },
+  { from: "revise_resubmit", to: "verify_passed",    actors: ["hq"] },
 
   // ── 설치 (본사 전담) ──
   { from: "install_pending", to: "install_done",     actors: ["hq"] },

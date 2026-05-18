@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import VerifyQueueList from "@/components/super/VerifyQueueList";
+import RespondedItemActions from "@/components/super/RespondedItemActions";
 
 export const metadata = { title: "인증 처리 · 슈퍼관리자" };
 export const dynamic = "force-dynamic";
@@ -119,6 +120,7 @@ export default async function VerifyPage() {
                   ) : (
                     <div className="mt-1 text-[12px] text-rk-faint">협력점 회신 메모 없음 (신청서 수정만)</div>
                   )}
+                  <RespondedItemActions leadId={l.id} />
                 </li>
               );
             })}
