@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { generateTempPassword } from "@/lib/passwordPolicy";
+import { generateTempPassword, BCRYPT_COST } from "@/lib/passwordPolicy";
 import { sendCredentialEmail } from "@/lib/notifier";
 import { writeAudit, extractRequestInfo } from "@/lib/auditLog";
 import bcrypt from "bcryptjs";
@@ -105,7 +105,7 @@ export async function POST(req: Request) {
   }
 
   const tempPassword = generateTempPassword();
-  const hash = await bcrypt.hash(tempPassword, 12);
+  const hash = await bcrypt.hash(tempPassword, BCRYPT_COST);
 
   const user = await prisma.user.create({
     data: {

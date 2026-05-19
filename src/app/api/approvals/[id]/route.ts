@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { randomBytes, randomInt } from "crypto";
+import { BCRYPT_COST } from "@/lib/passwordPolicy";
 import { notifyHq, esc } from "@/lib/telegram";
 
 export const runtime = "nodejs";
@@ -162,7 +163,7 @@ export async function PATCH(
       const finalEmail = emailTaken ? `${partnerCode}@rentking.kr` : loginEmail;
 
       const tempPassword = generateTempPassword();
-      const passwordHash = await bcrypt.hash(tempPassword, 10);
+      const passwordHash = await bcrypt.hash(tempPassword, BCRYPT_COST);
 
       await tx.partner.create({
         data: {

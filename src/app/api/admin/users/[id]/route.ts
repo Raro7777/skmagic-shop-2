@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { generateTempPassword } from "@/lib/passwordPolicy";
+import { generateTempPassword, BCRYPT_COST } from "@/lib/passwordPolicy";
 import { sendCredentialEmail } from "@/lib/notifier";
 import { writeAudit, extractRequestInfo } from "@/lib/auditLog";
 import bcrypt from "bcryptjs";
@@ -55,7 +55,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
       return NextResponse.json({ error: "본인 계정은 '내 계정' 페이지에서 비밀번호를 변경하세요." }, { status: 400 });
     }
     const tempPassword = generateTempPassword();
-    const hash = await bcrypt.hash(tempPassword, 12);
+    const hash = await bcrypt.hash(tempPassword, BCRYPT_COST);
     await prisma.user.update({
       where: { id },
       data: {

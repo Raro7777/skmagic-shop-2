@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { validatePassword } from "@/lib/passwordPolicy";
+import { validatePassword, BCRYPT_COST } from "@/lib/passwordPolicy";
 import { writeAudit, extractRequestInfo } from "@/lib/auditLog";
 import bcrypt from "bcryptjs";
 
@@ -43,7 +43,7 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ error: "현재 비밀번호가 일치하지 않습니다." }, { status: 400 });
   }
 
-  const newHash = await bcrypt.hash(b.newPassword, 12);
+  const newHash = await bcrypt.hash(b.newPassword, BCRYPT_COST);
   await prisma.user.update({
     where: { id: user.id },
     data: {

@@ -12,6 +12,13 @@
 import { randomInt } from "crypto";
 
 const MIN_LENGTH = 12;
+
+/**
+ * P0-6: bcrypt cost factor 단일 출처 (12 — bcryptjs 기준 ~250ms).
+ * 모든 비밀번호 해시 호출은 이 값을 사용해 partner_admin / seller / hq 가
+ * 같은 강도로 저장되도록 통일.
+ */
+export const BCRYPT_COST = 12;
 const MAX_LENGTH = 64;
 const SPECIAL_RE = /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?`~]/;
 const COMMON_WEAK = [

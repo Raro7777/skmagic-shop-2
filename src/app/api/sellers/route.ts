@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { HQ_VIEW_COOKIE, gatePartnerOrHq } from "@/lib/effectivePartner";
 import { normalizeKoreanPhone } from "@/lib/sellerPhone";
 import { generateSellerCode } from "@/lib/sellerCode";
+import { BCRYPT_COST } from "@/lib/passwordPolicy";
 
 /**
  * 임시 비밀번호 — 8자 base32 (혼동 방지: O/0/I/1 제외).
@@ -125,7 +126,7 @@ export async function POST(req: Request) {
       if (taken) loginEmail = `s-${code}@rentking.kr`;
     }
     const tempPassword = generateTempPassword();
-    const passwordHash = await bcrypt.hash(tempPassword, 10);
+    const passwordHash = await bcrypt.hash(tempPassword, BCRYPT_COST);
 
     try {
       const created = await prisma.$transaction(async tx => {
