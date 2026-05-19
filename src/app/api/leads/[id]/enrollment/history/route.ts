@@ -1,9 +1,39 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { maskRRN, maskAccount, maskCardNumber } from "@/lib/enrollmentForm";
+import type { ActorRole } from "@/lib/leadStatus";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+/**
+ * P0-5: changes JSON 의 PII 필드를 actorRole 기준으로 마스킹.
+ * viewForRole 과 동일한 정책 — hq/partner_admin 평문, seller 는 본인 작성 건만 평문.
+ */
+type ChangeMap = Record<string, { from: unknown; to: unknown }>;
+const PII_FIELD_HANDLERS: Record<string, (v: string, role: ActorRole, isOwn: boolean) => string> = {
+  residentRegNumber: maskRRN,
+  autoDebitAccount:  maskAccount,
+  cardNumber:        maskCardNumber,
+  giftAccount:       maskAccount,
+};
+function maskChanges(changes: unknown, actorRole: ActorRole, isOwn: boolean): unknown {
+  if (!changes || typeof changes !== "object") return changes;
+  const out: ChangeMap = {};
+  for (const [k, v] of Object.entries(changes as ChangeMap)) {
+    const mask = PII_FIELD_HANDLERS[k];
+    if (mask) {
+      out[k] = {
+        from: typeof v.from === "string" && v.from ? mask(v.from, actorRole, isOwn) : v.from,
+        to:   typeof v.to   === "string" && v.to   ? mask(v.to,   actorRole, isOwn) : v.to,
+      };
+    } else {
+      out[k] = v;
+    }
+  }
+  return out;
+}
 
 /** GET — 특정 lead 의 EnrollmentForm 변경 이력 (timeline) */
 export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> }) {
@@ -38,6 +68,9 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
     orderBy: { changedAt: "desc" },
   });
 
+  // P0-5: changes JSON 의 PII 필드를 viewForRole 과 동일 정책으로 마스킹.
+  // isOwn — 해당 history 변경자(changedById)가 현재 actor 본인이면 평문 노출.
+  const actorRole = role as ActorRole;
   return NextResponse.json({
     items: rows.map(r => ({
       id: r.id,
@@ -46,7 +79,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
       changedByRole: r.changedByRole,
       reason: r.reason,
       changeSource: r.changeSource,
-      changes: r.changes, // { fieldName: { from, to } }
+      changes: maskChanges(r.changes, actorRole, !!r.changedById && r.changedById === session.user.id),
     })),
   });
 }
