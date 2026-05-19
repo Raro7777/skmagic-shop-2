@@ -9,6 +9,7 @@ import ProductContentImages from "@/components/consumer/ProductContentImages";
 import { getPartnerProductDetail, type ConsumerProduct } from "@/lib/partnerSite";
 import { prisma } from "@/lib/prisma";
 import { SK_MAGIC_LOGO } from "@/lib/constants/assets";
+import { HQ_HOTLINE } from "@/lib/constants/hq";
 
 const fmt = (n: number) => n.toLocaleString("ko-KR");
 
@@ -428,7 +429,9 @@ export default async function ProductDetailPage({
           </div>
           <dl className="grid grid-cols-[auto_1fr] gap-x-2 gap-y-1 m-0">
             <dt className="text-rk-faint m-0">상호</dt><dd className="m-0">{partner.companyName}</dd>
-            <dt className="text-rk-faint m-0">고객센터</dt><dd className="m-0 rk-num">{partner.hotlineNumber}</dd>
+            {partner.hotlineNumber && partner.hotlineNumber !== HQ_HOTLINE && (
+              <><dt className="text-rk-faint m-0">고객센터</dt><dd className="m-0 rk-num">{partner.hotlineNumber}</dd></>
+            )}
             {partner.businessNumber && <><dt className="text-rk-faint m-0">사업자</dt><dd className="m-0 rk-num">{partner.businessNumber}</dd></>}
           </dl>
         </footer>

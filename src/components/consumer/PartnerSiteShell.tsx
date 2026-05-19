@@ -8,6 +8,7 @@ import ConsultForm from "@/components/consumer/ConsultForm";
 import UtmTracker from "@/components/consumer/UtmTracker";
 import { listActivePartners, type ConsumerProduct, type PartnerSiteData } from "@/lib/partnerSite";
 import { SK_MAGIC_LOGO } from "@/lib/constants/assets";
+import { HQ_HOTLINE } from "@/lib/constants/hq";
 
 const fmt = (n: number) => n.toLocaleString("ko-KR");
 
@@ -310,7 +311,9 @@ export default async function PartnerSiteShell({
             {partner.address && <><dt className="text-rk-faint m-0">주소</dt><dd className="m-0">{partner.address}</dd></>}
             {partner.businessNumber && <><dt className="text-rk-faint m-0">사업자</dt><dd className="m-0 rk-num">{partner.businessNumber}</dd></>}
             {partner.commerceNumber && <><dt className="text-rk-faint m-0">통신판매</dt><dd className="m-0 rk-num">{partner.commerceNumber}</dd></>}
-            <dt className="text-rk-faint m-0">고객센터</dt><dd className="m-0 rk-num">{partner.hotlineNumber} (평일 09:00–22:00)</dd>
+            {partner.hotlineNumber && partner.hotlineNumber !== HQ_HOTLINE && (
+              <><dt className="text-rk-faint m-0">고객센터</dt><dd className="m-0 rk-num">{partner.hotlineNumber} (평일 09:00–22:00)</dd></>
+            )}
           </dl>
         </footer>
 

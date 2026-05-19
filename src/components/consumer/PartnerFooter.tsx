@@ -1,7 +1,11 @@
 import Link from "next/link";
 import type { PartnerSiteData } from "@/lib/partnerSite";
+import { HQ_HOTLINE } from "@/lib/constants/hq";
 
 export default function PartnerFooter({ partner }: { partner: PartnerSiteData["partner"] }) {
+  // 협력점 본인이 자체 번호를 입력한 경우만 footer 에 표시. schema default
+  // (본사 핫라인) 인 경우 본사 번호가 협력점 footer 로 노출되지 않도록 행 숨김.
+  const showHotline = partner.hotlineNumber && partner.hotlineNumber !== HQ_HOTLINE;
   return (
     <footer className="bg-rk-soft px-3.5 py-4 text-[13px] text-rk-muted leading-[1.7]">
       <div className="flex gap-2.5 flex-wrap mb-2.5 text-[13px]">
@@ -37,8 +41,12 @@ export default function PartnerFooter({ partner }: { partner: PartnerSiteData["p
             <dd className="m-0 rk-num">{partner.commerceNumber}</dd>
           </>
         )}
-        <dt className="text-rk-faint m-0">고객센터</dt>
-        <dd className="m-0 rk-num">{partner.hotlineNumber} (평일 09:00–22:00)</dd>
+        {showHotline && (
+          <>
+            <dt className="text-rk-faint m-0">고객센터</dt>
+            <dd className="m-0 rk-num">{partner.hotlineNumber} (평일 09:00–22:00)</dd>
+          </>
+        )}
       </dl>
     </footer>
   );
