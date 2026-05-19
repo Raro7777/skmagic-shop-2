@@ -56,12 +56,14 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
     where: { formId: form.id },
     orderBy: { createdAt: "asc" },
   });
+  // P0-1: blob URL 을 직접 노출하지 않고 auth-gated proxy URL 만 반환.
+  // 클라이언트는 이 URL 로 fetch → 서버가 권한 재검증 후 blob 으로 redirect.
   return NextResponse.json({
     documents: docs.map(d => ({
       id: d.id,
       kind: d.kind,
       label: d.label,
-      url: d.url,
+      url: `/api/leads/${id}/documents/${d.id}/download`,
       fileName: d.fileName,
       contentType: d.contentType,
       sizeBytes: d.sizeBytes,
@@ -94,11 +96,13 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
 
   const buf = Buffer.from(await file.arrayBuffer());
   const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 80) || "doc";
-  const path = `enrollments/${id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${safeName}`;
+  // P0-1: 고객 PII(신분증 등) URL 추측 차단을 위해 addRandomSuffix=true 로 32자 hex 무작위 토큰 부여.
+  // 응답에는 blob URL 을 직접 노출하지 않고 proxy endpoint URL 만 반환 (아래) → 본 blob URL 은 DB 에만 존재.
+  const path = `enrollments/${id}/${Date.now()}-${safeName}`;
 
   let blobUrl: string;
   try {
-    const blob = await put(path, buf, { access: "public", contentType: file.type, addRandomSuffix: false });
+    const blob = await put(path, buf, { access: "public", contentType: file.type, addRandomSuffix: true });
     blobUrl = blob.url;
   } catch (e) {
     return NextResponse.json({ error: "Blob 업로드 실패: " + (e instanceof Error ? e.message : "unknown") }, { status: 500 });
@@ -125,7 +129,8 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
       id: created.id,
       kind: created.kind,
       label: created.label,
-      url: created.url,
+      // P0-1: proxy URL 반환 — blob URL 은 DB 에만 보관.
+      url: `/api/leads/${id}/documents/${created.id}/download`,
       fileName: created.fileName,
       contentType: created.contentType,
       sizeBytes: created.sizeBytes,
