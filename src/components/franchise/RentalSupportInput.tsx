@@ -20,10 +20,15 @@ export default function RentalSupportInput({
   const [flash, setFlash] = useState<{ tone: "ok" | "err"; text: string } | null>(null);
 
   const rawParsed = Math.max(0, Math.floor(Number(value.replace(/[^\d]/g, "")) || 0));
-  // 만원 단위 절사 — 입력 시점에도 미리 보여줘 협력점이 헷갈리지 않게
+  // 만원 단위 절사 — 저장 시점에 사용. 입력 화면에는 사용자가 친 raw 값을 그대로 노출해
+  // 작은 숫자(만원 미만)를 입력해도 화면이 "0" 으로만 보이지 않도록 한다.
   const parsed = Math.floor(rawParsed / 10000) * 10000;
   const truncated = rawParsed > parsed ? rawParsed - parsed : 0;
-  const dirty = parsed !== initial || enabled !== initialEnabled;
+  // 만원 미만 입력도 dirty 로 간주 — 안 그러면 "3원" 같은 미세 입력이 저장 버튼 비활성화로
+  // 이어져 "입력이 안 되는" 것처럼 보임. 실제 저장은 절사된 값이 들어감.
+  const dirty = (rawParsed !== initial && parsed !== initial) || enabled !== initialEnabled;
+  // 화면 표시값 — raw 값을 콤마 포맷으로. 0 이면 placeholder 노출.
+  const display = rawParsed === 0 ? "" : fmt(rawParsed);
 
   const save = async () => {
     setBusy(true);
@@ -86,8 +91,8 @@ export default function RentalSupportInput({
             id="rentalSupport"
             type="text"
             inputMode="numeric"
-            value={value === "0" ? "" : fmt(parsed)}
-            onChange={e => setValue(e.target.value)}
+            value={display}
+            onChange={e => setValue(e.target.value.replace(/[^\d]/g, ""))}
             placeholder="예: 300,000"
             disabled={busy}
             className="border border-rk-line rounded px-2.5 py-1.5 text-[14px] focus:outline-none focus:border-rk-navy disabled:opacity-50 rk-num w-[180px]"
@@ -97,8 +102,12 @@ export default function RentalSupportInput({
         {truncated > 0 && (
           <>
             <div />
-            <small className="text-[11px] text-rk-orange-deep">
-              만원 단위 절사 → 실제 저장·노출은 <b>₩{fmt(parsed)}</b> ({fmt(truncated)}원 절사)
+            <small className={"text-[12px] " + (parsed === 0 ? "text-rk-sale font-semibold" : "text-rk-orange-deep")}>
+              {parsed === 0 ? (
+                <>⚠ 만원 미만 입력은 <b>₩0</b> 으로 저장됩니다. 최소 ₩10,000 이상 입력해 주세요.</>
+              ) : (
+                <>만원 단위 절사 → 실제 저장·노출은 <b>₩{fmt(parsed)}</b> ({fmt(truncated)}원 절사)</>
+              )}
             </small>
           </>
         )}
