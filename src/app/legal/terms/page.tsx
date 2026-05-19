@@ -1,3 +1,5 @@
+import { HQ_COMPANY_NAME } from "@/lib/constants/hq";
+
 export const metadata = { title: "이용약관" };
 
 export default function TermsPage() {
@@ -10,7 +12,7 @@ export default function TermsPage() {
 
       <Article num="1" title="목적">
         <p>
-          본 약관은 ㈜렌트왕(이하 &quot;회사&quot;)이 운영하는 분양형 렌탈 플랫폼(이하 &quot;플랫폼&quot;)에서 회사 및
+          본 약관은 {HQ_COMPANY_NAME}(이하 &quot;회사&quot;)이 운영하는 분양형 렌탈 플랫폼(이하 &quot;플랫폼&quot;)에서 회사 및
           회사로부터 분양받은 협력점(이하 &quot;협력점&quot;)이 제공하는 렌탈 상품 상담·신청 서비스 이용에 관한 회사,
           협력점, 이용자 간 권리·의무 및 책임사항, 이용절차 등 기본적인 사항을 규정함을 목적으로 합니다.
         </p>

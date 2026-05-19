@@ -1,4 +1,4 @@
-import { HQ_HOTLINE, HQ_HOTLINE_HOURS } from "@/lib/constants/hq";
+import { HQ_HOTLINE, HQ_HOTLINE_HOURS, HQ_COMPANY_NAME } from "@/lib/constants/hq";
 
 export const metadata = { title: "개인정보처리방침" };
 
@@ -11,7 +11,7 @@ export default function PrivacyPage() {
       </p>
 
       <p className="text-[13px] text-rk-text mb-8">
-        ㈜렌트왕(이하 &quot;회사&quot;)은 이용자의 개인정보를 중요하게 생각하며, 「개인정보 보호법」 및 관련 법령을 준수합니다.
+        {HQ_COMPANY_NAME}(이하 &quot;회사&quot;)은 이용자의 개인정보를 중요하게 생각하며, 「개인정보 보호법」 및 관련 법령을 준수합니다.
         본 방침은 회사가 운영하는 분양형 렌탈 플랫폼 및 협력점 사이트를 통해 수집한 개인정보의 처리 방법을 명시합니다.
       </p>
 

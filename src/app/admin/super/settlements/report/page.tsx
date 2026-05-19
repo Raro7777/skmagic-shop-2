@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import PrintButton from "@/components/super/PrintButton";
+import { HQ_COMPANY_NAME } from "@/lib/constants/hq";
 
 export const metadata = { title: "월별 정산서 · 슈퍼관리자" };
 export const dynamic = "force-dynamic";
@@ -133,7 +134,7 @@ export default async function MonthlyReportPage({
           </div>
           <div className="text-right">
             <div className="w-12 h-12 bg-rk-orange text-white rounded grid place-items-center font-bold text-[14px] tracking-[-.04em] ml-auto">RK</div>
-            <b className="block text-rk-ink text-[14px] mt-1">렌트왕(주)</b>
+            <b className="block text-rk-ink text-[14px] mt-1">{HQ_COMPANY_NAME}</b>
             <small className="text-[12px] text-rk-faint block">서울특별시 종로구 청계천로 85</small>
           </div>
         </div>

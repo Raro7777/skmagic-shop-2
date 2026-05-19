@@ -1,6 +1,6 @@
 import Link from "next/link";
 import ApplyForm from "../ApplyForm";
-import { HQ_HOTLINE } from "@/lib/constants/hq";
+import { HQ_HOTLINE, HQ_COMPANY_NAME } from "@/lib/constants/hq";
 
 export const metadata = {
   title: "분양 신청서 작성",
@@ -53,7 +53,7 @@ export default function ApplyFormSimplePage() {
           <Link href="/legal/terms" className="text-rk-text no-underline">이용약관</Link>
           <Link href="/legal/privacy" className="text-rk-text no-underline">개인정보처리방침</Link>
           <Link href="/" className="text-rk-text no-underline">허브</Link>
-          <span className="ml-auto text-rk-faint">© ㈜렌트왕 · 통신판매중개자 · {HQ_HOTLINE}</span>
+          <span className="ml-auto text-rk-faint">© {HQ_COMPANY_NAME} · 통신판매중개자 · {HQ_HOTLINE}</span>
         </div>
       </footer>
     </div>

@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { HQ_HOTLINE } from "@/lib/constants/hq";
+import { HQ_HOTLINE, HQ_COMPANY_NAME } from "@/lib/constants/hq";
 
 /**
  * 운영용 공통 푸터 — 허브 + legal 페이지에서 사용.
  *
  * 사업자 정보는 본사가 운영하는 협력점의 Partner 데이터를 노출.
- * 우선순위: ENV `HQ_FOOTER_PARTNER_CODE` → 그게 없으면 첫 active 협력점 → 그것도 없으면 hardcoded "㈜렌트왕".
+ * 우선순위: ENV `HQ_FOOTER_PARTNER_CODE` → 그게 없으면 첫 active 협력점 → 그것도 없으면 HQ_COMPANY_NAME.
  */
 
 const HQ_FOOTER_PARTNER_CODE = process.env.HQ_FOOTER_PARTNER_CODE;
@@ -90,7 +90,7 @@ export default async function Footer() {
       <div className="border-t border-white/10">
         <div className="max-w-[1100px] mx-auto px-6 py-5 flex flex-col md:flex-row gap-2 md:justify-between text-[11px] text-white/45 leading-[1.7]">
           <div>
-            <b className="text-white/70">{partner?.partnerName ?? "㈜렌트왕"}</b>
+            <b className="text-white/70">{partner?.partnerName ?? HQ_COMPANY_NAME}</b>
             {partner?.ownerName && <span className="ml-1.5">대표 {partner.ownerName}</span>}
             {partner?.businessNumber && <span className="ml-1.5">사업자등록번호 {partner.businessNumber}</span>}
             {partner?.commerceNumber && <span className="ml-1.5">통신판매업 신고 {partner.commerceNumber}</span>}
