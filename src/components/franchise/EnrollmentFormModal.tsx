@@ -36,15 +36,20 @@ type ProductDetail = {
   colorOptions: string[];
 };
 
+// SK매직 결제일 정책 — 10/20/25 중 선택 (3가지로 좁힘, 2026-05).
+// 기존 신청서가 month_end / day_15 / weekly_friday / custom 으로 저장돼 있을 수 있어
+// 표시는 가능하되 신규 선택은 막음.
 const PAYMENT_OPTIONS: Array<{ key: string; label: string }> = [
-  { key: "month_end",     label: "익월 말일 (기본)" },
-  { key: "day_10",        label: "매월 10일" },
-  { key: "day_15",        label: "매월 15일" },
-  { key: "day_20",        label: "매월 20일" },
-  { key: "day_25",        label: "매월 25일" },
-  { key: "weekly_friday", label: "익주 금요일" },
-  { key: "custom",        label: "직접 입력" },
+  { key: "day_10", label: "매월 10일" },
+  { key: "day_20", label: "매월 20일" },
+  { key: "day_25", label: "매월 25일" },
 ];
+const LEGACY_PAYMENT_LABEL: Record<string, string> = {
+  month_end: "익월 말일 (구버전)",
+  day_15: "매월 15일 (구버전)",
+  weekly_friday: "익주 금요일 (구버전)",
+  custom: "직접 입력 (구버전)",
+};
 
 const KOREAN_BANKS = [
   "국민", "신한", "우리", "하나", "농협", "기업", "SC제일", "씨티", "카카오뱅크",
@@ -109,6 +114,8 @@ export type ExistingFormData = {
   giftBank: string | null;
   giftAccount: string | null;
   giftHolder: string | null;
+  giftPaidBy?: string | null;
+  giftCashAmount?: number | null;
   memo: string | null;
   lockedAt: string | null;
   selectedColor?: string | null;
@@ -134,7 +141,7 @@ export default function EnrollmentFormModal({
   const [address, setAddress] = useState(existing?.address ?? "");
   const [addressDetail, setAddressDetail] = useState(existing?.addressDetail ?? "");
 
-  const [paymentDayType, setPaymentDayType] = useState(existing?.paymentDayType ?? "month_end");
+  const [paymentDayType, setPaymentDayType] = useState(existing?.paymentDayType ?? "day_10");
   const [paymentDayValue, setPaymentDayValue] = useState(existing?.paymentDayValue ?? "");
 
   const [installSchedule, setInstallSchedule] = useState(existing?.installSchedule ?? "");
@@ -157,6 +164,13 @@ export default function EnrollmentFormModal({
   const [giftBank, setGiftBank] = useState(existing?.giftBank ?? "");
   const [giftAccount, setGiftAccount] = useState(existing?.giftAccount ?? "");
   const [giftHolder, setGiftHolder] = useState(existing?.giftHolder ?? "");
+
+  // 사은품 지급처 — "본사" | "협력점" | null (미지정)
+  const [giftPaidBy, setGiftPaidBy] = useState<string>(existing?.giftPaidBy ?? "");
+  // 협력점이 직접 입금하는 현금 금액 (giftPaidBy === "협력점" 일 때만 의미)
+  const [giftCashAmount, setGiftCashAmount] = useState(
+    existing?.giftCashAmount != null ? String(existing.giftCashAmount) : ""
+  );
 
   // 결제수단 변경 시 — 신용카드로 바뀌면 sameAccount 강제 해제 (자동이체 계좌가 없어 동일 사용 불가)
   useEffect(() => {
@@ -386,6 +400,11 @@ export default function EnrollmentFormModal({
           giftBank: paymentMethod !== "card" && sameAccount ? null : giftBank.trim(),
           giftAccount: paymentMethod !== "card" && sameAccount ? null : giftAccount.trim(),
           giftHolder: sameAccount ? null : (giftHolder.trim() || autoDebitHolder.trim()),
+          // 사은품 지급처 (본사/협력점) + 협력점 직접 지급 시 현금 금액. 다른 지급처면 cashAmount null.
+          giftPaidBy: giftPaidBy.trim() || null,
+          giftCashAmount: giftPaidBy === "협력점" && giftCashAmount.trim()
+            ? Math.max(0, Math.floor(Number(giftCashAmount.replace(/[^\d]/g, "")) || 0))
+            : null,
           memo: memo.trim() || null,
         },
       };
@@ -731,12 +750,12 @@ export default function EnrollmentFormModal({
             </div>
           </Section>
 
-          {/* 결제일 */}
-          <Section title="결제일">
-            <div className="grid grid-cols-4 gap-1.5">
+          {/* 결제일 — SK매직 정책: 10 / 20 / 25 중 선택 */}
+          <Section title="결제일 (SK매직 정책)">
+            <div className="grid grid-cols-3 gap-1.5">
               {PAYMENT_OPTIONS.map(o => (
                 <label key={o.key} className={
-                  "border rounded-md px-2 py-1.5 text-[13px] cursor-pointer transition-colors " +
+                  "border rounded-md px-2 py-1.5 text-[13px] cursor-pointer transition-colors text-center " +
                   (paymentDayType === o.key ? "bg-rk-navy text-white border-rk-navy" : "bg-white border-rk-line text-rk-muted hover:border-rk-navy")
                 }>
                   <input type="radio" name="payday" value={o.key} checked={paymentDayType === o.key} onChange={() => setPaymentDayType(o.key)} className="hidden" />
@@ -744,14 +763,11 @@ export default function EnrollmentFormModal({
                 </label>
               ))}
             </div>
-            {paymentDayType === "custom" && (
-              <input
-                type="text"
-                value={paymentDayValue}
-                onChange={e => setPaymentDayValue(e.target.value)}
-                placeholder="예: 매월 5일, 첫째 주 월요일 등"
-                className="mt-2 w-full border border-rk-line rounded-md px-2.5 py-1.5 text-[14px] focus:outline-none focus:border-rk-navy"
-              />
+            {/* 구버전 값(month_end / day_15 / weekly_friday / custom)이 저장된 신청서는 그 값을 그대로 노출. 신규 선택은 위 3가지로 강제. */}
+            {LEGACY_PAYMENT_LABEL[paymentDayType] && (
+              <div className="mt-2 bg-rk-tint-orange text-rk-orange-deep text-[12px] px-2.5 py-1.5 rounded">
+                ⚠ 현재 저장된 값: <b>{LEGACY_PAYMENT_LABEL[paymentDayType]}</b>{paymentDayValue ? ` · "${paymentDayValue}"` : ""} — SK매직 정책 변경으로 신규 신청서는 10/20/25 중 선택해 주세요.
+              </div>
             )}
           </Section>
 
@@ -791,6 +807,42 @@ export default function EnrollmentFormModal({
                 <Field label="명의자" value={cardHolder} onChange={setCardHolder} required />
                 <Field label="유효기간 MM/YY" value={cardExpiry} onChange={setCardExpiry} placeholder="12/27" required />
               </div>
+            )}
+          </Section>
+
+          {/* 사은품 지급처 */}
+          <Section title="사은품 지급처">
+            <div className="grid grid-cols-2 gap-1.5">
+              {(["본사", "협력점"] as const).map(opt => (
+                <label key={opt} className={
+                  "border rounded-md px-2 py-1.5 text-[13px] cursor-pointer transition-colors text-center " +
+                  (giftPaidBy === opt ? "bg-rk-navy text-white border-rk-navy" : "bg-white border-rk-line text-rk-muted hover:border-rk-navy")
+                }>
+                  <input type="radio" name="giftPaidBy" value={opt} checked={giftPaidBy === opt} onChange={() => setGiftPaidBy(opt)} className="hidden" />
+                  {opt === "본사" ? "🏢 본사 지급" : "🏪 협력점 직접 지급"}
+                </label>
+              ))}
+            </div>
+            {giftPaidBy === "협력점" && (
+              <div className="mt-2 flex flex-col gap-1">
+                <label className="text-[12px] text-rk-muted">협력점이 고객에게 입금할 현금 금액 *</label>
+                <div className="flex items-center gap-2">
+                  <span className="text-rk-muted text-[14px]">₩</span>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={giftCashAmount === "0" ? "" : giftCashAmount ? Number(giftCashAmount.replace(/[^\d]/g, "")).toLocaleString("ko-KR") : ""}
+                    onChange={e => setGiftCashAmount(e.target.value.replace(/[^\d]/g, ""))}
+                    placeholder="예: 300,000"
+                    className="border border-rk-line rounded px-2.5 py-1.5 text-[14px] focus:outline-none focus:border-rk-navy rk-num w-[200px]"
+                  />
+                  <span className="text-[12px] text-rk-muted">원</span>
+                </div>
+                <small className="text-[11px] text-rk-faint">개통 확인 후 협력점이 고객에게 직접 입금. 본사 지급 사은품과 별개로 운영.</small>
+              </div>
+            )}
+            {giftPaidBy === "본사" && (
+              <small className="text-[11px] text-rk-info block mt-2">ⓘ 본사가 사은품(또는 상응 캐시백)을 직접 지급합니다.</small>
             )}
           </Section>
 

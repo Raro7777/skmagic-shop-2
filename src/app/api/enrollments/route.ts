@@ -125,6 +125,8 @@ export async function GET(req: Request) {
       giftBank: f.giftBank,
       giftAccount: masked!.giftAccount,
       giftHolder: f.giftHolder,
+      giftPaidBy: f.giftPaidBy ?? null,
+      giftCashAmount: f.giftCashAmount ?? null,
       lockedAt: f.lockedAt?.toISOString() ?? null,
       createdByRole: f.createdByRole,
       updatedAt: f.updatedAt.toISOString(),

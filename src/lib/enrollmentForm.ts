@@ -64,6 +64,9 @@ export type EnrollmentFormInput = {
   giftBank?: string | null;
   giftAccount?: string | null;
   giftHolder?: string | null;
+  // 사은품 지급처 ("본사" | "협력점") + 협력점 직접 지급 시 현금 금액
+  giftPaidBy?: string | null;
+  giftCashAmount?: number | null;
   // 카테고리별 추가
   categorySpecific?: Record<string, unknown> | null;
   memo?: string | null;
@@ -113,6 +116,7 @@ const TRACKED_FIELDS = [
   "autoDebitBank", "autoDebitAccount", "autoDebitHolder",
   "cardCompany", "cardNumber", "cardHolder", "cardExpiry",
   "giftBank", "giftAccount", "giftHolder",
+  "giftPaidBy", "giftCashAmount",
   "memo",
 ] as const;
 
@@ -190,6 +194,10 @@ export async function upsertEnrollmentForm(input: {
     giftBank: d.giftBank?.trim() || null,
     giftAccount: d.giftAccount?.trim() || null,
     giftHolder: d.giftHolder?.trim() || null,
+    giftPaidBy: d.giftPaidBy?.trim() || null,
+    giftCashAmount: typeof d.giftCashAmount === "number" && d.giftCashAmount > 0
+      ? Math.floor(d.giftCashAmount)
+      : null,
     categorySpecific: (d.categorySpecific ?? null) as never,
     memo: d.memo?.trim() || null,
   };

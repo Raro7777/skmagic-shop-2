@@ -474,6 +474,11 @@ model EnrollmentForm {
   // 사은품
   giftAmount           Int      @default(0)
   giftLabel            String?
+  // 사은품 지급처 — "본사" | "협력점" | 자유 텍스트. 본사가 지급하면 본사 자체 채널에서 처리,
+  // "협력점" 이면 협력점이 직접 입금. null 이면 미지정.
+  giftPaidBy           String?
+  // 협력점이 직접 입금(giftPaidBy="협력점") 시 입금 현금 금액. 다른 지급처면 null/0.
+  giftCashAmount       Int?
 
   // 결제일
   paymentDayType       String   @default("month_end") // month_end | day_10 | day_15 | day_20 | day_25 | weekly_friday | custom

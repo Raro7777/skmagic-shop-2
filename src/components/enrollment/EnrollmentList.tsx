@@ -54,6 +54,8 @@ export type EnrollmentItem = {
   giftBank: string | null;
   giftAccount: string | null;
   giftHolder: string | null;
+  giftPaidBy: string | null;
+  giftCashAmount: number | null;
   lockedAt: string | null;
   createdByRole: string;
   updatedAt: string;
@@ -389,15 +391,30 @@ function DetailPanel({ item }: { item: EnrollmentItem }) {
         )}
       </div>
       <div>
-        <h4 className="text-[12px] uppercase tracking-[.06em] text-rk-muted font-semibold mb-1">사은계좌</h4>
+        <h4 className="text-[12px] uppercase tracking-[.06em] text-rk-muted font-semibold mb-1">사은품 / 사은계좌</h4>
+        <dl className="grid grid-cols-[80px_1fr] gap-y-0.5">
+          <dt className="text-rk-muted">지급처</dt>
+          <dd className="text-rk-ink">
+            {item.giftPaidBy ? (
+              <>
+                <span className={item.giftPaidBy === "협력점" ? "text-rk-orange-deep font-medium" : "text-rk-info font-medium"}>
+                  {item.giftPaidBy === "본사" ? "🏢 본사 지급" : item.giftPaidBy === "협력점" ? "🏪 협력점 직접" : item.giftPaidBy}
+                </span>
+                {item.giftPaidBy === "협력점" && item.giftCashAmount != null && item.giftCashAmount > 0 && (
+                  <span className="ml-1.5 text-rk-orange-deep">· 현금 ₩{item.giftCashAmount.toLocaleString("ko-KR")}</span>
+                )}
+              </>
+            ) : "—"}
+          </dd>
+        </dl>
         {item.giftBank ? (
-          <dl className="grid grid-cols-[80px_1fr] gap-y-0.5">
+          <dl className="grid grid-cols-[80px_1fr] gap-y-0.5 mt-1.5">
             <dt className="text-rk-muted">은행</dt><dd className="text-rk-ink">{item.giftBank}</dd>
             <dt className="text-rk-muted">계좌번호</dt><dd className="font-mono text-rk-ink">{item.giftAccount}</dd>
             <dt className="text-rk-muted">예금주</dt><dd className="text-rk-ink">{item.giftHolder}</dd>
           </dl>
         ) : (
-          <p className="text-rk-muted">자동이체 계좌와 동일</p>
+          <p className="text-rk-muted mt-1.5">사은계좌: 자동이체 계좌와 동일</p>
         )}
       </div>
       {(item.installSchedule || item.installPreferredDate || item.memo) && (
