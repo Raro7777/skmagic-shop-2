@@ -9,6 +9,63 @@ import { HQ_VIEW_COOKIE } from "@/lib/effectivePartner";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+/**
+ * P0-4: Referer/Host 헤더에서 (partnerCode, sellerCode) 결정.
+ *   - 본사 도메인 + Referer path `/p/{code}` 또는 `/p/{code}/s/{seller}` 매칭
+ *   - 협력점 customDomain (verified) 으로 들어온 경우 host → Partner.customDomain 매핑
+ * 어디서도 도출 불가하면 null 반환 → captureLead 가 hq_pool 로 fallback.
+ */
+async function deriveOwnershipFromRequest(req: Request): Promise<{ partnerCode: string | null; sellerCode: string | null }> {
+  // 1) Referer path 에서 직접 매칭
+  const referer = req.headers.get("referer") ?? "";
+  let path = "";
+  try { path = referer ? new URL(referer).pathname : ""; } catch { /* invalid */ }
+  const m1 = path.match(/^\/p\/([a-z0-9-]+)\/s\/([a-z0-9]+)(?:\/|$)/i);
+  if (m1) {
+    const partnerCode = m1[1];
+    const sellerCode = m1[2];
+    const p = await prisma.partner.findUnique({ where: { partnerCode }, select: { status: true } });
+    if (p && p.status === "active") {
+      const s = await prisma.seller.findUnique({
+        where: { partnerId_sellerCode: { partnerId: partnerCode, sellerCode } },
+        select: { status: true },
+      });
+      if (s && s.status === "active") return { partnerCode, sellerCode };
+      return { partnerCode, sellerCode: null };
+    }
+  }
+  const m2 = path.match(/^\/p\/([a-z0-9-]+)(?:\/|$)/i);
+  if (m2) {
+    const partnerCode = m2[1];
+    const p = await prisma.partner.findUnique({ where: { partnerCode }, select: { status: true } });
+    if (p && p.status === "active") return { partnerCode, sellerCode: null };
+  }
+
+  // 2) customDomain 으로 들어온 경우 host → partnerCode 매핑
+  const host = (req.headers.get("x-forwarded-host") ?? req.headers.get("host") ?? "").replace(/:\d+$/, "").toLowerCase();
+  if (host) {
+    const byDomain = await prisma.partner.findFirst({
+      where: { customDomain: host, customDomainStatus: "verified", status: "active" },
+      select: { partnerCode: true },
+    });
+    if (byDomain) {
+      // customDomain root 접근 — Referer path 가 `/s/{seller}` 였다면 그 seller 도 적용
+      const m3 = path.match(/^\/s\/([a-z0-9]+)(?:\/|$)/i);
+      if (m3) {
+        const sellerCode = m3[1];
+        const s = await prisma.seller.findUnique({
+          where: { partnerId_sellerCode: { partnerId: byDomain.partnerCode, sellerCode } },
+          select: { status: true },
+        });
+        if (s && s.status === "active") return { partnerCode: byDomain.partnerCode, sellerCode };
+      }
+      return { partnerCode: byDomain.partnerCode, sellerCode: null };
+    }
+  }
+
+  return { partnerCode: null, sellerCode: null };
+}
+
 // POST is public — anyone (anonymous consumer) can submit a lead.
 export async function POST(req: Request) {
   // 봇/스팸 방지: IP당 60초 10건
@@ -76,6 +133,15 @@ export async function POST(req: Request) {
     ? Math.floor(b.selectedCardDiscountPrice)
     : null;
 
+  // P0-4: client body 의 partnerId/sellerCode 를 그대로 신뢰하지 않고 서버에서 재결정.
+  // Referer path (`/p/{code}` / `/p/{code}/s/{seller}`) 또는 customDomain 매핑으로 도출.
+  // 도출 실패 시 hq_pool 로 떨어짐 (client body 무시).
+  const derived = await deriveOwnershipFromRequest(req);
+  const landingType: "consumer_partner" | "consumer_seller" | "region" | "main" =
+    derived.sellerCode ? "consumer_seller"
+    : derived.partnerCode ? "consumer_partner"
+    : "main";
+
   const lead = await captureLead({
     customerName: b.customerName,
     phone: phoneDigits,
@@ -83,9 +149,9 @@ export async function POST(req: Request) {
     productCode: b.productCode ?? null,
     region: b.region ?? "",
     ownership: {
-      landingType: b.landingType ?? "consumer_partner",
-      partnerId: b.partnerId ?? undefined,
-      sellerCode: b.sellerCode,
+      landingType,
+      partnerId: derived.partnerCode ?? undefined,
+      sellerCode: derived.sellerCode ?? undefined,
     },
     utm: b.utm,
     selectedMode,
