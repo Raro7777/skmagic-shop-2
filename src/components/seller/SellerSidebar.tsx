@@ -77,11 +77,6 @@ export default function SellerSidebar({ user, partnerName, sellerName }: Sidebar
           </Link>
         );
       })}
-
-      <div className="mt-auto p-2.5 bg-rk-soft-2 border border-rk-line-2 rounded text-[13px]">
-        <b className="text-rk-ink font-medium block">📱 빠른 링크</b>
-        <Link href="/" className="block text-rk-info text-[13px] mt-1.5 no-underline">→ 허브로</Link>
-      </div>
     </aside>
   );
 }
