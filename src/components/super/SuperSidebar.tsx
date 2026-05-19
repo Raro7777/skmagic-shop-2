@@ -22,6 +22,7 @@ const NAV_OPS: NavItem[] = [
   { href: "/admin/super/reviews",    ico: "⭐", label: "후기 승인" },
   { href: "/admin/super/anomalies",  ico: "🚨", label: "운영 이상감지" },
   { href: "/admin/super/analytics",  ico: "📈", label: "마케팅 분석" },
+  { href: "/admin/super/apply-share",ico: "📢", label: "분양신청 링크 공유" },
 ];
 const NAV_MASTER: NavItem[] = [
   { href: "/admin/super/products",          ico: "📦", label: "상품 마스터" },
