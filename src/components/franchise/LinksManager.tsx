@@ -8,6 +8,7 @@ type Seller = {
   name: string;
   phone: string | null;
   email: string | null;
+  loginEmail: string | null;
   status: string;
   leadCount: number;
 };
@@ -98,9 +99,10 @@ export default function LinksManager({
   const [adding, setAdding] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
 
-  // Inline edit state (per seller id)
+  // Inline edit state (per seller id) — 전화번호 + 로그인 ID(이메일)
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editPhone, setEditPhone] = useState("");
+  const [editLoginEmail, setEditLoginEmail] = useState("");
   const [editSaving, setEditSaving] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
 
@@ -277,6 +279,7 @@ export default function LinksManager({
   const startEdit = (s: Seller) => {
     setEditingId(s.id);
     setEditPhone(s.phone ?? "");
+    setEditLoginEmail(s.loginEmail ?? "");
     setEditError(null);
   };
 
@@ -289,10 +292,22 @@ export default function LinksManager({
     setEditSaving(true);
     setEditError(null);
     try {
+      // 변경된 값만 전송 — 미변경 필드까지 PATCH 하면 불필요한 검증/DB 쓰기.
+      const current = sellers.find(s => s.id === id);
+      const payload: { phone?: string; loginEmail?: string } = {};
+      if (editPhone !== (current?.phone ?? "")) payload.phone = editPhone;
+      const currentLogin = current?.loginEmail ?? "";
+      if (editLoginEmail.trim().toLowerCase() !== currentLogin.toLowerCase()) {
+        payload.loginEmail = editLoginEmail.trim();
+      }
+      if (Object.keys(payload).length === 0) {
+        setEditingId(null);
+        return;
+      }
       const res = await fetch(`/api/sellers/${id}`, {
         method: "PATCH",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ phone: editPhone }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -442,7 +457,7 @@ export default function LinksManager({
                           onClick={() => (editingId === l.seller!.id ? cancelEdit() : startEdit(l.seller!))}
                           className="text-[12px] text-rk-info hover:text-rk-navy bg-transparent border-0 cursor-pointer"
                         >
-                          {editingId === l.seller.id ? "닫기" : "✏ 전화"}
+                          {editingId === l.seller.id ? "닫기" : "✏ 수정"}
                         </button>
                         <button
                           type="button"
@@ -467,7 +482,7 @@ export default function LinksManager({
                     {l.url}
                   </div>
                   {l.type === "seller" && l.seller && editingId === l.seller.id && (
-                    <div className="bg-rk-soft-2 border border-rk-line rounded p-2 mt-2 flex flex-col gap-2">
+                    <div className="bg-rk-soft-2 border border-rk-line rounded p-2.5 mt-2 flex flex-col gap-2">
                       <label className="flex flex-col gap-1 text-[12px] text-rk-muted">
                         전화
                         <input
@@ -477,6 +492,17 @@ export default function LinksManager({
                           onChange={e => setEditPhone(e.target.value)}
                           className="px-2 py-1 border border-rk-line rounded text-[14px] font-mono"
                         />
+                      </label>
+                      <label className="flex flex-col gap-1 text-[12px] text-rk-muted">
+                        로그인 ID (이메일)
+                        <input
+                          type="email"
+                          placeholder="seller@example.com"
+                          value={editLoginEmail}
+                          onChange={e => setEditLoginEmail(e.target.value)}
+                          className="px-2 py-1 border border-rk-line rounded text-[14px] font-mono"
+                        />
+                        <small className="text-[11px] text-rk-faint">영업자 콘솔(/admin/seller) 로그인 이메일. 변경 시 기존 ID 는 즉시 사용 불가.</small>
                       </label>
                       <div className="flex gap-2 items-center">
                         <button

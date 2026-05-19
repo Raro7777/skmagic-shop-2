@@ -48,6 +48,7 @@ export async function GET(req: Request) {
     orderBy: [{ status: "asc" }, { createdAt: "asc" }],
     include: {
       _count: { select: { leads: true } },
+      user: { select: { email: true } },
     },
   });
 
@@ -59,6 +60,7 @@ export async function GET(req: Request) {
       name: r.name,
       phone: r.phone,
       email: r.email,
+      loginEmail: r.user?.email ?? null,
       status: r.status,
       leadCount: r._count.leads,
       createdAt: r.createdAt.toISOString(),
