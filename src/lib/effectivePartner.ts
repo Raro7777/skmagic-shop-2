@@ -39,12 +39,9 @@ export async function getEffectivePartner(): Promise<
         return { partnerId: fromCookie, isHqImpersonating: true };
       }
     }
-    const first = await prisma.partner.findFirst({
-      where: { status: "active" },
-      orderBy: { createdAt: "asc" },
-      select: { partnerCode: true },
-    });
-    if (first) return { partnerId: first.partnerCode, isHqImpersonating: true };
+    // cookie 없거나 invalid — 자동으로 첫 active partner 선택하지 않음.
+    // 의도치 않게 우성종합통신 등 옛 partner 데이터가 보이는 사고 방지.
+    // /admin/super/partners 의 "콘솔 진입" 버튼으로 명시적으로 들어와야 함.
     return null;
   }
 
