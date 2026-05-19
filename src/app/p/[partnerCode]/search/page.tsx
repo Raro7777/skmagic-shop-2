@@ -93,7 +93,7 @@ export default async function SearchPage({
               <div className="text-[14px] text-rk-muted mb-3">
                 <b className="text-rk-ink">&quot;{trimmed}&quot;</b> 검색 결과 <b className="text-rk-ink">{results.length}</b>건
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-3 auto-rows-fr">
                 {results.map(p => (
                   <ResultCard
                     key={p.productCode}
@@ -116,7 +116,7 @@ export default async function SearchPage({
 function ResultCard({ product, href }: { product: ConsumerProduct; href: string }) {
   const bg = PRODUCT_BG[product.category] ?? PRODUCT_BG.water;
   return (
-    <Link href={href} className="no-underline text-inherit cursor-pointer">
+    <Link href={href} className="no-underline text-inherit cursor-pointer flex flex-col h-full">
       <ProductThumb imageUrl={product.imageUrl} alt={product.name} fallbackBg={bg}>
         {product.giftAmount > 0 && <span className="text-[9px] px-1 py-px rounded text-white font-semibold bg-rk-orange">사은품</span>}
         {product.isFeatured && <span className="text-[9px] px-1 py-px rounded text-white font-semibold bg-rk-navy">MD추천</span>}
@@ -126,8 +126,8 @@ function ResultCard({ product, href }: { product: ConsumerProduct; href: string 
         )}
       </ProductThumb>
       <div className="text-[13px] text-rk-muted mt-2">SK매직</div>
-      <h4 className="text-[13px] font-medium text-rk-ink leading-[1.4] m-0 mt-0.5">{product.name}</h4>
-      <div className="text-[12px] text-rk-faint font-mono mt-0.5">{product.modelName}</div>
+      <h4 className="text-[13px] font-medium text-rk-ink leading-[1.4] m-0 mt-0.5 min-h-[2.6em] line-clamp-2">{product.name}</h4>
+      <div className="text-[12px] text-rk-faint font-mono mt-0.5 truncate">{product.modelName}</div>
       <div className="mt-1.5 flex items-baseline gap-1">
         <small className="text-[12px] text-rk-muted">월</small>
         <b className="text-[15px] font-bold tracking-[-.02em] text-rk-ink rk-num">{fmt(product.rentalPrice)}원~</b>
@@ -137,8 +137,11 @@ function ResultCard({ product, href }: { product: ConsumerProduct; href: string 
           카드할인 시 최대 <b className="font-bold rk-num">월 {fmt(product.cardDiscountPrice)}원</b>
         </div>
       )}
+      {product.maxRentalSupport > 0 && (
+        <div className="text-[12px] text-rk-success font-bold mt-1 rk-num">💰 캐시백 +{fmt(product.maxRentalSupport)}원</div>
+      )}
       {product.giftLabel && (
-        <div className="text-[12px] text-rk-orange-deep font-medium mt-1">🎁 {product.giftLabel}</div>
+        <div className="text-[12px] text-rk-orange-deep font-medium mt-1 line-clamp-1">🎁 {product.giftLabel}</div>
       )}
     </Link>
   );

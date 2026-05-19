@@ -81,7 +81,7 @@ export default async function AllProductsPage({
                 {CATEGORY_LABEL[cat] ?? cat} 전체 →
               </Link>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3 auto-rows-fr">
               {items.map(p => (
                 <ProductCard
                   key={p.productCode}
@@ -103,7 +103,7 @@ export default async function AllProductsPage({
 function ProductCard({ product, href }: { product: ConsumerProduct; href: string }) {
   const bg = PRODUCT_BG[product.category] ?? PRODUCT_BG.water;
   return (
-    <Link href={href} className="no-underline text-inherit cursor-pointer">
+    <Link href={href} className="no-underline text-inherit cursor-pointer flex flex-col h-full">
       <ProductThumb imageUrl={product.imageUrl} alt={product.name} fallbackBg={bg}>
         {product.giftAmount > 0 && <span className="text-[9px] px-1 py-px rounded text-white font-semibold bg-rk-orange">사은품</span>}
         {product.isFeatured && <span className="text-[9px] px-1 py-px rounded text-white font-semibold bg-rk-navy">MD추천</span>}
@@ -113,19 +113,25 @@ function ProductCard({ product, href }: { product: ConsumerProduct; href: string
         )}
       </ProductThumb>
       <div className="text-[13px] text-rk-muted mt-2">SK매직</div>
-      <h4 className="text-[13px] font-medium text-rk-ink leading-[1.4] m-0 mt-0.5">{product.name}</h4>
-      <div className="text-[12px] text-rk-faint font-mono mt-0.5">{product.modelName}</div>
+      {/* 상품명 2줄 고정 — 카드 높이 균일화. 1줄짜리도 2줄 영역 차지 */}
+      <h4 className="text-[13px] font-medium text-rk-ink leading-[1.4] m-0 mt-0.5 min-h-[2.6em] line-clamp-2">{product.name}</h4>
+      {/* 모델명 1줄 강제 — 긴 코드는 말줄임 */}
+      <div className="text-[12px] text-rk-faint font-mono mt-0.5 truncate">{product.modelName}</div>
       <div className="mt-1.5 flex items-baseline gap-1">
         <small className="text-[12px] text-rk-muted">월</small>
         <b className="text-[15px] font-bold tracking-[-.02em] text-rk-ink rk-num">{fmt(product.rentalPrice)}원~</b>
       </div>
+      {/* 카드할인 / 사은품 / 캐시백 — 텍스트로도 명시 노출. 썸네일 위 작은 배지로만 보면 사용자가 놓치기 쉬워서 정보 영역에 명시적으로 한 줄 추가 */}
       {product.cardDiscountPrice != null && (
         <div className="mt-px text-[12px] text-rk-sale font-medium">
           카드할인 시 최대 <b className="font-bold rk-num">월 {fmt(product.cardDiscountPrice)}원</b>
         </div>
       )}
+      {product.maxRentalSupport > 0 && (
+        <div className="text-[12px] text-rk-success font-bold mt-1 rk-num">💰 캐시백 +{fmt(product.maxRentalSupport)}원</div>
+      )}
       {product.giftLabel && (
-        <div className="text-[12px] text-rk-orange-deep font-medium mt-1">🎁 {product.giftLabel}</div>
+        <div className="text-[12px] text-rk-orange-deep font-medium mt-1 line-clamp-1">🎁 {product.giftLabel}</div>
       )}
     </Link>
   );
