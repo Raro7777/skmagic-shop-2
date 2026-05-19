@@ -69,7 +69,11 @@ export default async function FranchiseLayout({
             <LeaveHqImpersonation />
           </div>
         )}
-        <Topbar />
+        <Topbar
+          partnerCode={partner?.partnerCode ?? null}
+          customDomain={partner?.customDomainStatus === "verified" ? partner?.customDomain ?? null : null}
+          userName={session?.user?.name ?? null}
+        />
         {children}
       </main>
     </div>

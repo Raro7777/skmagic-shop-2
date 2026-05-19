@@ -15,7 +15,15 @@ const TITLES: Record<string, string> = {
   "/admin/franchise/settings":    "사이트 설정",
 };
 
-export default function Topbar() {
+export default function Topbar({
+  partnerCode,
+  customDomain,
+  userName,
+}: {
+  partnerCode?: string | null;
+  customDomain?: string | null;
+  userName?: string | null;
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const [q, setQ] = useState("");
@@ -26,6 +34,15 @@ export default function Topbar() {
     const trimmed = q.trim();
     if (trimmed) router.push(`/admin/search?q=${encodeURIComponent(trimmed)}`);
   };
+
+  // 내 사이트 URL — customDomain 우선, 없으면 /p/{partnerCode}
+  const siteUrl = customDomain
+    ? (customDomain.startsWith("http") ? customDomain : `https://${customDomain}`)
+    : partnerCode
+      ? `/p/${partnerCode}`
+      : null;
+
+  const avatarChar = (userName?.trim()?.[0] ?? "?").toUpperCase();
 
   return (
     <div className="flex items-center gap-3.5 mb-3.5 flex-wrap">
@@ -40,15 +57,23 @@ export default function Topbar() {
           className="w-[240px] px-2.5 py-1.5 border border-rk-line rounded text-[14px] outline-none focus:border-rk-navy"
           placeholder="🔍 영업자·상품·고객 검색"
         />
-        <a
-          className="bg-rk-orange hover:bg-rk-orange-deep text-white px-3 py-1.5 rounded text-[14px] no-underline font-medium transition-colors"
-          href="/"
-          target="_blank"
-        >
-          🔗 내 사이트 열기
-        </a>
-        <div className="w-7 h-7 rounded-full bg-rk-navy text-white grid place-items-center text-[13px] font-semibold">
-          박
+        {siteUrl ? (
+          <a
+            className="bg-rk-orange hover:bg-rk-orange-deep text-white px-3 py-1.5 rounded text-[14px] no-underline font-medium transition-colors"
+            href={siteUrl}
+            target="_blank"
+            rel="noreferrer"
+            title={customDomain ? `자체 도메인 ${customDomain}` : `매장 사이트 /p/${partnerCode}`}
+          >
+            🔗 내 사이트 열기
+          </a>
+        ) : (
+          <span className="bg-rk-soft text-rk-muted px-3 py-1.5 rounded text-[14px] cursor-not-allowed" title="협력점 미선택">
+            🔗 내 사이트
+          </span>
+        )}
+        <div className="w-7 h-7 rounded-full bg-rk-navy text-white grid place-items-center text-[13px] font-semibold" title={userName ?? "사용자"}>
+          {avatarChar}
         </div>
       </form>
     </div>
