@@ -705,6 +705,10 @@ export type PriceOption = {
   promoPrice: number | null; // 5월 판촉가 (전사할인)
   cardDiscountPrice: number | null; // (promo ?? rental) − 23,000 (매직몰 카드할인 최대)
   baseCommission: number | null;
+  // 협력점 실제 commission (= (baseCommission + monthIncentive) − 본사마진, VAT 제외 기준).
+  // 메인 카드의 maxRentalSupport 와 동일한 산식으로 server 가 미리 계산해서 전달.
+  // PriceConfigurator 의 렌탈지원금 계산은 반드시 이 값을 사용해야 메인 카드와 일치.
+  partnerCommission?: number | null;
   // 타사보상 (rival compensation) 가격 — 본사 정책 PDF 별첨 (신규 단품에만 적용)
   // 카드할인은 이 값과 별개로 들어감.
   rivalCompensationPrice?: number | null;
@@ -774,6 +778,7 @@ export async function getPartnerProductDetail(
     where: { productCode },
     include: {
       partnerPolicies: { where: { partnerId: partnerCode } },
+      hqPolicies: true,
       contentImages: {
         where: { status: "active" },
         orderBy: { order: "asc" },
@@ -782,6 +787,22 @@ export async function getPartnerProductDetail(
     },
   });
   if (!product || product.status !== "active") return null;
+
+  // partner.tier 기반 본사마진 — 메인 카드의 maxRentalSupport 와 같은 산식 적용을 위해 필요
+  const tierMargin = await prisma.hqMarginByTier.findUnique({ where: { tier: partner.tier } });
+  const tierMarginConfig = tierMargin
+    ? { type: tierMargin.marginType as "fixed" | "percent", amount: tierMargin.marginAmount, percent: tierMargin.marginPercent }
+    : null;
+
+  // priceMatrix 옵션 ↔ HqPolicy 매칭 — verify-hq-policy-consistency.ts 와 동일한 키.
+  // priceMatrix 의 mode 가 null 이면 product.managementType 으로 fallback.
+  const managementTypeToMode = (mt: string): "방문형" | "셀프형" =>
+    mt.includes("자가") || mt.includes("셀프") ? "셀프형" : "방문형";
+  const productDefaultMode = managementTypeToMode(product.managementType);
+  const hqByKey = new Map<string, { baseCommission: number; monthIncentive: number; marginType: string | null; marginAmount: number | null; marginPercent: number | null }>();
+  for (const hq of product.hqPolicies) {
+    hqByKey.set(`${hq.mode}|${hq.contractPeriod}`, hq);
+  }
 
   const policy = product.partnerPolicies[0];
   const effectiveCard = effectiveCardDiscount(product.rentalPrice, product.cardDiscountPrice);
@@ -806,6 +827,16 @@ export async function getPartnerProductDetail(
     .map(r => {
       // effective = promo ?? rental. cardDiscount 는 effective 기준으로 정규화.
       const effective = r.promoPrice ?? (r.rentalPrice as number);
+      // partnerCommission — 메인 카드 computeMaxRentalSupport 와 동일 산식.
+      //   1) (mode, contractPeriod) 으로 HqPolicy 매칭 (mode null 이면 product.managementType fallback)
+      //   2) base = HqPolicy.baseCommission + HqPolicy.monthIncentive (VAT 제외)
+      //   3) partnerCommission = base − computeHqMargin(base, hq, tierMargin)
+      // 매칭 실패 시 null — UI 측은 렌탈지원금 0 으로 처리 (안전 기본값).
+      const optMode = (r.mode === "방문형" || r.mode === "셀프형") ? r.mode : productDefaultMode;
+      const hq = hqByKey.get(`${optMode}|${r.contractPeriod}`);
+      const partnerCommission = hq
+        ? (hq.baseCommission + hq.monthIncentive) - computeHqMargin(hq.baseCommission + hq.monthIncentive, hq, tierMarginConfig)
+        : null;
       return {
         mode: (r.mode === "방문형" || r.mode === "셀프형") ? r.mode : null,
         contractPeriod: r.contractPeriod,
@@ -816,6 +847,7 @@ export async function getPartnerProductDetail(
         promoPrice: r.promoPrice ?? null,
         cardDiscountPrice: effectiveCardDiscount(effective, r.cardDiscountPrice),
         baseCommission: r.baseCommission,
+        partnerCommission,
         rivalCompensationPrice: r.rivalCompensationPrice ?? null,
         rivalCompensationHalfPriceMonths: r.rivalCompensationHalfPriceMonths ?? null,
       };

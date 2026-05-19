@@ -318,9 +318,12 @@ export default function PriceConfigurator({
       {finalCard != null && <CardBenefitsPanel />}
 
       {/* 협력점 렌탈지원금 — 강조 카드 (한도 부족 옵션은 박스 자체 미노출) */}
+      {/* commission 우선순위: partnerCommission (서버에서 본사마진 차감 + VAT 제외, 메인 카드와 동일 산식) → */}
+      {/* baseCommission (priceMatrix 원본, VAT 포함, 본사마진 미차감 — 매칭 실패 시 fallback) */}
       {partnerRentalSupportEnabled && partnerRentalSupportAmount > 0 && (() => {
+        const commission = currentOption?.partnerCommission ?? currentOption?.baseCommission;
         const support = rentalSupportFor(
-          currentOption?.baseCommission,
+          commission,
           partnerRentalSupportAmount,
           partnerGiftAmount,
           partnerInstallAmount,
