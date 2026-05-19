@@ -4,8 +4,8 @@ import { listActivePartners } from "@/lib/partnerSite";
 import { HQ_HOTLINE } from "@/lib/constants/hq";
 
 export const metadata = {
-  title: "분양 신청 · 렌트왕 협력점 모집",
-  description: "월 30,000원부터 시작하는 SK매직 인증점 분양. 본사가 상품·정책·정산을 전부 관장합니다.",
+  title: "분양 신청 · SK매직 공식인증점 모집",
+  description: "월 30,000원부터 시작하는 SK매직 공식인증점 분양. 본사가 상품·정책·정산을 전부 관장합니다.",
 };
 
 export default async function ApplyPage() {
@@ -17,8 +17,8 @@ export default async function ApplyPage() {
       <header className="bg-white border-b border-rk-line sticky top-0 z-30">
         <div className="max-w-[1100px] mx-auto px-6 py-3 flex items-center gap-4">
           <Link href="/" className="flex items-center gap-2 no-underline">
-            <div className="w-7 h-7 bg-rk-orange text-white rounded grid place-items-center font-bold text-[12px]">RK</div>
-            <b className="text-rk-ink text-[14px]">렌트왕 협력점 분양</b>
+            <div className="w-7 h-7 bg-rk-orange text-white rounded grid place-items-center font-bold text-[12px]">SK</div>
+            <b className="text-rk-ink text-[14px]">SK매직 공식인증점 모집</b>
           </Link>
           <nav className="hidden md:flex gap-4 text-[12px] text-rk-muted ml-4">
             <a href="#why" className="no-underline text-rk-text">왜 렌트왕인가</a>

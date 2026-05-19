@@ -28,10 +28,10 @@ export async function generateMetadata({
   const { regionSlug } = await params;
   const { cat } = await searchParams;
   const region = await findRegion(regionSlug);
-  if (!region) return { title: "지역 정보 없음 · 렌트왕" };
+  if (!region) return { title: "지역 정보 없음" };
   const catLabel = cat ? categoryLabel(cat) : "SK매직 렌탈";
-  const title = `${region.label} ${catLabel} — 협력점 ${region.partners.length}곳 · 렌트왕`;
-  const description = `${region.label}에서 SK매직 ${catLabel} 가입 — 본사 정책 그대로, 지역 협력점 ${region.partners.length}곳 단독 사은품. 카드할인가 + 약정 옵션 즉시 비교.`;
+  const title = `${region.label} ${catLabel} — SK매직 공식인증점 ${region.partners.length}곳`;
+  const description = `${region.label}에서 SK매직 ${catLabel} 가입 — 본사 정책 그대로, 지역 공식인증점 ${region.partners.length}곳 단독 사은품. 카드할인가 + 약정 옵션 즉시 비교.`;
   return {
     title,
     description,
@@ -39,7 +39,7 @@ export async function generateMetadata({
       title,
       description,
       type: "website",
-      siteName: "렌트왕",
+      siteName: "SK매직 공식인증점",
     },
     twitter: {
       card: "summary",
@@ -73,8 +73,8 @@ export default async function RegionPage({
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "LocalBusiness",
-    name: `렌트왕 ${region.label}`,
-    description: `${region.label} 지역의 SK매직 렌탈 분양 사이트 — 협력점 ${region.partners.length}곳`,
+    name: `SK매직 공식인증점 ${region.label}`,
+    description: `${region.label} 지역의 SK매직 공식인증점 ${region.partners.length}곳`,
     address: { "@type": "PostalAddress", addressRegion: region.shortLabel, addressCountry: "KR" },
     url: `${SITE_URL}/region/${regionSlug}`,
     areaServed: region.label,

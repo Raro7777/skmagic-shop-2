@@ -7,8 +7,8 @@ import { formatMonthly, formatKrw } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 export const metadata = {
-  title: "렌트왕 — 동네 SK매직 공식 협력점 한 번에 비교",
-  description: "정수기·공기청정기·비데·매트리스 렌탈 — 동네 협력점에서 사은품 차별화된 가격으로 상담받으세요.",
+  title: "SK매직 공식인증점 — 동네 인증판매점 한 번에 비교",
+  description: "정수기·공기청정기·비데·매트리스 렌탈 — SK매직 공식인증점에서 사은품 차별화된 가격으로 상담받으세요.",
 };
 
 const CATEGORY_LABEL: Record<string, string> = {
@@ -48,9 +48,9 @@ export default async function HubPage() {
       <header className="bg-white border-b border-rk-line">
         <div className="max-w-[1100px] mx-auto px-6 py-4 flex justify-between items-center flex-wrap gap-3">
           <Link href="/" className="flex items-center gap-2.5 no-underline">
-            <div className="w-8 h-8 bg-rk-orange text-white rounded grid place-items-center font-bold text-[14px]">RK</div>
-            <span className="text-[17px] font-bold text-rk-ink">렌트왕</span>
-            <span className="text-[11px] text-rk-muted hidden sm:inline">SK매직 공식 협력점 분양 플랫폼</span>
+            <div className="w-8 h-8 bg-rk-orange text-white rounded grid place-items-center font-bold text-[14px]">SK</div>
+            <span className="text-[17px] font-bold text-rk-ink">SK매직 공식인증점</span>
+            <span className="text-[11px] text-rk-muted hidden sm:inline">동네 인증판매점 한 번에 비교</span>
           </Link>
           <div className="flex gap-2 items-center">
             <Link

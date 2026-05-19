@@ -1,4 +1,4 @@
-export const metadata = { title: "이용약관 · 렌트왕" };
+export const metadata = { title: "이용약관" };
 
 export default function TermsPage() {
   return (
