@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
@@ -46,11 +47,27 @@ export async function POST(req: Request) {
   lines.push(`연락처: ${phoneDigits}`);
   if (b.email) lines.push(`이메일: ${b.email}`);
 
+  // 신청서 원본 데이터 구조화 보관 — 승인 시 Partner 에 그대로 매핑됨.
+  // body 텍스트는 admin 빠른 훑어보기용으로 유지.
+  const applicationData: Prisma.InputJsonValue = {
+    applicantName: b.applicantName.trim(),
+    storeName: b.storeName.trim(),
+    phone: phoneDigits,
+    email: b.email?.trim() || null,
+    region: b.region?.trim() || null,
+    brandsOfInterest: b.brandsOfInterest?.trim() || null,
+    teamSize: b.teamSize?.trim() || null,
+    plan: b.plan?.trim() || null,
+    memo: b.memo?.trim() || null,
+    submittedAt: new Date().toISOString(),
+  };
+
   const created = await prisma.approvalRequest.create({
     data: {
       kind: "partner_signup",
       title: b.storeName.trim().slice(0, 80),
       body: lines.join(" · ").slice(0, 800),
+      applicationData,
       status: "pending",
       partnerId: null,
       requestedByEmail: b.email?.trim() || null,

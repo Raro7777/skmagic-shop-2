@@ -119,15 +119,30 @@ export async function PATCH(
 
     if (newStatus === "approved" && appr.kind === "partner_signup") {
       // 신규 협력점 생성 — Partner row + partner_admin User 동시 발급
+      // 우선순위: applicationData (구조화) → body 텍스트 파싱 fallback
+      const appData = (appr.applicationData ?? null) as null | {
+        applicantName?: string;
+        storeName?: string;
+        phone?: string;
+        email?: string | null;
+        region?: string | null;
+        brandsOfInterest?: string | null;
+        teamSize?: string | null;
+        plan?: string | null;
+        memo?: string | null;
+      };
       const parsed = parseApplicationBody(appr.body);
-      const applicantName = parseApplicant(appr.reason);
+
+      const applicantName = appData?.applicantName?.trim() || parseApplicant(appr.reason);
+      const storeName = appData?.storeName?.trim() || appr.title;
+      const phone = appData?.phone?.trim() || parsed.phone || null;
+      const region = appData?.region?.trim() || parsed.region || null;
+      const email = appData?.email?.trim() || appr.requestedByEmail?.trim() || parsed.email || null;
+
       const partnerCode = await generatePartnerCode();
 
       // 로그인 이메일: 신청자 이메일 우선, 없으면 partnerCode 기반 fallback
-      const loginEmail = (appr.requestedByEmail ?? parsed.email)?.trim().toLowerCase()
-        || `${partnerCode}@rentking.kr`;
-
-      // 동일 이메일 사용자 존재 시 partnerCode 기반 fallback 으로 강제
+      const loginEmail = email?.toLowerCase() || `${partnerCode}@rentking.kr`;
       const emailTaken = await tx.user.findUnique({ where: { email: loginEmail }, select: { id: true } });
       const finalEmail = emailTaken ? `${partnerCode}@rentking.kr` : loginEmail;
 
@@ -137,10 +152,10 @@ export async function PATCH(
       await tx.partner.create({
         data: {
           partnerCode,
-          partnerName: appr.title.slice(0, 80),
-          region: parsed.region ?? null,
-          phone: parsed.phone ?? null,
-          ownerName: applicantName ?? null,
+          partnerName: storeName.slice(0, 80),
+          region,
+          phone,
+          ownerName: applicantName,
           status: "active",
           tier: "basic",
         },
@@ -150,7 +165,7 @@ export async function PATCH(
         data: {
           email: finalEmail,
           passwordHash,
-          name: applicantName ?? appr.title,
+          name: applicantName ?? storeName,
           role: "partner_admin",
           partnerId: partnerCode,
         },
@@ -161,7 +176,7 @@ export async function PATCH(
         data: { partnerId: partnerCode },
       });
 
-      sideEffect = `협력점 생성 완료 · partnerCode=${partnerCode} · 로그인 ${finalEmail} · 임시 비밀번호 ${tempPassword} · 매장 사이트 /p/${partnerCode}`;
+      sideEffect = `협력점 생성 완료 · partnerCode=${partnerCode} · 신청자=${applicantName ?? "—"} · 지역=${region ?? "—"} · 전화=${phone ?? "—"} · 로그인 ${finalEmail} · 임시 비밀번호 ${tempPassword} · 매장 /p/${partnerCode}`;
     }
 
     if (newStatus === "resolved" && appr.kind === "settlement_dispute" && appr.settlementId) {

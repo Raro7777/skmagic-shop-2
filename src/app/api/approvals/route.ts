@@ -36,6 +36,7 @@ export async function GET(req: Request) {
       settlementId: r.settlementId,
       reason: r.reason,
       requestedByEmail: r.requestedByEmail,
+      applicationData: r.applicationData,
       reviewedById: r.reviewedById,
       reviewedAt: r.reviewedAt?.toISOString() ?? null,
       reviewNote: r.reviewNote,

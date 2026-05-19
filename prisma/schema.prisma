@@ -119,6 +119,10 @@ model ApprovalRequest {
   // settlement_dispute fields
   settlementId String?
 
+  // partner_signup 등 신청서 원본 raw 데이터 (구조화 보관 — Partner 생성 시 그대로 매핑).
+  // 형태: { applicantName, storeName, phone, email, region, brandsOfInterest, teamSize, plan, memo, ... }
+  applicationData Json?
+
   reason       String?
 
   // Tracking

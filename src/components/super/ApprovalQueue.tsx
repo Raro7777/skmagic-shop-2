@@ -2,6 +2,19 @@
 
 import { useEffect, useState, useCallback } from "react";
 
+type ApplicationData = {
+  applicantName?: string;
+  storeName?: string;
+  phone?: string;
+  email?: string | null;
+  region?: string | null;
+  brandsOfInterest?: string | null;
+  teamSize?: string | null;
+  plan?: string | null;
+  memo?: string | null;
+  submittedAt?: string;
+};
+
 type Approval = {
   id: string;
   kind: "partner_signup" | "commission_increase" | "settlement_dispute" | "brand_listing" | string;
@@ -16,6 +29,7 @@ type Approval = {
   settlementId: string | null;
   reason: string | null;
   requestedByEmail: string | null;
+  applicationData: ApplicationData | null;
   createdAt: string;
   ageHours: number;
 };
@@ -155,6 +169,24 @@ export default function ApprovalQueue() {
               </div>
               <h6 className="text-[13px] text-rk-ink font-medium mb-1">{a.title}</h6>
               {a.body && <p className="text-[13px] text-rk-muted m-0 leading-[1.5]">{a.body}</p>}
+
+              {/* 분양 신청 — 신청서 원본 정보 (승인 시 Partner 에 그대로 매핑됨) */}
+              {a.kind === "partner_signup" && a.applicationData && (
+                <div className="text-[12px] mt-2 px-3 py-2 bg-rk-tint-blue text-rk-info rounded">
+                  <b className="block text-[12px] mb-1">📋 분양 신청서 (승인 시 Partner 에 자동 매핑)</b>
+                  <dl className="grid grid-cols-[80px_1fr] gap-y-0.5 m-0">
+                    {a.applicationData.applicantName && (<><dt className="text-rk-muted">신청자</dt><dd className="m-0 font-medium text-rk-ink">{a.applicationData.applicantName}</dd></>)}
+                    {a.applicationData.storeName && (<><dt className="text-rk-muted">상호명</dt><dd className="m-0 text-rk-ink">{a.applicationData.storeName}</dd></>)}
+                    {a.applicationData.phone && (<><dt className="text-rk-muted">휴대폰</dt><dd className="m-0 font-mono text-rk-ink rk-num">{a.applicationData.phone}</dd></>)}
+                    {a.applicationData.email && (<><dt className="text-rk-muted">이메일</dt><dd className="m-0 font-mono text-rk-ink">{a.applicationData.email}</dd></>)}
+                    {a.applicationData.region && (<><dt className="text-rk-muted">지역</dt><dd className="m-0 text-rk-ink">{a.applicationData.region}</dd></>)}
+                    {a.applicationData.brandsOfInterest && (<><dt className="text-rk-muted">관심 브랜드</dt><dd className="m-0 text-rk-ink">{a.applicationData.brandsOfInterest}</dd></>)}
+                    {a.applicationData.teamSize && (<><dt className="text-rk-muted">영업조직</dt><dd className="m-0 text-rk-ink">{a.applicationData.teamSize}</dd></>)}
+                    {a.applicationData.plan && (<><dt className="text-rk-muted">희망 패키지</dt><dd className="m-0 text-rk-ink">{a.applicationData.plan}</dd></>)}
+                    {a.applicationData.memo && (<><dt className="text-rk-muted">메모</dt><dd className="m-0 text-rk-ink whitespace-pre-wrap">{a.applicationData.memo}</dd></>)}
+                  </dl>
+                </div>
+              )}
 
               {a.kind === "commission_increase" && a.productCode && (
                 <div className="text-[13px] text-rk-text mt-2 px-2 py-1.5 bg-rk-soft-2 rounded font-mono">
