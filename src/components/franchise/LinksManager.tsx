@@ -105,11 +105,11 @@ export default function LinksManager({
   const [editError, setEditError] = useState<string | null>(null);
 
   // 영업자 추가 직후 토스트
-  // 단일: 카톡 문구 자동 클립보드 복사 안내
-  // 일괄: 성공/실패 명단 안내
+  // 단일: 로그인 자격(email + 임시비번) + 카톡 문구 자동 클립보드 복사 안내
+  // 일괄: 성공/실패 명단 + 각 영업자별 로그인 자격 안내
   type AddedToast =
-    | { mode: "single"; name: string; copied: boolean }
-    | { mode: "bulk"; added: string[]; failed: Array<{ raw: string; reason: string }> };
+    | { mode: "single"; name: string; copied: boolean; login: { email: string; tempPassword: string } | null }
+    | { mode: "bulk"; added: Array<{ name: string; login: { email: string; tempPassword: string } | null }>; failed: Array<{ raw: string; reason: string }> };
   const [addedToast, setAddedToast] = useState<AddedToast | null>(null);
 
   useEffect(() => {
@@ -207,7 +207,8 @@ export default function LinksManager({
       return;
     }
     setAdding(true);
-    const added: Array<{ name: string; sellerCode: string; phone: string | null }> = [];
+    type AddedRow = { name: string; sellerCode: string; phone: string | null; login: { email: string; tempPassword: string } | null };
+    const added: AddedRow[] = [];
     const failed: Array<{ raw: string; reason: string }> = rows
       .filter(r => !r.ok)
       .map(r => (r as Extract<ParsedRow, { ok: false }>));
@@ -225,7 +226,8 @@ export default function LinksManager({
           failed.push({ raw: `${r.name} ${r.phone}`, reason: data.error ?? "생성 실패" });
         } else {
           const s = data.seller as { sellerCode: string; name: string; phone: string | null };
-          added.push(s);
+          const login = (data.login as { email: string; tempPassword: string } | undefined) ?? null;
+          added.push({ ...s, login });
         }
       } catch {
         failed.push({ raw: `${r.name} ${r.phone}`, reason: "네트워크 오류" });
@@ -238,30 +240,34 @@ export default function LinksManager({
       return;
     }
 
-    // 단일 추가일 때만 카톡 문구 자동 클립보드 복사
+    // 단일 추가일 때만 카톡 문구(영업 링크 + 로그인 자격) 자동 클립보드 복사
     if (added.length === 1 && failed.length === 0) {
       const s = added[0];
       const sellerUrl = sellerUrlFor(s.sellerCode);
-      const text = makeSellerShareText({
+      const baseText = makeSellerShareText({
         partnerName,
         sellerName: s.name,
         sellerUrl,
         contactPhone: s.phone?.trim() || hotline,
       });
+      const text = s.login
+        ? `${baseText}\n\n— 영업자 콘솔 로그인 —\nID: ${s.login.email}\n임시 비밀번호: ${s.login.tempPassword}\n첫 로그인 시 비밀번호 변경 필요`
+        : baseText;
       let copied = false;
       try {
         await navigator.clipboard.writeText(text);
         copied = true;
       } catch { /* 클립보드 차단되어도 추가는 성공 */ }
-      setAddedToast({ mode: "single", name: s.name, copied });
+      setAddedToast({ mode: "single", name: s.name, copied, login: s.login });
     } else {
       setAddedToast({
         mode: "bulk",
-        added: added.map(a => a.name),
+        added: added.map(a => ({ name: a.name, login: a.login })),
         failed,
       });
     }
-    setTimeout(() => setAddedToast(null), 8000);
+    // 로그인 자격이 포함된 토스트는 협력점이 옮겨 적어야 하므로 자동 닫기 안 함.
+    // 사용자가 직접 ✕ 로 닫을 때까지 유지. (이전엔 8초 후 자동 닫기였음)
 
     setShowAdd(false);
     setBulkInput("");
@@ -365,12 +371,37 @@ export default function LinksManager({
                 ) : (
                   <>아래 영업자 목록에서 <b>💬 카톡 문구</b> 버튼으로 복사할 수 있어요.</>
                 )}
+                {addedToast.login && (
+                  <div className="bg-white/70 border border-rk-success/30 rounded p-2 mt-2 text-rk-ink text-[13px] leading-[1.7]">
+                    <b className="block text-rk-success mb-1">🔑 영업자 콘솔 로그인 자격</b>
+                    <div className="flex flex-wrap gap-x-3 gap-y-0.5 font-mono">
+                      <span>ID: <b>{addedToast.login.email}</b></span>
+                      <span>임시 비밀번호: <b>{addedToast.login.tempPassword}</b></span>
+                    </div>
+                    <small className="text-rk-muted text-[12px] block mt-1">
+                      영업자 본인이 첫 로그인 시 비밀번호를 변경해야 합니다. 위 자격은 카톡 문구에 자동 포함되어 있습니다.
+                    </small>
+                  </div>
+                )}
               </>
             ) : (
               <>
                 <b>{addedToast.added.length}명</b> 추가 완료
                 {addedToast.added.length > 0 && (
-                  <span className="ml-1 opacity-80">({addedToast.added.join(", ")})</span>
+                  <span className="ml-1 opacity-80">({addedToast.added.map(a => a.name).join(", ")})</span>
+                )}
+                {addedToast.added.some(a => a.login) && (
+                  <div className="bg-white/70 border border-rk-success/30 rounded p-2 mt-2 text-rk-ink text-[12px] leading-[1.7]">
+                    <b className="block text-rk-success mb-1">🔑 영업자별 로그인 자격</b>
+                    <ul className="m-0 p-0 list-none font-mono">
+                      {addedToast.added.filter(a => a.login).map((a, i) => (
+                        <li key={i}><b>{a.name}</b> · ID {a.login!.email} · 임시 {a.login!.tempPassword}</li>
+                      ))}
+                    </ul>
+                    <small className="text-rk-muted text-[11px] block mt-1 font-sans">
+                      각 영업자에게 카톡으로 전달 — 첫 로그인 시 비밀번호 변경 강제됩니다.
+                    </small>
+                  </div>
                 )}
                 {addedToast.failed.length > 0 && (
                   <div className="mt-1 text-rk-sale">

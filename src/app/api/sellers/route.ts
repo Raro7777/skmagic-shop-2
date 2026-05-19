@@ -1,10 +1,19 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
+import bcrypt from "bcryptjs";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { HQ_VIEW_COOKIE, gatePartnerOrHq } from "@/lib/effectivePartner";
 import { normalizeKoreanPhone } from "@/lib/sellerPhone";
 import { generateSellerCode } from "@/lib/sellerCode";
+
+/** 임시 비밀번호 — 8자 base32 (혼동 방지: O/0/I/1 제외). approvals/[id]/route.ts 와 동일. */
+function generateTempPassword(): string {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let out = "";
+  for (let i = 0; i < 8; i++) out += chars[Math.floor(Math.random() * chars.length)];
+  return out;
+}
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -98,18 +107,45 @@ export async function POST(req: Request) {
   }
 
   // sellerCode 자동 생성 (12자리 영문소문자+숫자). 충돌 시 최대 5회 재시도.
+  // 동시에 영업자 로그인 User(role=seller) 도 발급 → 임시 비밀번호로 /admin/seller 로그인 가능.
   for (let attempt = 0; attempt < 5; attempt++) {
     const code = generateSellerCode();
+    // 로그인 이메일: 신청자 제공값 우선, 없으면 sellerCode 기반 fallback.
+    // 같은 이메일이 이미 점유되어 있으면 fallback 으로 회피.
+    const requestedEmail = b.email?.trim().toLowerCase() || null;
+    let loginEmail = requestedEmail ?? `s-${code}@rentking.kr`;
+    if (requestedEmail) {
+      const taken = await prisma.user.findUnique({ where: { email: requestedEmail }, select: { id: true } });
+      if (taken) loginEmail = `s-${code}@rentking.kr`;
+    }
+    const tempPassword = generateTempPassword();
+    const passwordHash = await bcrypt.hash(tempPassword, 10);
+
     try {
-      const created = await prisma.seller.create({
-        data: {
-          partnerId: eff.partnerId,
-          sellerCode: code,
-          name: b.name.trim().slice(0, 32),
-          phone: normalizedPhone,
-          email: b.email?.trim() || null,
-          status: "active",
-        },
+      const created = await prisma.$transaction(async tx => {
+        const seller = await tx.seller.create({
+          data: {
+            partnerId: eff.partnerId,
+            sellerCode: code,
+            name: b.name!.trim().slice(0, 32),
+            phone: normalizedPhone,
+            email: b.email?.trim() || null,
+            status: "active",
+          },
+        });
+        const user = await tx.user.create({
+          data: {
+            email: loginEmail,
+            passwordHash,
+            name: b.name!.trim().slice(0, 32),
+            role: "seller",
+            partnerId: eff.partnerId,
+            mustChangePassword: true,
+            status: "active",
+          },
+        });
+        await tx.seller.update({ where: { id: seller.id }, data: { userId: user.id } });
+        return seller;
       });
       return NextResponse.json({
         ok: true,
@@ -119,10 +155,15 @@ export async function POST(req: Request) {
           name: created.name,
           phone: created.phone,
         },
+        // 협력점이 영업자에게 카톡으로 전달할 자격 — 첫 로그인 시 mustChangePassword 강제.
+        login: {
+          email: loginEmail,
+          tempPassword,
+        },
       });
     } catch (e) {
       const pcode = (e as { code?: string }).code;
-      if (pcode === "P2002") continue; // sellerCode 충돌 — 재시도
+      if (pcode === "P2002") continue; // sellerCode 또는 email 충돌 — 재시도
       return NextResponse.json({ error: "생성 실패" }, { status: 500 });
     }
   }
