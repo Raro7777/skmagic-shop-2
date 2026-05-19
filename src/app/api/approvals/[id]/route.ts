@@ -82,7 +82,11 @@ export async function PATCH(
   const newStatus = b.action === "approve" ? "approved" : b.action === "reject" ? "rejected" : "resolved";
   const reviewNote = b.note?.slice(0, 256) ?? null;
 
-  // Apply side effects within a transaction
+  // Apply side effects within a transaction.
+  // P0-2: sideEffect 는 텔레그램·HTTP 응답 양쪽에 노출되어 임시 비밀번호 등 자격증명이
+  // 텔레그램으로 새어나가는 사고를 막기 위해 두 갈래로 분리.
+  //   sideEffectPublic — telegram 알림용. 자격증명 미포함.
+  //   sideEffectSecret — HTTP 응답용. 본사 운영자만 보는 임시 비번/로그인 ID 포함.
   const result = await prisma.$transaction(async tx => {
     // Update the approval first
     const updated = await tx.approvalRequest.update({
@@ -95,7 +99,8 @@ export async function PATCH(
       },
     });
 
-    let sideEffect: string | null = null;
+    let sideEffect: string | null = null;          // telegram 안전 노출용 (자격증명 X)
+    let sideEffectSecret: string | null = null;    // HTTP 응답 전용 (임시 비번 등)
 
     // Side effects depend on kind + action
     if (newStatus === "approved" && appr.kind === "commission_increase" && appr.productCode) {
@@ -191,7 +196,11 @@ export async function PATCH(
         data: { partnerId: partnerCode },
       });
 
-      sideEffect = `협력점 생성 완료 · partnerCode=${partnerCode} · 신청자=${applicantName ?? "—"} · 지역=${region ?? "—"} · 전화=${phone ?? "—"} · 로그인 ${finalEmail} · 임시 비밀번호 ${tempPassword} · 매장 /p/${partnerCode}`;
+      // P0-2: 텔레그램으로 새지 않도록 메시지 분리.
+      //   sideEffect (public)      — 협력점 식별 정보만. tempPassword/로그인 이메일 미포함.
+      //   sideEffectSecret (response) — HTTP 응답으로만 본사 운영자에게 임시 비번 전달.
+      sideEffect = `협력점 생성 완료 · partnerCode=${partnerCode} · 신청자=${applicantName ?? "—"} · 지역=${region ?? "—"} · 전화=${phone ?? "—"} · 매장 /p/${partnerCode}`;
+      sideEffectSecret = `로그인 ${finalEmail} · 임시 비밀번호 ${tempPassword}`;
     }
 
     if (newStatus === "resolved" && appr.kind === "settlement_dispute" && appr.settlementId) {
@@ -205,7 +214,7 @@ export async function PATCH(
       }
     }
 
-    return { updated, sideEffect };
+    return { updated, sideEffect, sideEffectSecret };
   });
 
   // 본사 텔레그램 알림 — 분양 승인 처리 결과 기록 (fire-and-forget).
@@ -229,6 +238,12 @@ export async function PATCH(
       (result.sideEffect ? `\n${esc(result.sideEffect)}` : ""),
   );
 
+  // P0-2: HTTP 응답에만 임시 비밀번호 포함. 텔레그램에는 절대 안 보냄.
+  // 응답을 받은 본사 운영자가 임시 비번을 메모/카톡으로 협력점에 직접 전달.
+  const fullSideEffect = result.sideEffectSecret
+    ? `${result.sideEffect ?? ""}\n${result.sideEffectSecret}`.trim()
+    : result.sideEffect;
+
   return NextResponse.json({
     ok: true,
     approval: {
@@ -236,6 +251,6 @@ export async function PATCH(
       status: result.updated.status,
       reviewedAt: result.updated.reviewedAt?.toISOString() ?? null,
     },
-    sideEffect: result.sideEffect,
+    sideEffect: fullSideEffect,
   });
 }
