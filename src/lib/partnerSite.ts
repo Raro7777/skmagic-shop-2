@@ -255,6 +255,9 @@ export type PartnerSiteData = {
     partnerCode: string;
     partnerName: string;
     brandLabel: string;
+    // 협력점 법인/상호 원본명 — 푸터의 "상호" 표기에만 사용.
+    // partnerName/brandLabel 은 CONSUMER_BRAND_NAME 으로 덮였기 때문에 raw 값을 별도 보존.
+    companyName: string;
     region: string | null;
     address: string | null;
     businessNumber: string | null;
@@ -525,6 +528,8 @@ export async function getPartnerSite(partnerCode: string): Promise<PartnerSiteDa
       // 본사 정책: 컨슈머 사이트에서는 모든 협력점을 "SK매직 공식인증점" 단일 브랜드로 노출
       partnerName: CONSUMER_BRAND_NAME,
       brandLabel: CONSUMER_BRAND_NAME,
+      // 푸터 "상호" 표기 — 협력점 row 의 raw partnerName (법인/상호 원본)
+      companyName: partner.partnerName,
       region: partner.region,
       address: partner.address,
       businessNumber: partner.businessNumber,
@@ -657,6 +662,8 @@ export async function getPartnerHeader(partnerCode: string) {
     // 협력점 고유명(인터넷끝판왕 등)은 admin/franchise 콘솔에서만 사용.
     partnerName: CONSUMER_BRAND_NAME,
     brandLabel: CONSUMER_BRAND_NAME,
+    // 푸터 "상호" 표기 — 협력점 row 의 raw partnerName (법인/상호 원본)
+    companyName: partner.partnerName,
     region: partner.region,
     address: partner.address,
     businessNumber: partner.businessNumber,
@@ -871,6 +878,8 @@ export async function getPartnerProductDetail(
       // 컨슈머 사이트 단일 브랜드 노출
       partnerName: CONSUMER_BRAND_NAME,
       brandLabel: CONSUMER_BRAND_NAME,
+      // 푸터 "상호" 표기 — 협력점 row 의 raw partnerName (법인/상호 원본)
+      companyName: partner.partnerName,
       region: partner.region,
       address: partner.address,
       businessNumber: partner.businessNumber,

@@ -427,7 +427,7 @@ export default async function ProductDetailPage({
             <Link href={`/p/${partner.partnerCode}/help`} className="text-rk-text no-underline cursor-pointer">고객센터</Link>
           </div>
           <dl className="grid grid-cols-[auto_1fr] gap-x-2 gap-y-1 m-0">
-            <dt className="text-rk-faint m-0">상호</dt><dd className="m-0">우성종합통신</dd>
+            <dt className="text-rk-faint m-0">상호</dt><dd className="m-0">{partner.companyName}</dd>
             <dt className="text-rk-faint m-0">고객센터</dt><dd className="m-0 rk-num">{partner.hotlineNumber}</dd>
             {partner.businessNumber && <><dt className="text-rk-faint m-0">사업자</dt><dd className="m-0 rk-num">{partner.businessNumber}</dd></>}
           </dl>

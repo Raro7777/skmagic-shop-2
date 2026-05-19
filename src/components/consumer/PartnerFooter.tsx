@@ -12,7 +12,7 @@ export default function PartnerFooter({ partner }: { partner: PartnerSiteData["p
       </div>
       <dl className="grid grid-cols-[auto_1fr] gap-x-2 gap-y-1 m-0">
         <dt className="text-rk-faint m-0">상호</dt>
-        <dd className="m-0">우성종합통신</dd>
+        <dd className="m-0">{partner.companyName}</dd>
         {partner.ownerName && (
           <>
             <dt className="text-rk-faint m-0">대표</dt>

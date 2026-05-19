@@ -305,7 +305,7 @@ export default async function PartnerSiteShell({
             <Link href={`/p/${partner.partnerCode}/help`} className="text-rk-text no-underline cursor-pointer">설치 A/S</Link>
           </div>
           <dl className="grid grid-cols-[auto_1fr] gap-x-2 gap-y-1 m-0">
-            <dt className="text-rk-faint m-0">상호</dt><dd className="m-0">우성종합통신</dd>
+            <dt className="text-rk-faint m-0">상호</dt><dd className="m-0">{partner.companyName}</dd>
             {partner.ownerName && <><dt className="text-rk-faint m-0">대표</dt><dd className="m-0">{partner.ownerName}</dd></>}
             {partner.address && <><dt className="text-rk-faint m-0">주소</dt><dd className="m-0">{partner.address}</dd></>}
             {partner.businessNumber && <><dt className="text-rk-faint m-0">사업자</dt><dd className="m-0 rk-num">{partner.businessNumber}</dd></>}
