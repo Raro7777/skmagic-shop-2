@@ -10,7 +10,7 @@ import { prisma } from "@/lib/prisma";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const ALLOWED_LAYOUTS = ["classic", "image-bg", "product-spotlight", "promo-stamp"] as const;
+const ALLOWED_LAYOUTS = ["classic", "image-bg", "product-spotlight", "promo-stamp", "image-only"] as const;
 
 export async function GET(req: Request) {
   const session = await auth();
@@ -43,6 +43,7 @@ export async function POST(req: Request) {
     layout: string; title: string; subtitle: string | null; imageUrl: string | null;
     bgColor1: string; bgColor2: string; textColor: string;
     ctaLabel: string | null; ctaHref: string | null;
+    fullClickable: boolean;
     stampText: string | null; spotlightProductCode: string | null;
     status: "active" | "archived";
   }>;
@@ -66,6 +67,7 @@ export async function POST(req: Request) {
       textColor: b.textColor?.slice(0, 16) ?? "#FFFFFF",
       ctaLabel: b.ctaLabel?.trim().slice(0, 40) || null,
       ctaHref: b.ctaHref?.trim().slice(0, 256) || null,
+      fullClickable: !!b.fullClickable,
       stampText: b.stampText?.trim().slice(0, 60) || null,
       spotlightProductCode: b.spotlightProductCode?.trim().slice(0, 32) || null,
       status: b.status === "archived" ? "archived" : "active",

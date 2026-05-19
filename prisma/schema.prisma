@@ -860,6 +860,9 @@ model BannerTemplate {
   textColor            String   @default("#FFFFFF")
   ctaLabel             String?
   ctaHref              String?
+  // 배너 전체 영역 클릭 시 ctaHref 로 이동 (자세히 보기 버튼 + 전체 영역 둘 다 활성).
+  // image-only 모드에서 이미지 자체에 카피가 박혀있을 때 자주 사용.
+  fullClickable        Boolean  @default(false)
   stampText            String?
   spotlightProductCode String?
   status               String   @default("active") // active | archived

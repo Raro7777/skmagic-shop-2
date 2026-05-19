@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const ALLOWED_LAYOUTS = ["classic", "image-bg", "product-spotlight", "promo-stamp"];
+const ALLOWED_LAYOUTS = ["classic", "image-bg", "product-spotlight", "promo-stamp", "image-only"];
 
 async function requireHq() {
   const session = await auth();
@@ -27,6 +27,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     layout: string; title: string; subtitle: string | null; imageUrl: string | null;
     bgColor1: string; bgColor2: string; textColor: string;
     ctaLabel: string | null; ctaHref: string | null;
+    fullClickable: boolean;
     stampText: string | null; spotlightProductCode: string | null;
     status: "active" | "archived";
   }>;
@@ -44,6 +45,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   if (b.textColor) data.textColor = b.textColor.slice(0, 16);
   if (b.ctaLabel !== undefined) data.ctaLabel = b.ctaLabel?.slice(0, 40) || null;
   if (b.ctaHref !== undefined) data.ctaHref = b.ctaHref?.slice(0, 256) || null;
+  if (b.fullClickable !== undefined) data.fullClickable = !!b.fullClickable;
   if (b.stampText !== undefined) data.stampText = b.stampText?.slice(0, 60) || null;
   if (b.spotlightProductCode !== undefined) data.spotlightProductCode = b.spotlightProductCode?.slice(0, 32) || null;
   if (b.status && ["active", "archived"].includes(b.status)) data.status = b.status;

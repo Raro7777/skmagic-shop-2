@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-type Layout = "classic" | "image-bg" | "product-spotlight" | "promo-stamp";
+type Layout = "classic" | "image-bg" | "product-spotlight" | "promo-stamp" | "image-only";
 
 type Template = {
   id: string;
@@ -18,6 +18,7 @@ type Template = {
   textColor: string;
   ctaLabel: string | null;
   ctaHref: string | null;
+  fullClickable: boolean;
   stampText: string | null;
   spotlightProductCode: string | null;
   status: "active" | "archived";
@@ -37,16 +38,18 @@ type Draft = {
   textColor: string;
   ctaLabel: string;
   ctaHref: string;
+  fullClickable: boolean;
   stampText: string;
   spotlightProductCode: string;
   status: "active" | "archived";
 };
 
-const LAYOUTS: Array<{ id: Layout; label: string }> = [
+const LAYOUTS: Array<{ id: Layout; label: string; desc?: string }> = [
   { id: "classic", label: "클래식" },
   { id: "image-bg", label: "이미지 배경" },
   { id: "product-spotlight", label: "상품 스포트라이트" },
   { id: "promo-stamp", label: "프로모 스탬프" },
+  { id: "image-only", label: "🖼 이미지 전용", desc: "텍스트·CTA 없이 이미지만 풀-블리드 (텍스트 baked 이미지용)" },
 ];
 
 const PRESETS = [
@@ -61,7 +64,7 @@ const emptyDraft = (): Draft => ({
   name: "", description: "", category: "", layout: "classic",
   title: "", subtitle: "", imageUrl: "",
   bgColor1: PRESETS[0].c1, bgColor2: PRESETS[0].c2, textColor: PRESETS[0].text,
-  ctaLabel: "지금 신청", ctaHref: "", stampText: "", spotlightProductCode: "",
+  ctaLabel: "지금 신청", ctaHref: "", fullClickable: false, stampText: "", spotlightProductCode: "",
   status: "active",
 });
 
@@ -94,6 +97,7 @@ export default function BannerTemplateManager() {
       layout: t.layout, title: t.title, subtitle: t.subtitle ?? "", imageUrl: t.imageUrl ?? "",
       bgColor1: t.bgColor1, bgColor2: t.bgColor2, textColor: t.textColor,
       ctaLabel: t.ctaLabel ?? "", ctaHref: t.ctaHref ?? "",
+      fullClickable: !!t.fullClickable,
       stampText: t.stampText ?? "", spotlightProductCode: t.spotlightProductCode ?? "",
       status: t.status,
     });
@@ -103,6 +107,10 @@ export default function BannerTemplateManager() {
   const save = async () => {
     if (!draft || !editing) return;
     if (!draft.name.trim() || !draft.title.trim()) { setError("name, title 필수"); return; }
+    if (draft.layout === "image-only" && !draft.imageUrl.trim()) {
+      setError("이미지 전용 모드는 이미지 URL 이 필요합니다");
+      return;
+    }
     setBusy(true);
     try {
       const res = editing === "new"
@@ -162,28 +170,49 @@ export default function BannerTemplateManager() {
                 className="border border-rk-line rounded px-2 py-1 text-[14px] bg-white">
                 {LAYOUTS.map(l => <option key={l.id} value={l.id}>{l.label}</option>)}
               </select>
+              {LAYOUTS.find(l => l.id === draft.layout)?.desc && (
+                <small className="text-[11px] text-rk-muted mt-1 block">{LAYOUTS.find(l => l.id === draft.layout)?.desc}</small>
+              )}
             </Field>
-            <Field label="배너 제목 *">
+            <Field label={draft.layout === "image-only" ? "배너 제목 * (관리용 — 컨슈머에 노출 안 됨)" : "배너 제목 *"}>
               <input value={draft.title} onChange={e => setDraft({ ...draft, title: e.target.value })}
+                placeholder={draft.layout === "image-only" ? "이미지 전용 모드 — 관리 라벨로만 사용" : ""}
                 className="border border-rk-line rounded px-2 py-1 text-[14px]" />
             </Field>
-            <Field label="보조 카피">
+            <Field label={draft.layout === "image-only" ? "보조 카피 (이미지 전용 모드에선 숨김)" : "보조 카피"}>
               <input value={draft.subtitle} onChange={e => setDraft({ ...draft, subtitle: e.target.value })}
-                className="border border-rk-line rounded px-2 py-1 text-[14px]" />
+                placeholder={draft.layout === "image-only" ? "이미지 전용 모드에선 표시되지 않음" : ""}
+                disabled={draft.layout === "image-only"}
+                className="border border-rk-line rounded px-2 py-1 text-[14px] disabled:bg-rk-soft disabled:text-rk-faint" />
             </Field>
-            <Field label="이미지 URL (선택)">
+            <Field label={draft.layout === "image-only" ? "이미지 URL *" : "이미지 URL (선택)"}>
               <input value={draft.imageUrl} onChange={e => setDraft({ ...draft, imageUrl: e.target.value })}
                 placeholder="https://..."
                 className="border border-rk-line rounded px-2 py-1 text-[14px] font-mono" />
             </Field>
-            <Field label="CTA 버튼">
+            <Field label={draft.layout === "image-only" ? "제품명 / CTA 라벨 (이미지 위 버튼 숨김, 전체 클릭만 사용)" : "CTA 버튼 (제품명 / 라벨)"}>
               <input value={draft.ctaLabel} onChange={e => setDraft({ ...draft, ctaLabel: e.target.value })}
+                placeholder="예: 자세히 보기 / MEGA ICE 얼음정수기"
                 className="border border-rk-line rounded px-2 py-1 text-[14px]" />
             </Field>
-            <Field label="CTA 링크">
+            <Field label="상세 URL (CTA 링크)">
               <input value={draft.ctaHref} onChange={e => setDraft({ ...draft, ctaHref: e.target.value })}
-                placeholder="/p/{partnerCode}/products/..."
+                placeholder="https://skmagic-shop.com/p/{partnerCode}/products/..."
                 className="border border-rk-line rounded px-2 py-1 text-[14px]" />
+            </Field>
+            <Field label="배너 전체 영역 클릭">
+              <label className="flex items-center gap-2 text-[13px] text-rk-ink cursor-pointer mt-1">
+                <input
+                  type="checkbox"
+                  checked={draft.fullClickable}
+                  onChange={e => setDraft({ ...draft, fullClickable: e.target.checked })}
+                  className="accent-rk-navy"
+                />
+                <span>활성 — CTA 버튼뿐 아니라 <b>배너 전체 영역 클릭</b> 시에도 상세 URL 로 이동</span>
+              </label>
+              {draft.layout === "image-only" && !draft.fullClickable && (
+                <small className="text-[11px] text-rk-orange-deep mt-1 block">⚠ 이미지 전용 모드는 CTA 버튼이 숨겨지므로 전체 클릭을 켜야 링크가 동작합니다.</small>
+              )}
             </Field>
             <Field label="스탬프 텍스트 (promo-stamp)">
               <input value={draft.stampText} onChange={e => setDraft({ ...draft, stampText: e.target.value })}
@@ -232,16 +261,26 @@ export default function BannerTemplateManager() {
         <div className="grid grid-cols-2 gap-2">
           {list.map(t => (
             <div key={t.id} className="bg-rk-soft-2 border border-rk-line rounded-md overflow-hidden">
-              <div className="h-[80px] flex items-center justify-center text-[13px] font-medium px-3"
-                   style={{ background: `linear-gradient(135deg, ${t.bgColor1}, ${t.bgColor2})`, color: t.textColor }}>
-                {t.title}
+              {/* 미리보기 — image-only 면 이미지만 풀-블리드, 그 외엔 그라데이션 + 제목 */}
+              <div className="h-[80px] relative overflow-hidden" style={{ background: `linear-gradient(135deg, ${t.bgColor1}, ${t.bgColor2})` }}>
+                {t.layout === "image-only" && t.imageUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={t.imageUrl} alt={t.name} className="absolute inset-0 w-full h-full object-cover" />
+                ) : (
+                  <div className="h-full flex items-center justify-center text-[13px] font-medium px-3" style={{ color: t.textColor }}>
+                    {t.title}
+                  </div>
+                )}
               </div>
               <div className="px-3 py-2">
                 <div className="flex items-baseline justify-between gap-2">
                   <b className="text-[13px] text-rk-ink truncate">{t.name}</b>
                   <span className={"text-[11px] px-1.5 py-px rounded font-medium " + (t.status === "active" ? "bg-rk-tint-green text-rk-success" : "bg-rk-soft text-rk-muted")}>{t.status}</span>
                 </div>
-                <small className="text-[12px] text-rk-muted block">{t.category ?? "—"} · {LAYOUTS.find(l => l.id === t.layout)?.label ?? t.layout}</small>
+                <small className="text-[12px] text-rk-muted block">
+                  {t.category ?? "—"} · {LAYOUTS.find(l => l.id === t.layout)?.label ?? t.layout}
+                  {t.fullClickable && <span className="ml-1 text-[10px] px-1 py-px rounded bg-rk-tint-blue text-rk-info font-medium">전체 클릭</span>}
+                </small>
                 {t.description && <p className="text-[11px] text-rk-text mt-1 m-0 leading-[1.4] line-clamp-2">{t.description}</p>}
                 <div className="flex gap-2 mt-2">
                   <button type="button" onClick={() => startEdit(t)} disabled={editing !== null}
