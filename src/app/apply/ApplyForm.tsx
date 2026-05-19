@@ -115,8 +115,8 @@ export default function ApplyForm() {
 
   return (
     <form onSubmit={submit} className="bg-white border border-rk-line rounded-lg p-6 md:p-8">
-      <h3 className="text-[18px] font-bold text-rk-ink mb-1">📝 분양 신청서</h3>
-      <p className="text-[12px] text-rk-muted m-0 mb-5">
+      <h3 className="text-[20px] font-bold text-rk-ink mb-1.5 tracking-[-.01em]">📝 분양 신청서</h3>
+      <p className="text-[14px] text-rk-text m-0 mb-5 leading-[1.6]">
         모든 항목 작성 후 제출 — 본사 운영팀 검토 후 1~2 영업일 내 연락드립니다.
       </p>
 
@@ -180,18 +180,18 @@ export default function ApplyForm() {
         </Field>
       </div>
 
-      <div className="text-[11px] text-rk-muted leading-[1.6] mt-3">
-        ⓘ 신청 시 <a href="/legal/privacy" className="text-rk-info underline">개인정보 수집·이용</a>에 동의한 것으로 간주합니다 (3년 보유 후 자동 익명화).
+      <div className="text-[12px] text-rk-text leading-[1.6] mt-3">
+        ⓘ 신청 시 <a href="/legal/privacy" className="text-rk-info underline font-medium">개인정보 수집·이용</a>에 동의한 것으로 간주합니다 (3년 보유 후 자동 익명화).
       </div>
 
       {error && (
-        <div className="bg-rk-tint-red text-rk-sale text-[12px] px-3 py-2 rounded mt-3">⚠ {error}</div>
+        <div className="bg-rk-tint-red text-rk-sale text-[13px] px-3 py-2 rounded mt-3 font-medium">⚠ {error}</div>
       )}
 
       <button
         type="submit"
         disabled={busy}
-        className="w-full mt-5 bg-rk-orange hover:bg-rk-orange-deep disabled:bg-rk-muted text-white border-0 py-3 rounded text-[14px] font-semibold cursor-pointer transition-colors"
+        className="w-full mt-5 bg-rk-orange hover:bg-rk-orange-deep disabled:bg-rk-muted text-white border-0 py-3.5 rounded text-[15px] font-semibold cursor-pointer transition-colors"
       >
         {busy ? "접수 중…" : "분양 신청서 제출"}
       </button>
@@ -200,14 +200,14 @@ export default function ApplyForm() {
 }
 
 const INPUT =
-  "w-full px-3 py-2 border border-rk-line rounded text-[13px] outline-none focus:border-rk-navy bg-white";
+  "w-full px-3 py-2.5 border border-rk-line rounded text-[14px] outline-none focus:border-rk-navy bg-white text-rk-ink placeholder:text-rk-faint";
 
 function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-[11px] text-rk-muted mb-1 font-medium">
+      <label className="block text-[13px] text-rk-ink mb-1.5 font-semibold">
         {label}
-        {required && <span className="text-rk-sale ml-0.5">*</span>}
+        {required && <span className="text-rk-sale ml-1">*</span>}
       </label>
       {children}
     </div>
