@@ -250,8 +250,8 @@ export default function LiveLeads() {
                   <td className="px-1.5 py-2.5 border-b border-rk-line-2">
                     <b className="rk-num text-rk-ink">{formatTime(l.createdAt)}</b>
                     <br />
-                    <small className={l.minutesAgo > 60 ? "text-rk-orange-deep" : l.minutesAgo > 10 ? "text-rk-warn" : "text-rk-muted"}>
-                      ⏱ {l.minutesAgo === 0 ? "방금" : `${l.minutesAgo}분 전`}
+                    <small className={ageTone(l.minutesAgo)}>
+                      ⏱ {formatAge(l.minutesAgo)}
                     </small>
                   </td>
                   <td className="px-1.5 py-2.5 border-b border-rk-line-2">
@@ -371,3 +371,29 @@ function formatTime(iso: string): string {
   return `${d.getMonth() + 1}/${d.getDate()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 function pad(n: number) { return n < 10 ? "0" + n : String(n); }
+
+/**
+ * 인입 시간 표시 — 경과 시간 크기별 단위 자동 전환.
+ *   < 1분    "방금"
+ *   < 60분   "N분 전"
+ *   < 24시간 "N시간 전"
+ *   < 7일    "N일 전"
+ *   ≥ 7일    "N주 전"
+ */
+function formatAge(minutesAgo: number): string {
+  if (minutesAgo < 1) return "방금";
+  if (minutesAgo < 60) return `${minutesAgo}분 전`;
+  const hours = Math.floor(minutesAgo / 60);
+  if (hours < 24) return `${hours}시간 전`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}일 전`;
+  const weeks = Math.floor(days / 7);
+  return `${weeks}주 전`;
+}
+
+/** 경과 시간에 따른 강조 톤 — 오래된 인입일수록 진한 색. */
+function ageTone(minutesAgo: number): string {
+  if (minutesAgo > 60) return "text-rk-orange-deep"; // 1시간 이상 (당일 후반 + 오늘 이후)
+  if (minutesAgo > 10) return "text-rk-warn";        // 10~60분
+  return "text-rk-muted";                            // 10분 미만 (응대 여유)
+}
