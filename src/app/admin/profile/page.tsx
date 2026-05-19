@@ -3,6 +3,7 @@ import Link from "next/link";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import PasswordChangeForm from "@/components/PasswordChangeForm";
+import ProfileEditForm from "@/components/ProfileEditForm";
 
 export const metadata = { title: "내 계정" };
 export const dynamic = "force-dynamic";
@@ -28,7 +29,7 @@ export default async function ProfilePage({
       partnerId: true, lastLoginAt: true, createdAt: true,
       mustChangePassword: true, passwordUpdatedAt: true,
       partner: { select: { partnerName: true } },
-      seller: { select: { sellerCode: true, name: true } },
+      seller: { select: { sellerCode: true, name: true, phone: true } },
     },
   });
   if (!user) redirect("/login");
@@ -91,6 +92,18 @@ export default async function ProfilePage({
             <dd className="text-rk-ink rk-num text-[13px]">{user.createdAt.toISOString().slice(0, 10)}</dd>
           </dl>
         </div>
+
+        {/* force 모드(첫 로그인 비번 변경)에서는 기본 정보 편집 숨김 — 비밀번호 변경에만 집중. */}
+        {!isForce && (
+          <ProfileEditForm
+            initial={{
+              name: user.name ?? "",
+              email: user.email,
+              phone: user.seller?.phone ?? null,
+            }}
+            role={user.role as "hq" | "partner_admin" | "seller"}
+          />
+        )}
 
         <PasswordChangeForm forceChange={isForce} />
 
