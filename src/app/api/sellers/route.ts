@@ -1,17 +1,21 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import bcrypt from "bcryptjs";
+import { randomInt } from "crypto";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { HQ_VIEW_COOKIE, gatePartnerOrHq } from "@/lib/effectivePartner";
 import { normalizeKoreanPhone } from "@/lib/sellerPhone";
 import { generateSellerCode } from "@/lib/sellerCode";
 
-/** 임시 비밀번호 — 8자 base32 (혼동 방지: O/0/I/1 제외). approvals/[id]/route.ts 와 동일. */
+/**
+ * 임시 비밀번호 — 8자 base32 (혼동 방지: O/0/I/1 제외).
+ * P0-3: crypto.randomInt CSPRNG 사용. Math.random 은 V8 내부 상태 복원 공격에 취약.
+ */
 function generateTempPassword(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let out = "";
-  for (let i = 0; i < 8; i++) out += chars[Math.floor(Math.random() * chars.length)];
+  for (let i = 0; i < 8; i++) out += chars[randomInt(0, chars.length)];
   return out;
 }
 

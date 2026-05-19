@@ -5,7 +5,11 @@
  *   - 영문 대문자 / 소문자 / 숫자 / 특수문자 4종 모두 포함
  *   - 이메일 일부와 동일하지 않을 것
  *   - 흔한 패턴(qwerty, password 등) 금지
+ *
+ * P0-3: 임시 비밀번호 생성은 crypto.randomInt 사용 (Math.random 은 V8 PRNG
+ * 복원 공격에 취약). 단일 비번 노출 시 후속 비번이 예측되는 사고 방지.
  */
+import { randomInt } from "crypto";
 
 const MIN_LENGTH = 12;
 const MAX_LENGTH = 64;
@@ -89,8 +93,9 @@ export function generateTempPassword(): string {
   const DIGIT = "23456789";                 // 0, 1 제외
   const SPECIAL = "!@#$%^&*";               // 안전한 특수문자만
 
+  // P0-3: crypto.randomInt (CSPRNG) 사용 — Math.random() 의 V8 내부 상태 복원 공격 차단.
   const pick = (s: string, n: number) =>
-    Array.from({ length: n }, () => s[Math.floor(Math.random() * s.length)]);
+    Array.from({ length: n }, () => s[randomInt(0, s.length)]);
 
   const chars = [
     ...pick(UPPER, 3),
@@ -99,9 +104,9 @@ export function generateTempPassword(): string {
     ...pick(SPECIAL, 3),
   ];
 
-  // 셔플
+  // Fisher-Yates 셔플 — randomInt 로 cryptographically secure.
   for (let i = chars.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const j = randomInt(0, i + 1);
     [chars[i], chars[j]] = [chars[j], chars[i]];
   }
   return chars.join("");
