@@ -85,9 +85,15 @@ function buildMessage(channel: Channel, url: string): string {
   }
 }
 
-export default function ApplyShareClient({ baseUrl }: { baseUrl: string }) {
+type FormKind = "landing" | "simple";
+
+export default function ApplyShareClient({ landingUrl, simpleUrl }: { landingUrl: string; simpleUrl: string }) {
   const [campaign, setCampaign] = useState("apply-2026");
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  // 어떤 페이지 링크를 줄지 — 단순 신청서(/apply/form) 또는 안내+신청서(/apply)
+  const [kind, setKind] = useState<FormKind>("simple");
+
+  const baseUrl = kind === "simple" ? simpleUrl : landingUrl;
 
   // 기본(파라미터 없는) URL — 가장 깔끔. UTM 없는 채널 (예: 직접 안내) 용
   const cleanUrl = baseUrl;
@@ -113,6 +119,31 @@ export default function ApplyShareClient({ baseUrl }: { baseUrl: string }) {
 
   return (
     <div className="flex flex-col gap-4">
+      {/* 페이지 종류 토글 */}
+      <section className="bg-white border border-rk-line rounded-lg p-4">
+        <h3 className="text-[14px] font-semibold text-rk-ink mb-2">공유할 페이지</h3>
+        <div className="flex gap-2 flex-wrap">
+          <button
+            type="button"
+            onClick={() => setKind("simple")}
+            className={"flex-1 min-w-[200px] text-left px-3 py-2.5 rounded border-2 cursor-pointer transition-colors " + (kind === "simple" ? "bg-rk-tint-orange border-rk-orange text-rk-orange-deep" : "bg-white border-rk-line text-rk-text hover:border-rk-navy")}
+          >
+            <b className="block text-[13px]">🪶 단순 신청서</b>
+            <small className="text-[11px] opacity-75 block mt-0.5">신청서만 노출 (랜딩 X) — 카톡/문자 등 짧은 안내에 적합</small>
+            <small className="text-[11px] font-mono opacity-60 block mt-1 break-all">{simpleUrl}</small>
+          </button>
+          <button
+            type="button"
+            onClick={() => setKind("landing")}
+            className={"flex-1 min-w-[200px] text-left px-3 py-2.5 rounded border-2 cursor-pointer transition-colors " + (kind === "landing" ? "bg-rk-tint-orange border-rk-orange text-rk-orange-deep" : "bg-white border-rk-line text-rk-text hover:border-rk-navy")}
+          >
+            <b className="block text-[13px]">📋 안내 + 신청서 (랜딩)</b>
+            <small className="text-[11px] opacity-75 block mt-0.5">패키지·수익모델·FAQ 포함 — 네이버 카페·블로그 등에 적합</small>
+            <small className="text-[11px] font-mono opacity-60 block mt-1 break-all">{landingUrl}</small>
+          </button>
+        </div>
+      </section>
+
       {/* 기본 링크 + QR */}
       <section className="bg-white border border-rk-line rounded-lg p-4">
         <h3 className="text-[14px] font-semibold text-rk-ink mb-2">기본 링크 (파라미터 없음)</h3>

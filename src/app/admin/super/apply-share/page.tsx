@@ -11,7 +11,8 @@ export default async function ApplyShareLinkPage() {
   const session = await auth();
   if (!session?.user || session.user.role !== "hq") redirect("/login");
 
-  const applyUrl = `${SITE_URL}/apply`;
+  const landingUrl = `${SITE_URL}/apply`;
+  const simpleUrl = `${SITE_URL}/apply/form`;
 
   return (
     <>
@@ -22,7 +23,7 @@ export default async function ApplyShareLinkPage() {
         협력점 모집용 분양신청 페이지 링크 · 카톡/문자/네이버 카페 등 채널별 공유 · 유입 경로 자동 추적 (UTM).
       </p>
 
-      <ApplyShareClient baseUrl={applyUrl} />
+      <ApplyShareClient landingUrl={landingUrl} simpleUrl={simpleUrl} />
 
       <div className="mt-3 bg-rk-tint-blue text-rk-info px-3 py-2 rounded text-[13px] leading-[1.6]">
         ⓘ <b>채널별 링크</b>를 보내면 마케팅 분석에서 어떤 채널이 효과적이었는지 자동 집계됩니다.
