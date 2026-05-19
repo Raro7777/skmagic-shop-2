@@ -21,12 +21,12 @@ export default async function FranchiseDashboard() {
         {partner?.partnerName ?? "협력점"} 운영 대시보드
       </h1>
       <p className="text-rk-muted text-[14px] mb-[18px]">
-        {partner?.brandLabel ?? "—"} · 다음 정산일 5/15
+        {partner?.region ? `${partner.region} · ` : ""}{partner?.brandLabel ?? "—"}
       </p>
 
       <HqBroadcastBanner />
 
-      <KpiGrid />
+      <KpiGrid partnerCode={partnerCode ?? null} />
       <LiveLeads />
       <SettlementSummary />
 
