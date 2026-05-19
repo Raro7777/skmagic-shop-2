@@ -40,9 +40,17 @@ export default auth(async (req) => {
     const isStaticAsset = /\.[a-z0-9]{2,5}$/i.test(path);
     if (isStaticAsset) {
       // 통과
-    } else if (path.startsWith("/p/") || path === "/p" || path.startsWith("/admin") || path.startsWith("/login") || path.startsWith("/api/auth")) {
-      // 이미 partner namespace 거나 admin/login (인증 게이트가 알아서 처리) — 그대로 통과
-    } else if (path.startsWith("/preview/")) {
+    } else if (
+      path.startsWith("/p/") || path === "/p" ||
+      path.startsWith("/admin") ||
+      path.startsWith("/login") ||
+      path.startsWith("/api/auth") ||
+      path.startsWith("/apply") ||
+      path.startsWith("/legal/") ||
+      path.startsWith("/region/")
+    ) {
+      // 이미 partner namespace 거나 본사 공통 페이지 (분양/약관/지역 SEO) — 그대로 통과
+    } else if (path.startsWith("/preview/") || path === "/preview") {
       // customDomain 으로 들어온 컨슈머에게 PC 프리뷰 노출 금지
       return new NextResponse("Not Found", { status: 404 });
     } else {
