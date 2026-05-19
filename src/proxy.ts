@@ -98,7 +98,9 @@ export default auth(async (req) => {
   if (path.startsWith("/admin/franchise") && role !== "partner_admin" && role !== "hq") {
     return NextResponse.redirect(new URL(homeFor(role), req.nextUrl));
   }
-  if (path.startsWith("/admin/seller") && role !== "seller" && role !== "hq") {
+  // 영업자 콘솔: seller 본인 외에 hq / partner_admin 임시 진입(impersonation) 허용.
+  // 실제 본인 협력점 소속 여부는 effectiveSeller 가 cookie 기반으로 검증.
+  if (path.startsWith("/admin/seller") && role !== "seller" && role !== "hq" && role !== "partner_admin") {
     return NextResponse.redirect(new URL(homeFor(role), req.nextUrl));
   }
 

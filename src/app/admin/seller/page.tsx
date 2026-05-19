@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { auth } from "@/auth";
-import { getSellerDashboard } from "@/lib/sellerDashboard";
+import { getSellerDashboardBySellerId } from "@/lib/sellerDashboard";
+import { getEffectiveSeller } from "@/lib/effectiveSeller";
 
 export const metadata = { title: "내 대시보드 · 영업자" };
 export const dynamic = "force-dynamic";
@@ -8,9 +8,9 @@ export const dynamic = "force-dynamic";
 const fmt = (n: number) => n.toLocaleString("ko-KR");
 
 export default async function SellerDashboardPage() {
-  const session = await auth();
-  if (!session?.user || session.user.role !== "seller") return null;
-  const data = await getSellerDashboard(session.user.id);
+  const eff = await getEffectiveSeller();
+  if (!eff) return null;
+  const data = await getSellerDashboardBySellerId(eff.sellerId);
   if (!data) return null;
   const { profile, kpi, leads } = data;
   const recentLeads = leads.slice(0, 5);

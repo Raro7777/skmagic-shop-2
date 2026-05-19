@@ -329,6 +329,19 @@ export default function LinksManager({
     if (res.ok) fetchSellers();
   };
 
+  // 영업자 콘솔 임시 진입 — cookie 세팅 후 /admin/seller 로 이동
+  const enterSellerConsole = async (sellerId: string, sellerName: string) => {
+    if (!confirm(`"${sellerName}" 영업자 콘솔로 임시 진입합니다. 진행할까요?`)) return;
+    const res = await fetch("/api/console/enter-seller", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ sellerId }),
+    });
+    const j = await res.json();
+    if (!res.ok) { alert(j.error ?? "진입 실패"); return; }
+    window.location.href = j.redirect ?? "/admin/seller";
+  };
+
   return (
     <section className="bg-white border border-rk-line rounded-lg p-4 mb-3">
       <div className="flex items-center gap-2.5 mb-3 flex-wrap">
@@ -452,6 +465,13 @@ export default function LinksManager({
                     <b className="text-[13px] text-rk-ink">{l.label}</b>
                     {l.type === "seller" && l.seller && (
                       <>
+                        <button
+                          type="button"
+                          onClick={() => enterSellerConsole(l.seller!.id, l.seller!.name)}
+                          className="text-[12px] text-rk-orange-deep hover:text-rk-orange bg-transparent border-0 cursor-pointer font-medium"
+                        >
+                          🎯 콘솔 진입
+                        </button>
                         <button
                           type="button"
                           onClick={() => (editingId === l.seller!.id ? cancelEdit() : startEdit(l.seller!))}

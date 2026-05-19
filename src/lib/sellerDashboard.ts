@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { prisma } from "./prisma";
 import { STATUS_LABEL as STATUS_LABEL_MAP, LEAD_STATUSES, type LeadStatus } from "./leadStatus";
 
@@ -75,6 +76,26 @@ export async function getSellerDashboard(userId: string): Promise<SellerDashboar
     },
   });
   if (!seller) return null;
+  return getSellerDashboardBySellerRow(seller);
+}
+
+/** sellerId 직접 받는 변형 — hq/partner_admin 임시 진입(impersonation) 흐름용. */
+export async function getSellerDashboardBySellerId(sellerId: string): Promise<SellerDashboard | null> {
+  const seller = await prisma.seller.findUnique({
+    where: { id: sellerId },
+    include: {
+      partner: { select: { partnerCode: true, partnerName: true, hotlineNumber: true } },
+    },
+  });
+  if (!seller) return null;
+  return getSellerDashboardBySellerRow(seller);
+}
+
+type SellerWithPartner = Prisma.SellerGetPayload<{
+  include: { partner: { select: { partnerCode: true; partnerName: true; hotlineNumber: true } } };
+}>;
+
+async function getSellerDashboardBySellerRow(seller: SellerWithPartner): Promise<SellerDashboard | null> {
 
   const startOfMonth = new Date();
   startOfMonth.setDate(1); startOfMonth.setHours(0, 0, 0, 0);

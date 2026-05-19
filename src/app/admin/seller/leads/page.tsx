@@ -1,5 +1,5 @@
-import { auth } from "@/auth";
-import { getSellerDashboard } from "@/lib/sellerDashboard";
+import { getSellerDashboardBySellerId } from "@/lib/sellerDashboard";
+import { getEffectiveSeller } from "@/lib/effectiveSeller";
 import SellerLeadActions from "@/components/seller/SellerLeadActions";
 
 export const metadata = { title: "내 lead · 영업자" };
@@ -15,9 +15,9 @@ const STATUS_PILL: Record<string, string> = {
 };
 
 export default async function SellerLeadsPage() {
-  const session = await auth();
-  if (!session?.user || session.user.role !== "seller") return null;
-  const data = await getSellerDashboard(session.user.id);
+  const eff = await getEffectiveSeller();
+  if (!eff) return null;
+  const data = await getSellerDashboardBySellerId(eff.sellerId);
   if (!data) return null;
   const { leads } = data;
 

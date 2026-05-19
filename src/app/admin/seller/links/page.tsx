@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { auth } from "@/auth";
-import { getSellerDashboard } from "@/lib/sellerDashboard";
+import { getSellerDashboardBySellerId } from "@/lib/sellerDashboard";
+import { getEffectiveSeller } from "@/lib/effectiveSeller";
 import CopyLink from "@/components/seller/CopyLink";
 import { SITE_URL } from "@/lib/constants/site";
 
@@ -8,9 +8,9 @@ export const metadata = { title: "공유 링크 · 영업자" };
 export const dynamic = "force-dynamic";
 
 export default async function SellerLinksPage() {
-  const session = await auth();
-  if (!session?.user || session.user.role !== "seller") return null;
-  const data = await getSellerDashboard(session.user.id);
+  const eff = await getEffectiveSeller();
+  if (!eff) return null;
+  const data = await getSellerDashboardBySellerId(eff.sellerId);
   if (!data) return null;
   const { profile } = data;
 
