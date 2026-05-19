@@ -185,10 +185,17 @@ export default function BannerTemplateManager() {
                 disabled={draft.layout === "image-only"}
                 className="border border-rk-line rounded px-2 py-1 text-[14px] disabled:bg-rk-soft disabled:text-rk-faint" />
             </Field>
-            <Field label={draft.layout === "image-only" ? "이미지 URL *" : "이미지 URL (선택)"}>
-              <input value={draft.imageUrl} onChange={e => setDraft({ ...draft, imageUrl: e.target.value })}
-                placeholder="https://..."
-                className="border border-rk-line rounded px-2 py-1 text-[14px] font-mono" />
+            <Field label={draft.layout === "image-only" ? "이미지 업로드 * (≤ 8MB, WebP 자동 변환)" : "이미지 업로드 (≤ 8MB, WebP 자동 변환 · 선택)"}>
+              <ImageUploadField
+                value={draft.imageUrl}
+                onChange={url => setDraft({ ...draft, imageUrl: url })}
+              />
+              <input
+                value={draft.imageUrl}
+                onChange={e => setDraft({ ...draft, imageUrl: e.target.value })}
+                placeholder="또는 https://... URL 직접 입력"
+                className="border border-rk-line rounded px-2 py-1 text-[12px] font-mono mt-1"
+              />
             </Field>
             <Field label={draft.layout === "image-only" ? "제품명 / CTA 라벨 (이미지 위 버튼 숨김, 전체 클릭만 사용)" : "CTA 버튼 (제품명 / 라벨)"}>
               <input value={draft.ctaLabel} onChange={e => setDraft({ ...draft, ctaLabel: e.target.value })}
@@ -303,5 +310,57 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       <span className="text-rk-muted">{label}</span>
       {children}
     </label>
+  );
+}
+
+/** 본사 배너 템플릿용 이미지 업로드 — 협력점 ImageUploadField 와 동일 패턴, endpoint 만 본사 전용. */
+function ImageUploadField({ value, onChange }: { value: string; onChange: (url: string) => void }) {
+  const [uploading, setUploading] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  const handleFile = async (file: File) => {
+    setErr(null);
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/admin/banner-templates/upload-image", { method: "POST", body: fd });
+      const j = await res.json();
+      if (!res.ok) { setErr(j.error ?? "업로드 실패"); return; }
+      onChange(j.url);
+    } catch {
+      setErr("네트워크 오류");
+    } finally { setUploading(false); }
+  };
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      {value && (
+        <div className="flex items-center gap-2">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={value} alt="업로드 미리보기" className="w-[80px] h-[50px] object-cover rounded border border-rk-line" />
+          <button
+            type="button"
+            onClick={() => onChange("")}
+            className="text-[11px] text-rk-sale hover:underline cursor-pointer bg-transparent border-0"
+          >
+            제거
+          </button>
+        </div>
+      )}
+      <input
+        type="file"
+        accept="image/*"
+        disabled={uploading}
+        onChange={e => {
+          const f = e.target.files?.[0];
+          if (f) void handleFile(f);
+          e.target.value = "";
+        }}
+        className="text-[12px]"
+      />
+      {uploading && <small className="text-[11px] text-rk-info">⏳ 업로드 중…</small>}
+      {err && <small className="text-[11px] text-rk-sale">⚠ {err}</small>}
+    </div>
   );
 }
