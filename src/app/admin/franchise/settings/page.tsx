@@ -84,6 +84,7 @@ export default async function SettingsPage() {
           phone: partner.phone,
           businessNumber: partner.businessNumber,
           commerceNumber: partner.commerceNumber,
+          telegramChatId: partner.telegramChatId,
         }}
       />
 

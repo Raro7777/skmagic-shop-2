@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { notifyHq, esc } from "@/lib/telegram";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -92,6 +93,17 @@ export async function POST(req: Request) {
       reason: `applicant=${b.applicantName.trim().slice(0, 32)}`,
     },
   });
+
+  // 본사 텔레그램 알림 — 신규 분양 신청 접수 (fire-and-forget)
+  notifyHq(
+    `🏪 <b>신규 분양 신청 접수</b>\n` +
+      `상호: ${esc(b.storeName.trim())}\n` +
+      `신청자: ${esc(b.applicantName.trim())}\n` +
+      `휴대폰: ${esc(phoneDigits)}\n` +
+      (b.region ? `지역: ${esc(b.region.trim())}\n` : "") +
+      `사업자: ${esc(businessNumberFormatted)}\n` +
+      `\n본사 슈퍼관리자 → 분양 승인 큐에서 검토 부탁드립니다.`,
+  );
 
   return NextResponse.json({
     ok: true,

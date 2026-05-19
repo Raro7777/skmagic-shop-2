@@ -8,6 +8,7 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "./prisma";
 import { rentalSupportFor } from "./rentalSupport";
+import { notifyHq, notifyPartner, esc } from "./telegram";
 import {
   type LeadStatus,
   type ActorRole,
@@ -195,6 +196,34 @@ export async function captureLead(input: {
       rivalCompensationRequested: !!input.rivalCompensationRequested,
     },
   });
+
+  // 텔레그램 알림 — 본사 + 해당 협력점 (fire-and-forget).
+  // 휴대폰은 마스킹된 형태로만 노출 (개인정보 보호).
+  void (async () => {
+    let partnerName: string | null = null;
+    let partnerChatId: string | null = null;
+    if (created.partnerId) {
+      const p = await prisma.partner.findUnique({
+        where: { partnerCode: created.partnerId },
+        select: { partnerName: true, telegramChatId: true },
+      });
+      partnerName = p?.partnerName ?? null;
+      partnerChatId = p?.telegramChatId ?? null;
+    }
+    const masked = maskPhone(phoneRaw);
+    const dupBadge = duplicateStatus === "confirmed" ? " ⚠ 중복(확정)"
+      : duplicateStatus === "possible" ? " ⚠ 중복(의심)"
+      : "";
+    const text =
+      `💬 <b>신규 상담 인입${dupBadge}</b>\n` +
+      `고객: ${esc(created.customerName)} (${esc(masked)})\n` +
+      `상품: ${esc(created.productInterest)}\n` +
+      (created.region ? `지역: ${esc(created.region)}\n` : "") +
+      (partnerName ? `협력점: ${esc(partnerName)}\n` : `귀속: 본사 풀 (협력점 미지정)\n`) +
+      `\n협력점 콘솔 → 상담/문의에서 즉시 응대 가능합니다.`;
+    notifyHq(text);
+    notifyPartner(partnerChatId, text);
+  })();
 
   return toDomain(created);
 }
@@ -390,6 +419,31 @@ export async function updateLeadStatus(input: {
 
     return { updated, logs: logRows };
   });
+
+  // 텔레그램 알림 — apply_submitted 진입 시 (협력점이 본사 승인 요청 큐로 보냄).
+  // chain 안에 apply_submitted 가 포함되면 (from 이 form_ready 등) 알림.
+  if (chain.includes("apply_submitted") && from !== "apply_submitted") {
+    void (async () => {
+      let partnerName: string | null = null;
+      let partnerChatId: string | null = null;
+      if (updated.partnerId) {
+        const p = await prisma.partner.findUnique({
+          where: { partnerCode: updated.partnerId },
+          select: { partnerName: true, telegramChatId: true },
+        });
+        partnerName = p?.partnerName ?? null;
+        partnerChatId = p?.telegramChatId ?? null;
+      }
+      const text =
+        `📤 <b>신청서 본사 제출</b>\n` +
+        `고객: ${esc(updated.customerName)}\n` +
+        `상품: ${esc(updated.productInterest)}\n` +
+        (partnerName ? `협력점: ${esc(partnerName)}\n` : "") +
+        `\n본사 슈퍼관리자 → 인증 큐로 진입했습니다. 검토 부탁드립니다.`;
+      notifyHq(text);
+      notifyPartner(partnerChatId, text);
+    })();
+  }
 
   return {
     lead: toDomain(updated),

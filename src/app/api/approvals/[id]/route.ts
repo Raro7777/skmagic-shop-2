@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { randomBytes } from "crypto";
+import { notifyHq, esc } from "@/lib/telegram";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -206,6 +207,27 @@ export async function PATCH(
 
     return { updated, sideEffect };
   });
+
+  // 본사 텔레그램 알림 — 분양 승인 처리 결과 기록 (fire-and-forget).
+  // partner_signup 외 다른 kind 도 결과만 짧게 통지.
+  const tag = appr.kind === "partner_signup"
+    ? "🏪 분양 신청"
+    : appr.kind === "commission_increase"
+      ? "💰 수수료 인상"
+      : appr.kind === "settlement_dispute"
+        ? "💳 정산 이의"
+        : "📋 결재";
+  const decision = newStatus === "approved"
+    ? "✅ 승인 완료"
+    : newStatus === "rejected"
+      ? "❌ 반려"
+      : "✓ 처리 완료";
+  notifyHq(
+    `${tag} — ${decision}\n` +
+      `제목: ${esc(appr.title)}\n` +
+      (reviewNote ? `검토 메모: ${esc(reviewNote)}\n` : "") +
+      (result.sideEffect ? `\n${esc(result.sideEffect)}` : ""),
+  );
 
   return NextResponse.json({
     ok: true,

@@ -48,6 +48,7 @@ export async function PATCH(req: Request) {
     rentalSupportAmount: number;
     businessNumber: string | null;
     commerceNumber: string | null;
+    telegramChatId: string | null;
     sellerMarginType: "fixed" | "percent";
     sellerMarginAmount: number;
     sellerMarginPercent: number;
@@ -93,6 +94,14 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ error: "통신판매업 신고번호가 너무 깁니다." }, { status: 400 });
     }
     data.commerceNumber = t || null;
+  }
+  if (b.telegramChatId !== undefined) {
+    const t = b.telegramChatId?.trim() ?? "";
+    // 텔레그램 chat_id 는 정수 (그룹은 -100... 으로 시작) — 숫자/하이픈만 허용, 최대 32자
+    if (t && !/^-?\d{1,32}$/.test(t)) {
+      return NextResponse.json({ error: "텔레그램 chat_id 는 숫자(필요시 앞에 - )만 허용" }, { status: 400 });
+    }
+    data.telegramChatId = t || null;
   }
   if (b.rentalSupportAmount !== undefined) {
     const raw = Math.floor(Number(b.rentalSupportAmount));

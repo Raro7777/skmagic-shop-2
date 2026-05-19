@@ -15,6 +15,7 @@ type InitialProfile = {
   phone: string | null;
   businessNumber: string | null;
   commerceNumber: string | null;
+  telegramChatId: string | null;
 };
 
 export default function PartnerProfileEditor({ initial }: { initial: InitialProfile }) {
@@ -31,6 +32,7 @@ export default function PartnerProfileEditor({ initial }: { initial: InitialProf
   const [phone, setPhone] = useState(initial.phone ?? "");
   const [businessNumber, setBusinessNumber] = useState(initial.businessNumber ?? "");
   const [commerceNumber, setCommerceNumber] = useState(initial.commerceNumber ?? "");
+  const [telegramChatId, setTelegramChatId] = useState(initial.telegramChatId ?? "");
 
   const dirty =
     brandLabel !== initial.brandLabel ||
@@ -40,7 +42,8 @@ export default function PartnerProfileEditor({ initial }: { initial: InitialProf
     hotlineNumber !== initial.hotlineNumber ||
     (phone || null) !== initial.phone ||
     (businessNumber || null) !== initial.businessNumber ||
-    (commerceNumber || null) !== initial.commerceNumber;
+    (commerceNumber || null) !== initial.commerceNumber ||
+    (telegramChatId || null) !== initial.telegramChatId;
 
   const save = async () => {
     setBusy(true);
@@ -58,6 +61,7 @@ export default function PartnerProfileEditor({ initial }: { initial: InitialProf
           phone: phone.trim() || null,
           businessNumber: businessNumber.trim() || null,
           commerceNumber: commerceNumber.trim() || null,
+          telegramChatId: telegramChatId.trim() || null,
         }),
       });
       const j = await res.json();
@@ -78,6 +82,7 @@ export default function PartnerProfileEditor({ initial }: { initial: InitialProf
     setPhone(initial.phone ?? "");
     setBusinessNumber(initial.businessNumber ?? "");
     setCommerceNumber(initial.commerceNumber ?? "");
+    setTelegramChatId(initial.telegramChatId ?? "");
     setFlash(null);
   };
 
@@ -202,6 +207,24 @@ export default function PartnerProfileEditor({ initial }: { initial: InitialProf
           disabled={busy}
           className="border border-rk-line rounded px-2.5 py-1.5 text-[13px] focus:outline-none focus:border-rk-navy disabled:opacity-50"
         />
+
+        {/* 텔레그램 chat_id — 신규 lead/신청서 알림용 */}
+        <label htmlFor="telegramChatId" className="text-rk-muted">텔레그램 chat_id</label>
+        <div className="flex flex-col gap-1">
+          <input
+            id="telegramChatId"
+            type="text"
+            value={telegramChatId}
+            onChange={e => setTelegramChatId(e.target.value)}
+            placeholder="예: 123456789 (받기 안 받으려면 비워두세요)"
+            maxLength={32}
+            disabled={busy}
+            className="border border-rk-line rounded px-2.5 py-1.5 text-[13px] focus:outline-none focus:border-rk-navy disabled:opacity-50 rk-num"
+          />
+          <small className="text-[11px] text-rk-faint leading-[1.5]">
+            본사 봇이 신규 상담/신청서를 이 chat_id 로 알림 발송합니다. 텔레그램에서 <b>@SKmagicShopBot</b> 검색 → 대화 시작 → <code className="font-mono bg-rk-soft px-1 rounded">/start</code> 메시지 보내면 봇이 응답하면서 chat_id 안내합니다 (또는 본사 운영팀 문의).
+          </small>
+        </div>
       </div>
 
       {flash && (

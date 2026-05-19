@@ -25,6 +25,9 @@ model Partner {
   kakaoChannelUrl String?
   ownerName       String?
   phone           String?
+  // 협력점 텔레그램 알림 chat_id (BotFather 봇이 발송, 협력점이 settings 에서 직접 입력).
+  // null 이면 알림 미발송. 본사 알림은 env TELEGRAM_CHAT_ID_HQ 로 별도 처리.
+  telegramChatId  String?
   status          String   @default("active") // active | suspended | closed
   // 메인 페이지 진열 순서 (협력점 자체 편집)
   // 형태: { picks: ["WPU…", …], ranking: { water: […], air: […], bidet: […], mattress: […] } }
