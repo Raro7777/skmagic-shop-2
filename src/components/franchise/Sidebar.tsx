@@ -109,16 +109,6 @@ export default function Sidebar({ user, partnerName }: SidebarProps) {
 
       <h5 className="text-[12px] text-white/40 tracking-[.12em] px-2 mt-1.5 font-medium uppercase">사이트</h5>
       {NAV_SITE.map(item => <NavLink key={item.href} item={item} active={isActive(pathname, item.href)} />)}
-
-      <div className="mt-auto p-2.5 bg-white/[.05] rounded text-[13px]">
-        <b className="text-white font-medium block">📈 빠른 링크</b>
-        <Link href="/admin/super" className="block text-white/70 hover:text-white text-[13px] mt-1.5 no-underline">
-          → 본사 슈퍼관리자 (HQ만)
-        </Link>
-        <Link href="/" className="block text-white/70 hover:text-white text-[13px] mt-1 no-underline">
-          → 허브로
-        </Link>
-      </div>
     </aside>
   );
 }
