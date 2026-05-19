@@ -34,11 +34,6 @@ function managementLabel(p: ConsumerProduct): string {
   return p.managementType;
 }
 
-// 협력점 brandLabel 표시 정규화 — 'SK매직 인증판매점' → 'SK매직 공식 인증판매점'
-function formatBrandLabel(raw: string): string {
-  if (raw === "SK매직 인증판매점") return "SK매직 공식 인증판매점";
-  return raw;
-}
 
 // 설치 가능일 — 오늘 + 1일. 한국 시간대 기준 "M/D(요일)" 라벨.
 const DOW = ["일", "월", "화", "수", "목", "금", "토"];
@@ -154,7 +149,7 @@ export default async function PartnerSiteShell({
               <div className="min-w-0">
                 <div className="font-bold text-[16px] text-rk-ink tracking-[-.02em] leading-tight whitespace-nowrap">{partner.partnerName}</div>
                 {partner.brandLabel && partner.brandLabel !== partner.partnerName && (
-                  <div className="text-[13px] text-rk-muted whitespace-nowrap truncate">{formatBrandLabel(partner.brandLabel)}</div>
+                  <div className="text-[13px] text-rk-muted whitespace-nowrap truncate">{partner.brandLabel}</div>
                 )}
               </div>
             </Link>

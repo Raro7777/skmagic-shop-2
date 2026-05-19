@@ -13,12 +13,9 @@ const ROTATE_MS = 5500;
 export default function ReviewCarousel({
   reviews,
   partnerCode,
-  picksHref,
 }: {
   reviews: ReviewListItem[];
   partnerCode: string;
-  /** 혜택 확인하기 클릭 시 이동 경로 */
-  picksHref?: string;
 }) {
   const [idx, setIdx] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -123,22 +120,7 @@ export default function ReviewCarousel({
         <span className="text-[11px] text-rk-faint rk-num ml-1.5">{idx + 1} / {reviews.length}</span>
       </div>
 
-      {/* 듀얼 CTA */}
-      <div className="grid grid-cols-2 gap-2 mt-4">
-        <a
-          href="#picks"
-          onClick={(e) => { e.preventDefault(); document.querySelector("#picks")?.scrollIntoView({ behavior: "smooth", block: "start" }); }}
-          className="bg-rk-orange hover:bg-rk-orange-deep text-white font-semibold text-[14px] py-3 rounded-lg text-center no-underline cursor-pointer transition-colors"
-        >
-          🎁 혜택 확인하기
-        </a>
-        <Link
-          href={picksHref ?? `/p/${partnerCode}/reviews`}
-          className="bg-rk-navy hover:bg-rk-navy-deep text-white font-semibold text-[14px] py-3 rounded-lg text-center no-underline cursor-pointer transition-colors"
-        >
-          📞 상담받기
-        </Link>
-      </div>
+      {/* 듀얼 CTA 제거 — 하단 고정바 PartnerCta 와 중복되어 삭제 */}
 
       <style jsx>{`
         .review-fade { animation: review-slide 500ms ease-out; }

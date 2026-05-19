@@ -653,8 +653,10 @@ export async function getPartnerHeader(partnerCode: string) {
   if (!partner || partner.status !== "active") return null;
   return {
     partnerCode: partner.partnerCode,
-    partnerName: partner.partnerName,
-    brandLabel: partner.brandLabel,
+    // 본사 정책: 컨슈머 사이트에서는 모든 협력점을 "SK매직 공식인증점" 단일 브랜드로 노출.
+    // 협력점 고유명(인터넷끝판왕 등)은 admin/franchise 콘솔에서만 사용.
+    partnerName: CONSUMER_BRAND_NAME,
+    brandLabel: CONSUMER_BRAND_NAME,
     region: partner.region,
     address: partner.address,
     businessNumber: partner.businessNumber,

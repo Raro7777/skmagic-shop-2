@@ -56,7 +56,7 @@ export default async function ReviewsPage({
   const [reviews, total, avgAgg, verifiedCount, byRating] = await Promise.all([
     prisma.review.findMany({
       where,
-      orderBy: [{ isVerified: "desc" }, { createdAt: "desc" }],
+      orderBy: { createdAt: "desc" }, // 최신 등록순
       take: 50,
       include: { product: { select: { productCode: true, name: true, modelName: true } } },
     }),
@@ -99,7 +99,7 @@ export default async function ReviewsPage({
             )}
           </div>
           <p className="text-[13px] text-rk-muted mt-2 m-0">
-            {partner.partnerName} 자체 큐레이션 — 실제 가입 고객 후기 우선 표시
+            {partner.partnerName} · 실제 가입 고객 후기 최신순
           </p>
 
           {/* 별점 분포 */}
