@@ -30,6 +30,7 @@ export default async function SellersPage() {
         partnerCode={partner.partnerCode}
         partnerName={partner.partnerName}
         hotline={partner.hotlineNumber}
+        customDomain={partner.customDomainStatus === "verified" ? partner.customDomain : null}
       />
     </>
   );

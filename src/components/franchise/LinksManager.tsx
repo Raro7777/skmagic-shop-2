@@ -76,10 +76,12 @@ export default function LinksManager({
   partnerCode,
   partnerName,
   hotline,
+  customDomain,
 }: {
   partnerCode: string;
   partnerName: string;
   hotline: string;
+  customDomain: string | null;
 }) {
   const [sellers, setSellers] = useState<Seller[]>([]);
   const [origin, setOrigin] = useState("");
@@ -87,6 +89,8 @@ export default function LinksManager({
   const [error, setError] = useState<string | null>(null);
   const [qrFor, setQrFor] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
+  // customDomain 보유 시 그걸 우선 사용. 사용자가 본사 도메인 형태로 보고 싶으면 토글로 전환.
+  const [useShortDomain, setUseShortDomain] = useState(true);
 
   // Form state for adding seller (단일/일괄 통합 — 한 줄=1명, 여러 줄=일괄)
   const [showAdd, setShowAdd] = useState(false);
@@ -130,7 +134,25 @@ export default function LinksManager({
     fetchSellers();
   }, [fetchSellers]);
 
-  const partnerUrl = `${origin}/p/${partnerCode}`;
+  // customDomain (verified) 이 있고 사용자가 단축 도메인 모드를 켰으면 그걸 base 로.
+  // 안그러면 본사 도메인 + /p/{partnerCode} 형태 (origin 은 client mount 후에야 채워짐).
+  const useCustom = !!customDomain && useShortDomain;
+  const customBase = customDomain
+    ? (customDomain.startsWith("http") ? customDomain : `https://${customDomain}`)
+    : null;
+  const partnerUrl = useCustom && customBase
+    ? customBase
+    : origin
+      ? `${origin}/p/${partnerCode}`
+      : `/p/${partnerCode}`;
+
+  const sellerUrlFor = (sellerCode: string) =>
+    useCustom && customBase
+      ? `${customBase}/s/${sellerCode}`
+      : origin
+        ? `${origin}/p/${partnerCode}/s/${sellerCode}`
+        : `/p/${partnerCode}/s/${sellerCode}`;
+
   const links: LinkRow[] = [
     {
       key: "partner",
@@ -148,7 +170,7 @@ export default function LinksManager({
   ];
 
   for (const s of sellers.filter(x => x.status === "active")) {
-    const url = `${origin}/p/${partnerCode}/s/${s.sellerCode}`;
+    const url = sellerUrlFor(s.sellerCode);
     const sellerPhone = s.phone?.trim() || hotline;
     links.push({
       key: `seller-${s.id}`,
@@ -219,7 +241,7 @@ export default function LinksManager({
     // 단일 추가일 때만 카톡 문구 자동 클립보드 복사
     if (added.length === 1 && failed.length === 0) {
       const s = added[0];
-      const sellerUrl = `${origin}/p/${partnerCode}/s/${s.sellerCode}`;
+      const sellerUrl = sellerUrlFor(s.sellerCode);
       const text = makeSellerShareText({
         partnerName,
         sellerName: s.name,
@@ -297,6 +319,37 @@ export default function LinksManager({
           영업자 {sellers.filter(s => s.status === "active").length}명 · 점 링크 1 + 영업자 링크 N개
         </span>
       </div>
+
+      {/* customDomain 보유 협력점 — 단축 vs 본사 도메인 토글 */}
+      {customDomain && (
+        <div className="bg-rk-tint-blue rounded-md px-3 py-2.5 mb-3 flex items-center gap-3 flex-wrap text-[13px]">
+          <span className="text-rk-info">
+            <b>자체 도메인 사용 중</b> — <code className="font-mono bg-white/60 px-1.5 py-0.5 rounded text-[12px]">{customDomain}</code>
+          </span>
+          <div className="ml-auto flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setUseShortDomain(true)}
+              className={
+                "px-2.5 py-1 rounded text-[12px] cursor-pointer border-0 font-medium " +
+                (useShortDomain ? "bg-rk-navy text-white" : "bg-white text-rk-text border border-rk-line")
+              }
+            >
+              단축 (자체 도메인)
+            </button>
+            <button
+              type="button"
+              onClick={() => setUseShortDomain(false)}
+              className={
+                "px-2.5 py-1 rounded text-[12px] cursor-pointer border-0 font-medium " +
+                (!useShortDomain ? "bg-rk-navy text-white" : "bg-white text-rk-text border border-rk-line")
+              }
+            >
+              본사 도메인 형태
+            </button>
+          </div>
+        </div>
+      )}
 
       {error && <div className="bg-rk-tint-red text-rk-sale text-[14px] px-3 py-2 rounded mb-2">⚠ {error}</div>}
 
