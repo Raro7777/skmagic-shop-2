@@ -14,6 +14,10 @@ export default function ApplyForm() {
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [region, setRegion] = useState("");
+  const [address, setAddress] = useState("");
+  const [businessNumber, setBusinessNumber] = useState("");
+  const [commerceNumber, setCommerceNumber] = useState("");
+  const [hotlineNumber, setHotlineNumber] = useState("");
   const [brands, setBrands] = useState(BRANDS[0]);
   const [team, setTeam] = useState(TEAM_SIZES[0]);
   const [plan, setPlan] = useState(PLANS[1]);
@@ -24,6 +28,7 @@ export default function ApplyForm() {
 
   const reset = () => {
     setName(""); setStore(""); setPhone(""); setEmail(""); setRegion("");
+    setAddress(""); setBusinessNumber(""); setCommerceNumber(""); setHotlineNumber("");
     setBrands(BRANDS[0]); setTeam(TEAM_SIZES[0]); setPlan(PLANS[1]); setMemo("");
     setError(null); setDone(null); setBusy(false);
   };
@@ -31,13 +36,19 @@ export default function ApplyForm() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    if (!name.trim() || !store.trim() || !phone.trim()) {
-      setError("이름·상호명·휴대폰은 필수입니다.");
+    if (!name.trim() || !store.trim() || !phone.trim() || !businessNumber.trim() || !address.trim()) {
+      setError("이름·상호명·휴대폰·사업자번호·사업장 주소는 필수입니다.");
       return;
     }
     const digits = phone.replace(/\D/g, "");
     if (digits.length !== 11 || !digits.startsWith("010")) {
       setError("휴대폰은 010으로 시작하는 11자리여야 합니다.");
+      return;
+    }
+    // 사업자번호 — 10자리 숫자 (123-45-67890 / 1234567890 형태 모두 허용)
+    const bizDigits = businessNumber.replace(/\D/g, "");
+    if (bizDigits.length !== 10) {
+      setError("사업자번호는 10자리 숫자여야 합니다 (예: 123-45-67890).");
       return;
     }
 
@@ -52,6 +63,10 @@ export default function ApplyForm() {
           phone: digits,
           email,
           region,
+          address,
+          businessNumber: businessNumber.trim(),
+          commerceNumber: commerceNumber.trim(),
+          hotlineNumber: hotlineNumber.trim(),
           brandsOfInterest: brands,
           teamSize: team,
           plan,
@@ -121,6 +136,15 @@ export default function ApplyForm() {
         <Field label="운영 희망 지역">
           <input value={region} onChange={e => setRegion(e.target.value)} placeholder="예) 서울 강남구 / 경기 부천시" className={INPUT} />
         </Field>
+        <Field label="사업자번호" required>
+          <input value={businessNumber} onChange={e => setBusinessNumber(e.target.value)} placeholder="123-45-67890" inputMode="numeric" className={INPUT + " rk-num"} />
+        </Field>
+        <Field label="통신판매번호">
+          <input value={commerceNumber} onChange={e => setCommerceNumber(e.target.value)} placeholder="제2026-서울강남-1234호 (없으면 비워두세요)" className={INPUT} />
+        </Field>
+        <Field label="협력점 고객센터 번호">
+          <input value={hotlineNumber} onChange={e => setHotlineNumber(e.target.value)} placeholder="02-1234-5678 (없으면 비워두세요)" inputMode="tel" className={INPUT + " rk-num"} />
+        </Field>
         <Field label="관심 브랜드">
           <select value={brands} onChange={e => setBrands(e.target.value)} className={INPUT}>
             {BRANDS.map(b => <option key={b} value={b}>{b}</option>)}
@@ -135,6 +159,12 @@ export default function ApplyForm() {
           <select value={plan} onChange={e => setPlan(e.target.value)} className={INPUT}>
             {PLANS.map(p => <option key={p} value={p}>{p}</option>)}
           </select>
+        </Field>
+      </div>
+
+      <div className="mt-3">
+        <Field label="사업장 주소" required>
+          <input value={address} onChange={e => setAddress(e.target.value)} placeholder="예) 서울특별시 강남구 테헤란로 123, 5층" maxLength={200} className={INPUT} />
         </Field>
       </div>
 

@@ -8,6 +8,10 @@ type ApplicationData = {
   phone?: string;
   email?: string | null;
   region?: string | null;
+  address?: string | null;
+  businessNumber?: string | null;
+  commerceNumber?: string | null;
+  hotlineNumber?: string | null;
   brandsOfInterest?: string | null;
   teamSize?: string | null;
   plan?: string | null;
@@ -180,6 +184,10 @@ export default function ApprovalQueue() {
                     {a.applicationData.phone && (<><dt className="text-rk-muted">휴대폰</dt><dd className="m-0 font-mono text-rk-ink rk-num">{a.applicationData.phone}</dd></>)}
                     {a.applicationData.email && (<><dt className="text-rk-muted">이메일</dt><dd className="m-0 font-mono text-rk-ink">{a.applicationData.email}</dd></>)}
                     {a.applicationData.region && (<><dt className="text-rk-muted">지역</dt><dd className="m-0 text-rk-ink">{a.applicationData.region}</dd></>)}
+                    {a.applicationData.address && (<><dt className="text-rk-muted">사업장 주소</dt><dd className="m-0 text-rk-ink">{a.applicationData.address}</dd></>)}
+                    {a.applicationData.businessNumber && (<><dt className="text-rk-muted">사업자번호</dt><dd className="m-0 font-mono text-rk-ink rk-num">{a.applicationData.businessNumber}</dd></>)}
+                    {a.applicationData.commerceNumber && (<><dt className="text-rk-muted">통신판매번호</dt><dd className="m-0 text-rk-ink">{a.applicationData.commerceNumber}</dd></>)}
+                    {a.applicationData.hotlineNumber && (<><dt className="text-rk-muted">고객센터 번호</dt><dd className="m-0 font-mono text-rk-ink rk-num">{a.applicationData.hotlineNumber}</dd></>)}
                     {a.applicationData.brandsOfInterest && (<><dt className="text-rk-muted">관심 브랜드</dt><dd className="m-0 text-rk-ink">{a.applicationData.brandsOfInterest}</dd></>)}
                     {a.applicationData.teamSize && (<><dt className="text-rk-muted">영업조직</dt><dd className="m-0 text-rk-ink">{a.applicationData.teamSize}</dd></>)}
                     {a.applicationData.plan && (<><dt className="text-rk-muted">희망 패키지</dt><dd className="m-0 text-rk-ink">{a.applicationData.plan}</dd></>)}

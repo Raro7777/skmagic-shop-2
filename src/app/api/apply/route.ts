@@ -21,15 +21,19 @@ export async function POST(req: Request) {
     phone: string;
     email: string;
     region: string;
+    address: string;
+    businessNumber: string;
+    commerceNumber: string;
+    hotlineNumber: string;
     brandsOfInterest: string;
     teamSize: string;
     plan: string;
     memo: string;
   }>;
 
-  if (!b.applicantName?.trim() || !b.storeName?.trim() || !b.phone?.trim()) {
+  if (!b.applicantName?.trim() || !b.storeName?.trim() || !b.phone?.trim() || !b.businessNumber?.trim() || !b.address?.trim()) {
     return NextResponse.json(
-      { error: "필수 항목 누락 (이름·상호명·휴대폰)" },
+      { error: "필수 항목 누락 (이름·상호명·휴대폰·사업자번호·사업장 주소)" },
       { status: 400 }
     );
   }
@@ -37,9 +41,19 @@ export async function POST(req: Request) {
   if (phoneDigits.length !== 11 || !phoneDigits.startsWith("010")) {
     return NextResponse.json({ error: "유효하지 않은 휴대폰 번호" }, { status: 400 });
   }
+  const bizDigits = b.businessNumber.replace(/\D/g, "");
+  if (bizDigits.length !== 10) {
+    return NextResponse.json({ error: "사업자번호는 10자리 숫자여야 합니다" }, { status: 400 });
+  }
+  // 사업자번호 정규화: 10자리 → "XXX-XX-XXXXX" 표준 표기
+  const businessNumberFormatted = `${bizDigits.slice(0, 3)}-${bizDigits.slice(3, 5)}-${bizDigits.slice(5)}`;
 
   const lines: string[] = [];
   if (b.region) lines.push(`지역: ${b.region}`);
+  lines.push(`주소: ${b.address.trim()}`);
+  lines.push(`사업자번호: ${businessNumberFormatted}`);
+  if (b.commerceNumber?.trim()) lines.push(`통신판매번호: ${b.commerceNumber.trim()}`);
+  if (b.hotlineNumber?.trim()) lines.push(`고객센터: ${b.hotlineNumber.trim()}`);
   if (b.brandsOfInterest) lines.push(`관심 브랜드: ${b.brandsOfInterest}`);
   if (b.teamSize) lines.push(`영업조직: ${b.teamSize}`);
   if (b.plan) lines.push(`희망 패키지: ${b.plan}`);
@@ -55,6 +69,10 @@ export async function POST(req: Request) {
     phone: phoneDigits,
     email: b.email?.trim() || null,
     region: b.region?.trim() || null,
+    address: b.address.trim(),
+    businessNumber: businessNumberFormatted,
+    commerceNumber: b.commerceNumber?.trim() || null,
+    hotlineNumber: b.hotlineNumber?.trim() || null,
     brandsOfInterest: b.brandsOfInterest?.trim() || null,
     teamSize: b.teamSize?.trim() || null,
     plan: b.plan?.trim() || null,

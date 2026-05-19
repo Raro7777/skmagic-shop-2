@@ -126,6 +126,10 @@ export async function PATCH(
         phone?: string;
         email?: string | null;
         region?: string | null;
+        address?: string | null;
+        businessNumber?: string | null;
+        commerceNumber?: string | null;
+        hotlineNumber?: string | null;
         brandsOfInterest?: string | null;
         teamSize?: string | null;
         plan?: string | null;
@@ -138,6 +142,10 @@ export async function PATCH(
       const phone = appData?.phone?.trim() || parsed.phone || null;
       const region = appData?.region?.trim() || parsed.region || null;
       const email = appData?.email?.trim() || appr.requestedByEmail?.trim() || parsed.email || null;
+      const address = appData?.address?.trim() || null;
+      const businessNumber = appData?.businessNumber?.trim() || null;
+      const commerceNumber = appData?.commerceNumber?.trim() || null;
+      const hotlineNumber = appData?.hotlineNumber?.trim() || null;
 
       const partnerCode = await generatePartnerCode();
 
@@ -156,6 +164,12 @@ export async function PATCH(
           region,
           phone,
           ownerName: applicantName,
+          address,
+          businessNumber,
+          commerceNumber,
+          // 협력점 자체 hotline 입력 시 그 값으로, 없으면 schema default(본사 1600-2434).
+          // 컨슈머 footer 는 본사 default 와 같으면 "고객센터" 행 숨김 처리.
+          ...(hotlineNumber && { hotlineNumber }),
           status: "active",
           tier: "basic",
         },
