@@ -484,9 +484,47 @@ function DocumentsView({ leadId }: { leadId: string }) {
                 {d.fileName}
               </a>
             </div>
+            <DownloadButton url={d.url} fileName={d.fileName} />
           </li>
         );
       })}
     </ul>
+  );
+}
+
+/** 첨부 파일을 강제 다운로드. fetch → blob → ObjectURL 패턴 (Supabase storage 의 public URL 은 CORS 허용). */
+function DownloadButton({ url, fileName }: { url: string; fileName: string }) {
+  const [busy, setBusy] = useState(false);
+  const handleClick = async () => {
+    setBusy(true);
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("fetch failed");
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(blobUrl);
+    } catch {
+      // 실패 시 새 탭으로 열기 fallback
+      window.open(url, "_blank", "noreferrer");
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      disabled={busy}
+      title={`${fileName} 다운로드`}
+      className="text-[11px] px-2 py-1 rounded bg-rk-soft hover:bg-rk-line-2 text-rk-ink border-0 cursor-pointer disabled:opacity-50 shrink-0"
+    >
+      {busy ? "…" : "⬇"}
+    </button>
   );
 }

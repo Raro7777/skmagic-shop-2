@@ -150,12 +150,20 @@ export default function EnrollmentFormModal({
   const [cardHolder, setCardHolder] = useState(existing?.cardHolder ?? prefill.customerName);
   const [cardExpiry, setCardExpiry] = useState(existing?.cardExpiry ?? "");
 
-  // 사은계좌 — null 이면 자동이체와 동일
-  const initialSameAccount = !existing?.giftBank;
+  // 사은계좌 — null 이면 자동이체와 동일.
+  // 신용카드 결제는 계좌가 없으므로 sameAccount 가 의미 없음 → 초기값/자동 해제 처리.
+  const initialSameAccount = existing?.paymentMethod !== "card" && !existing?.giftBank;
   const [sameAccount, setSameAccount] = useState(initialSameAccount);
   const [giftBank, setGiftBank] = useState(existing?.giftBank ?? "");
   const [giftAccount, setGiftAccount] = useState(existing?.giftAccount ?? "");
   const [giftHolder, setGiftHolder] = useState(existing?.giftHolder ?? "");
+
+  // 결제수단 변경 시 — 신용카드로 바뀌면 sameAccount 강제 해제 (자동이체 계좌가 없어 동일 사용 불가)
+  useEffect(() => {
+    if (paymentMethod === "card" && sameAccount) {
+      setSameAccount(false);
+    }
+  }, [paymentMethod, sameAccount]);
 
   const [memo, setMemo] = useState(existing?.memo ?? "");
 
@@ -374,8 +382,9 @@ export default function EnrollmentFormModal({
           cardNumber: paymentMethod === "card" ? cardNumber.replace(/[\s-]/g, "").trim() : null,
           cardHolder: paymentMethod === "card" ? cardHolder.trim() : null,
           cardExpiry: paymentMethod === "card" ? cardExpiry.replace(/[\s-]/g, "").trim() : null,
-          giftBank: sameAccount ? null : giftBank.trim(),
-          giftAccount: sameAccount ? null : giftAccount.trim(),
+          // 신용카드 결제는 자동이체 계좌가 없어 sameAccount 의미 없음 → 항상 별도 사은계좌 사용.
+          giftBank: paymentMethod !== "card" && sameAccount ? null : giftBank.trim(),
+          giftAccount: paymentMethod !== "card" && sameAccount ? null : giftAccount.trim(),
           giftHolder: sameAccount ? null : (giftHolder.trim() || autoDebitHolder.trim()),
           memo: memo.trim() || null,
         },
@@ -787,11 +796,20 @@ export default function EnrollmentFormModal({
 
           {/* 사은계좌 */}
           <Section title="사은계좌">
-            <label className="flex items-center gap-1.5 text-[14px] text-rk-ink cursor-pointer mb-2">
-              <input type="checkbox" checked={sameAccount} onChange={e => setSameAccount(e.target.checked)} className="accent-rk-navy" />
+            <label className={"flex items-center gap-1.5 text-[14px] mb-2 " + (paymentMethod === "card" ? "text-rk-faint cursor-not-allowed" : "text-rk-ink cursor-pointer")}>
+              <input
+                type="checkbox"
+                checked={paymentMethod === "card" ? false : sameAccount}
+                onChange={e => setSameAccount(e.target.checked)}
+                disabled={paymentMethod === "card"}
+                className="accent-rk-navy"
+              />
               자동이체와 동일한 계좌 사용
+              {paymentMethod === "card" && (
+                <small className="text-[12px] text-rk-muted ml-1">(신용카드 결제는 계좌가 없으므로 사은계좌 별도 입력)</small>
+              )}
             </label>
-            {!sameAccount && (
+            {(!sameAccount || paymentMethod === "card") && (
               <div className="grid grid-cols-[1fr_2fr_1fr] gap-2">
                 <Select label="은행" value={giftBank} onChange={setGiftBank} options={KOREAN_BANKS} />
                 <Field label="계좌번호" value={giftAccount} onChange={setGiftAccount} />
@@ -951,6 +969,7 @@ function DocumentsPanel({ leadId, locked }: { leadId: string; locked: boolean })
                     {d.fileName}
                   </a>
                 </div>
+                <DocDownloadButton url={d.url} fileName={d.fileName} />
                 {!locked && (
                   <button type="button" onClick={() => onDelete(d.id)} className="text-rk-sale text-[12px] bg-transparent border-0 cursor-pointer hover:underline">
                     삭제
@@ -962,6 +981,42 @@ function DocumentsPanel({ leadId, locked }: { leadId: string; locked: boolean })
         </ul>
       )}
     </div>
+  );
+}
+
+/** 첨부 파일 강제 다운로드 — fetch → blob → ObjectURL 패턴. */
+function DocDownloadButton({ url, fileName }: { url: string; fileName: string }) {
+  const [busy, setBusy] = useState(false);
+  const handleClick = async () => {
+    setBusy(true);
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("fetch failed");
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(blobUrl);
+    } catch {
+      window.open(url, "_blank", "noreferrer");
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      disabled={busy}
+      title={`${fileName} 다운로드`}
+      className="text-[12px] px-2 py-1 rounded bg-rk-soft hover:bg-rk-line-2 text-rk-ink border-0 cursor-pointer disabled:opacity-50 shrink-0"
+    >
+      {busy ? "…" : "⬇"}
+    </button>
   );
 }
 

@@ -445,6 +445,36 @@ export async function updateLeadStatus(input: {
     })();
   }
 
+  // 텔레그램 알림 — 본사가 회송 (verify_failed = 인증실패, verify_revise = 수정요청).
+  // 협력점이 즉시 보완해서 다시 제출해야 하는 액션 큐로 들어감.
+  if (
+    (finalStatus === "verify_failed" || finalStatus === "verify_revise") &&
+    from !== finalStatus
+  ) {
+    void (async () => {
+      let partnerName: string | null = null;
+      let partnerChatId: string | null = null;
+      if (updated.partnerId) {
+        const p = await prisma.partner.findUnique({
+          where: { partnerCode: updated.partnerId },
+          select: { partnerName: true, telegramChatId: true },
+        });
+        partnerName = p?.partnerName ?? null;
+        partnerChatId = p?.telegramChatId ?? null;
+      }
+      const label = finalStatus === "verify_failed" ? "❌ 인증 실패 (본사 회송)" : "✏ 수정 요청 (본사 회송)";
+      const text =
+        `${label}\n` +
+        `고객: ${esc(updated.customerName)}\n` +
+        `상품: ${esc(updated.productInterest)}\n` +
+        (partnerName ? `협력점: ${esc(partnerName)}\n` : "") +
+        (input.reason ? `\n사유: ${esc(input.reason)}\n` : "") +
+        `\n협력점 콘솔 → 상담/문의에서 회신/재제출 부탁드립니다.`;
+      notifyHq(text);
+      notifyPartner(partnerChatId, text);
+    })();
+  }
+
   return {
     lead: toDomain(updated),
     logs: logs.map(log => ({
