@@ -36,6 +36,10 @@ const won = (n: number | null) =>
 
 type Filter = "all" | "new" | "updated";
 
+type RejectModal =
+  | { kind: "single"; id: string }
+  | { kind: "bulk"; ids: string[] };
+
 export default function CrawlReviewQueue({ cards }: { cards: QueueCard[] }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -46,6 +50,38 @@ export default function CrawlReviewQueue({ cards }: { cards: QueueCard[] }) {
 
   const [filter, setFilter] = useState<Filter>("all");
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  // 변경 카드는 기본 접힘 (헤더만 보고 스캔 → 의심스러운 것만 펼침).
+  // 신규는 기본 펼침 (새 정보라 검토 필요).
+  const [expanded, setExpanded] = useState<Set<string>>(
+    () => new Set(cards.filter(c => c.changeType === "new").map(c => c.id))
+  );
+  const [rejectModal, setRejectModal] = useState<RejectModal | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
+
+  const toggleExpand = (id: string) => {
+    setExpanded(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const expandAllVisible = () => {
+    setExpanded(prev => {
+      const next = new Set(prev);
+      for (const c of visible) next.add(c.id);
+      return next;
+    });
+  };
+
+  const collapseAllVisible = () => {
+    setExpanded(prev => {
+      const next = new Set(prev);
+      for (const c of visible) next.delete(c.id);
+      return next;
+    });
+  };
 
   const visible = useMemo(() => {
     if (filter === "all") return cards;
@@ -155,9 +191,20 @@ export default function CrawlReviewQueue({ cards }: { cards: QueueCard[] }) {
   };
 
   const rejectSelected = () => {
-    const note = window.prompt(`선택된 ${selectedCount}건을 반려합니다. 사유 (선택):`);
-    if (note === null) return; // cancel
-    bulkAct(Array.from(selected), "reject", note || null);
+    setRejectReason("");
+    setRejectModal({ kind: "bulk", ids: Array.from(selected) });
+  };
+
+  const confirmReject = async () => {
+    if (!rejectModal) return;
+    const note = rejectReason.trim() || null;
+    if (rejectModal.kind === "single") {
+      await act(rejectModal.id, "reject", note ?? undefined);
+    } else {
+      await bulkAct(rejectModal.ids, "reject", note);
+    }
+    setRejectModal(null);
+    setRejectReason("");
   };
 
   if (cards.length === 0) {
@@ -257,6 +304,22 @@ export default function CrawlReviewQueue({ cards }: { cards: QueueCard[] }) {
           </>
         )}
 
+        <div className="h-5 w-px bg-rk-line-2 mx-1" />
+        <button
+          type="button"
+          onClick={expandAllVisible}
+          className="text-[13px] text-rk-muted hover:text-rk-ink bg-white border border-rk-line rounded px-2 py-1 cursor-pointer"
+        >
+          ⇣ 모두 펼침
+        </button>
+        <button
+          type="button"
+          onClick={collapseAllVisible}
+          className="text-[13px] text-rk-muted hover:text-rk-ink bg-white border border-rk-line rounded px-2 py-1 cursor-pointer"
+        >
+          ⇡ 모두 접힘
+        </button>
+
         <div className="ml-auto flex items-center gap-1.5">
           {newCount > 0 && (
             <button
@@ -294,6 +357,7 @@ export default function CrawlReviewQueue({ cards }: { cards: QueueCard[] }) {
 
       {visible.map(c => {
         const isSelected = selected.has(c.id);
+        const isExpanded = expanded.has(c.id);
         return (
           <article
             key={c.id}
@@ -309,6 +373,14 @@ export default function CrawlReviewQueue({ cards }: { cards: QueueCard[] }) {
                 onChange={() => toggle(c.id)}
                 className="w-4 h-4 cursor-pointer flex-shrink-0"
               />
+              <button
+                type="button"
+                onClick={() => toggleExpand(c.id)}
+                className="text-rk-muted hover:text-rk-ink bg-transparent border-0 cursor-pointer text-[12px] w-5 h-5 flex items-center justify-center"
+                aria-label={isExpanded ? "접기" : "펼치기"}
+              >
+                {isExpanded ? "▾" : "▸"}
+              </button>
               <span
                 className={
                   "px-1.5 py-px rounded text-[12px] font-semibold " +
@@ -319,11 +391,22 @@ export default function CrawlReviewQueue({ cards }: { cards: QueueCard[] }) {
               >
                 {c.changeType === "new" ? "🆕 신규" : "✏️ 변경"}
               </span>
-              <span className="font-semibold text-rk-ink">{c.name}</span>
+              <button
+                type="button"
+                onClick={() => toggleExpand(c.id)}
+                className="font-semibold text-rk-ink bg-transparent border-0 cursor-pointer p-0 text-left hover:underline"
+              >
+                {c.name}
+              </button>
               <span className="text-rk-muted text-[13px] font-mono">{c.productCode}</span>
               {c.category && (
                 <span className="text-rk-muted text-[13px] bg-rk-soft-2 px-1.5 py-px rounded">
                   {c.category}
+                </span>
+              )}
+              {!isExpanded && c.changeType === "updated" && c.diff.length > 0 && (
+                <span className="text-[12px] text-rk-info bg-rk-tint-blue px-1.5 py-px rounded">
+                  {c.diff.length}개 필드 변경
                 </span>
               )}
               <span className="ml-auto text-[13px] text-rk-muted">
@@ -331,6 +414,7 @@ export default function CrawlReviewQueue({ cards }: { cards: QueueCard[] }) {
               </span>
             </header>
 
+            {isExpanded && (
             <div className="p-4 grid grid-cols-1 md:grid-cols-[1fr_auto] gap-4">
               <div>
                 {c.changeType === "new" ? (
@@ -417,17 +501,25 @@ export default function CrawlReviewQueue({ cards }: { cards: QueueCard[] }) {
                       </tr>
                     </thead>
                     <tbody>
-                      {c.diff.map(d => (
-                        <tr key={d.field} className="border-t border-rk-line-2 align-top">
-                          <td className="pr-2 py-1.5 text-rk-muted">{d.label}</td>
-                          <td className="pr-2 py-1.5 text-rk-orange-deep line-through opacity-80 break-words">
-                            {d.before || "—"}
-                          </td>
-                          <td className="pl-2 py-1.5 text-rk-success font-medium break-words">
-                            {d.after || "—"}
-                          </td>
-                        </tr>
-                      ))}
+                      {c.diff.map(d => {
+                        const delta = computeNumericDelta(d.before, d.after);
+                        return (
+                          <tr key={d.field} className="border-t border-rk-line-2 align-top">
+                            <td className="pr-2 py-1.5 text-rk-muted">{d.label}</td>
+                            <td className="pr-2 py-1.5 text-rk-orange-deep line-through opacity-80 break-words">
+                              {d.before || "—"}
+                            </td>
+                            <td className="pl-2 py-1.5 text-rk-success font-medium break-words">
+                              {d.after || "—"}
+                              {delta && (
+                                <span className={"ml-1.5 text-[12px] font-mono " + (delta.sign === "+" ? "text-rk-orange-deep" : "text-rk-info")}>
+                                  Δ {delta.sign}{delta.amount.toLocaleString("ko-KR")}
+                                </span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
                       {c.diff.length === 0 && (
                         <tr>
                           <td colSpan={3} className="py-2 text-rk-muted text-[13px]">변경된 필드 없음</td>
@@ -451,8 +543,8 @@ export default function CrawlReviewQueue({ cards }: { cards: QueueCard[] }) {
                   type="button"
                   disabled={busyId === c.id || pending || bulkBusy}
                   onClick={() => {
-                    const note = window.prompt("반려 사유 (선택)") ?? undefined;
-                    act(c.id, "reject", note ?? undefined);
+                    setRejectReason("");
+                    setRejectModal({ kind: "single", id: c.id });
                   }}
                   className="flex-1 bg-white hover:bg-rk-soft border border-rk-line text-rk-muted px-3 py-2 rounded text-[14px] cursor-pointer disabled:cursor-not-allowed"
                 >
@@ -460,6 +552,7 @@ export default function CrawlReviewQueue({ cards }: { cards: QueueCard[] }) {
                 </button>
               </div>
             </div>
+            )}
           </article>
         );
       })}
@@ -469,8 +562,76 @@ export default function CrawlReviewQueue({ cards }: { cards: QueueCard[] }) {
           현재 필터에 해당하는 항목이 없습니다.
         </div>
       )}
+
+      {rejectModal && (
+        <div
+          className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4"
+          onClick={() => setRejectModal(null)}
+        >
+          <div
+            className="bg-white rounded-lg p-5 w-full max-w-[480px] shadow-lg"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-baseline justify-between mb-2">
+              <h4 className="text-[15px] font-semibold m-0">
+                {rejectModal.kind === "single"
+                  ? "크롤 항목 반려"
+                  : `${rejectModal.ids.length}건 일괄 반려`}
+              </h4>
+              <button
+                type="button"
+                onClick={() => setRejectModal(null)}
+                className="text-rk-muted hover:text-rk-ink text-[18px] leading-none bg-transparent border-0 cursor-pointer"
+                aria-label="닫기"
+              >
+                ✕
+              </button>
+            </div>
+            <p className="text-[13px] text-rk-muted mb-2 leading-[1.5]">
+              사유 (선택). 본사 검토 로그에 기록됩니다.
+            </p>
+            <textarea
+              value={rejectReason}
+              onChange={e => setRejectReason(e.target.value)}
+              rows={4}
+              autoFocus
+              placeholder="예: 본사몰 표기 오류 — 후속 크롤 결과 대기"
+              className="w-full px-2.5 py-1.5 border border-rk-line rounded text-[13px] resize-y focus:outline-none focus:border-rk-navy"
+            />
+            <div className="flex justify-end gap-2 mt-3">
+              <button
+                type="button"
+                onClick={() => setRejectModal(null)}
+                className="px-3 py-1.5 bg-white border border-rk-line text-rk-muted rounded text-[13px] cursor-pointer hover:bg-rk-soft"
+              >
+                취소
+              </button>
+              <button
+                type="button"
+                disabled={bulkBusy || busyId != null}
+                onClick={confirmReject}
+                className="px-3 py-1.5 bg-rk-sale text-white border-0 rounded text-[13px] cursor-pointer hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                반려 확정
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
+}
+
+/**
+ * before/after 두 문자열에서 숫자만 추출해 차이 산정. 둘 다 숫자가 아니면 null.
+ * 가격/약정기간 같은 숫자 필드의 +/− 차이를 한눈에 보여주기 위함.
+ */
+function computeNumericDelta(before: string, after: string): { sign: "+" | "−"; amount: number } | null {
+  const b = parseFloat(before.replace(/[^\d.-]/g, ""));
+  const a = parseFloat(after.replace(/[^\d.-]/g, ""));
+  if (!Number.isFinite(b) || !Number.isFinite(a) || b === a) return null;
+  const diff = a - b;
+  return { sign: diff > 0 ? "+" : "−", amount: Math.abs(diff) };
 }
 
 function SpecMini({ label, value }: { label: string; value: string }) {
