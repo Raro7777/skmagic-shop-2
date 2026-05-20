@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import PrintButton from "@/components/super/PrintButton";
 import { HQ_COMPANY_NAME } from "@/lib/constants/hq";
+import { calcVat, withVat } from "@/lib/constants/pricing";
 
 export const metadata = { title: "월별 정산서 · 슈퍼관리자" };
 export const dynamic = "force-dynamic";
@@ -139,10 +140,11 @@ export default async function MonthlyReportPage({
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-4 mt-5 pt-4 border-t border-rk-line-2">
+        <div className="grid grid-cols-4 gap-4 mt-5 pt-4 border-t border-rk-line-2">
           <SummaryStat label="활성 협력점" value={String(groups.size)} suffix="곳" />
           <SummaryStat label="정산 항목" value={String(grandCount)} suffix="건" />
-          <SummaryStat label="순수령 총계" value={`₩${fmt(grandTotal)}`} suffix="" tone="success" />
+          <SummaryStat label="공급가 총계" value={`₩${fmt(grandTotal)}`} suffix="" />
+          <SummaryStat label="청구액 (+VAT 10%)" value={`₩${fmt(withVat(grandTotal))}`} suffix="" tone="success" />
         </div>
       </div>
 
@@ -220,15 +222,23 @@ export default async function MonthlyReportPage({
                   <td className="px-2 py-2 text-right rk-num text-rk-ink">{fmt(g.totals.commission)}</td>
                   <td className="px-2 py-2 text-right rk-num text-rk-orange-deep">{g.totals.gift > 0 ? `−${fmt(g.totals.gift)}` : "—"}</td>
                   <td className="px-2 py-2 text-right rk-num text-rk-orange-deep">{g.totals.install > 0 ? `−${fmt(g.totals.install)}` : "—"}</td>
-                  <td className="px-2 py-2 text-right rk-num text-rk-success text-[14px]">₩{fmt(g.totals.net)}</td>
+                  <td className="px-2 py-2 text-right rk-num text-rk-ink text-[14px]">{fmt(g.totals.net)}</td>
+                  <td />
+                </tr>
+                {/* 청구액 = 공급가 + VAT(10%) — 협력점에 송금되는 실제 금액. project-vat-policy. */}
+                <tr className="bg-rk-tint-green font-semibold">
+                  <td colSpan={6} className="px-2 py-2 text-right text-rk-success text-[13px]">
+                    + 부가세 10% ({fmt(calcVat(g.totals.net))}) → <b>청구액</b>
+                  </td>
+                  <td className="px-2 py-2 text-right rk-num text-rk-success text-[15px]">₩{fmt(withVat(g.totals.net))}</td>
                   <td />
                 </tr>
               </tfoot>
             </table>
 
             <div className="mt-3 text-[12px] text-rk-faint leading-[1.5]">
-              ※ 상기 정산 내역은 룰북 20.7에 따라 본사 수수료(기본 + 월 인센티브)에서 협력점 환원(사은품·설치비)을 차감한 순수령액입니다.
-              송금일은 본사 검증 완료 후 영업일 기준 5일 이내입니다.
+              ※ 상기 정산 내역은 룰북 20.7에 따라 본사 수수료(기본 + 월 인센티브)에서 협력점 환원(사은품·설치비)을 차감한 <b>공급가 기준 순수령액</b>입니다.
+              실제 송금/세금계산서는 <b>청구액(공급가 + 부가세 10%)</b> 기준이며, 송금일은 본사 검증 완료 후 영업일 기준 5일 이내입니다.
             </div>
           </section>
         ))
@@ -237,12 +247,20 @@ export default async function MonthlyReportPage({
       {/* Grand total footer */}
       {groups.size > 0 && (
         <div className="bg-rk-navy text-white rounded-lg p-5 print:break-before-page">
-          <div className="flex items-baseline justify-between flex-wrap">
+          <div className="flex items-baseline justify-between flex-wrap gap-3">
             <div>
               <h3 className="text-[15px] font-semibold m-0">{month} 전체 합계</h3>
               <small className="opacity-80 text-[13px]">{groups.size}개 협력점 · {grandCount}건 정산</small>
             </div>
-            <b className="text-[24px] font-bold tracking-[-.02em] rk-num text-[#FFB374]">₩{fmt(grandTotal)}</b>
+            <div className="text-right">
+              <div className="text-[12px] opacity-80">
+                공급가 ₩{fmt(grandTotal)} <span className="opacity-60">+ VAT {fmt(calcVat(grandTotal))}</span>
+              </div>
+              <div className="flex items-baseline gap-1.5 justify-end">
+                <small className="opacity-80">청구액</small>
+                <b className="text-[24px] font-bold tracking-[-.02em] rk-num text-[#FFB374]">₩{fmt(withVat(grandTotal))}</b>
+              </div>
+            </div>
           </div>
         </div>
       )}

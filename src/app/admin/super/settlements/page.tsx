@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import SettlementsActionTable from "@/components/super/SettlementsActionTable";
+import { withVat } from "@/lib/constants/pricing";
 
 export const metadata = { title: "정산 · 슈퍼관리자" };
 export const dynamic = "force-dynamic";
@@ -84,9 +85,13 @@ export default async function SettlementsAllPage() {
       <p className="text-rk-muted text-[14px] mb-[18px]">
         활성 <b className="text-rk-ink">{active.length}</b>건 ·
         본사 GMV <b className="text-rk-ink rk-num">₩{fmt(totalCommission)}</b> ·
-        협력점 송금 합계 <b className="text-rk-ink rk-num">₩{fmt(total)}</b>
+        협력점 송금 공급가 <b className="text-rk-ink rk-num">₩{fmt(total)}</b>
+        {" "}<small className="text-rk-faint">(+VAT 청구 ₩{fmt(withVat(total))})</small>
         {pendingPayoutCount > 0 && (
-          <> · 송금 대기 <b className="text-rk-orange-deep rk-num">{pendingPayoutCount}건 ₩{fmt(pendingPayoutSum)}</b></>
+          <>
+            {" · "}송금 대기 <b className="text-rk-orange-deep rk-num">{pendingPayoutCount}건 ₩{fmt(pendingPayoutSum)}</b>
+            {" "}<small className="text-rk-faint">(+VAT ₩{fmt(withVat(pendingPayoutSum))})</small>
+          </>
         )}
       </p>
 

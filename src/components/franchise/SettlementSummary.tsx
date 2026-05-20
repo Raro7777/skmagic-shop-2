@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import MarginFlowDiagram from "@/components/super/MarginFlowDiagram";
+import { withVat, calcVat } from "@/lib/constants/pricing";
 
 type SettlementRow = {
   id: string;
@@ -68,7 +69,10 @@ export default function SettlementSummary() {
         <div className="ml-auto flex gap-3 items-center">
           {summary && (
             <span className="text-[13px] text-rk-muted">
-              {summary.periodMonth} · <b className="text-rk-ink">{summary.count}건</b> · 합계 <b className="text-rk-ink rk-num">₩{fmt(summary.totalPayout)}</b>
+              {summary.periodMonth} · <b className="text-rk-ink">{summary.count}건</b>
+              {" · "}공급가 <b className="text-rk-ink rk-num">₩{fmt(summary.totalPayout)}</b>
+              {" "}<span className="text-rk-success">→ 청구 <b className="rk-num">₩{fmt(withVat(summary.totalPayout))}</b></span>
+              {" "}<small className="text-rk-faint">(+VAT {fmt(calcVat(summary.totalPayout))})</small>
             </span>
           )}
           <button type="button" onClick={fetchData} className="text-[14px] text-rk-info bg-transparent border-0 cursor-pointer">↻ 새로고침</button>
@@ -143,6 +147,7 @@ export default function SettlementSummary() {
 
       <div className="mt-3 px-3 py-2 bg-rk-tint-blue rounded text-[13px] text-rk-info leading-[1.6]">
         ⓘ 정산은 lead가 <b>설치 완료(done)</b> 상태가 되면 트랜잭션으로 자동 생성됩니다. 본사가 done → 다른 상태로 되돌리면 해당 정산이 자동 <b>취소</b>됩니다.
+        {" "}표시된 금액은 모두 <b>공급가(VAT 제외)</b>이며, 실제 송금/세금계산서는 <b>+ 부가세 10%</b>가 가산된 청구액 기준입니다.
       </div>
 
       {/* 마진 흐름 모달 */}

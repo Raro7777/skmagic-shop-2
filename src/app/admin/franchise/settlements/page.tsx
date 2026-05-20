@@ -7,7 +7,7 @@ export default function SettlementsPage() {
     <>
       <h1 className="text-[20px] font-bold mb-0.5 tracking-[-.02em]">정산</h1>
       <p className="text-rk-muted text-[14px] mb-[18px]">
-        본사가 설치 완료(done)로 처리한 lead가 자동으로 정산 행으로 추가됩니다 · 본사 송금일 5/15
+        본사가 설치 완료(done)로 처리한 lead가 자동으로 정산 행으로 추가됩니다 · 본사 검증 완료 후 영업일 기준 5일 이내 송금
       </p>
 
       <SettlementSummary />

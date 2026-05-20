@@ -21,3 +21,13 @@ export const REFUND_LIMIT_RATIO = 0.6667;
 
 /** 부가가치세율 (10%). 본사 정책표 col15 는 VAT 포함값 → ÷ 1.1 로 공급가액 산출. */
 export const VAT_RATE = 1.1;
+
+/** 공급가 → 부가세액 (10%). 청구서/정산서 분리 표시용. project-vat-policy 메모 참조. */
+export function calcVat(supply: number): number {
+  return Math.round(supply * (VAT_RATE - 1));
+}
+
+/** 공급가 → 청구액 (공급가 + VAT). 협력점 송금/세금계산서 단계에서만 사용. */
+export function withVat(supply: number): number {
+  return supply + calcVat(supply);
+}
