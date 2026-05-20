@@ -1,5 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../prisma";
+import { notifyHq, esc } from "../telegram";
 import type { CrawlAdapter, CrawledProductPayload } from "./types";
 import { skmagicAdapter } from "./skmagic";
 
@@ -164,6 +165,20 @@ export async function runCrawl(opts: {
       data: { lastCrawledAt: new Date() },
     });
 
+    // 본사 텔레그램 알림 — 변경 감지된 경우만 (unchanged 만 있으면 스킵, 스팸 방지).
+    // 본사 슈퍼관리자가 검토 큐(/admin/super/crawl/queue)에서 승인해야 마스터에 반영됨.
+    if (newCount + updatedCount > 0) {
+      notifyHq(
+        `🔄 <b>본사몰 크롤 — 변경 감지</b>\n` +
+          `소스: ${esc(source.name)}\n` +
+          `신규: ${newCount}건\n` +
+          `변경: ${updatedCount}건\n` +
+          `미변경: ${unchangedCount}건\n` +
+          (warnings.length > 0 ? `경고: ${esc(warnings.slice(0, 3).join(" / "))}\n` : "") +
+          `\n본사 슈퍼관리자 → 크롤 검토 큐에서 검수 부탁드립니다.`,
+      );
+    }
+
     return {
       runId: run.id,
       itemCount: items.length,
@@ -181,6 +196,13 @@ export async function runCrawl(opts: {
         errorMessage: err instanceof Error ? err.message : String(err),
       },
     });
+    // 실패는 항상 알림 (네트워크/본사몰 구조 변경 가능성).
+    notifyHq(
+      `🚨 <b>본사몰 크롤 실패</b>\n` +
+        `소스: ${esc(source.name)}\n` +
+        `사유: ${esc(err instanceof Error ? err.message : String(err))}\n` +
+        `\n본사몰 구조 변경 또는 네트워크 점검 필요. /admin/super/crawl 확인.`,
+    );
     throw err;
   }
 }
