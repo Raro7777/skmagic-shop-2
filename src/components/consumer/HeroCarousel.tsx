@@ -63,10 +63,11 @@ export default function HeroCarousel({
   const sectionStyle: React.CSSProperties = cur.kind === "banner"
     ? { background: `linear-gradient(135deg, ${cur.banner.bgColor1}, ${cur.banner.bgColor2})`, color: cur.banner.textColor }
     : { backgroundImage: "radial-gradient(ellipse at 110% 110%, rgba(242,106,31,.4), transparent 50%)" };
-  // 모든 슬라이드 통일 min-h 320px. 3구역 (상/중/하) 수직 리듬 확보.
+  // 모든 슬라이드 750:1000 비율 (3:4) 로 통일. 너비 100% 에 맞춰 세로 자동.
+  // 이미지 배너 (image-only / image-bg) 가 잘리지 않고 꽉 차게.
   const sectionClass = cur.kind === "banner"
-    ? "relative overflow-hidden min-h-[320px] flex flex-col"
-    : "relative bg-rk-navy text-white overflow-hidden min-h-[320px] flex flex-col";
+    ? "relative overflow-hidden aspect-[3/4] flex flex-col"
+    : "relative bg-rk-navy text-white overflow-hidden aspect-[3/4] flex flex-col";
 
   const slideKey = cur.kind === "banner" ? `banner-${cur.banner.id}` : `product-${cur.product.productCode}`;
   const productHrefBase = `/p/${partnerCode}/products`;
@@ -228,7 +229,7 @@ function BannerSlideContent({ banner }: { banner: ActiveBanner }) {
     return (
       <Wrap>
         <div
-          className="banner-html relative flex-1 min-h-[320px]"
+          className="banner-html relative flex-1"
           dangerouslySetInnerHTML={{ __html: banner.htmlContent }}
         />
       </Wrap>
@@ -240,7 +241,7 @@ function BannerSlideContent({ banner }: { banner: ActiveBanner }) {
     const hasOverlay = (banner.title?.trim().length ?? 0) > 0;
     return (
       <Wrap>
-        <div className="relative flex-1 min-h-[320px] w-full">
+        <div className="relative flex-1 w-full">
           {banner.imageUrl && (
             <img src={banner.imageUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
           )}
@@ -410,8 +411,10 @@ function ImageOnlySlide({
     } catch { /* noop */ }
   };
 
+  // 750:1000 비율 고정. 부모 section 의 aspect-[3/4] 가 박스 크기 결정,
+  // 이미지는 그 박스를 object-cover 로 꽉 채움. 750×1000 원본이면 잘림 없음.
   const inner = (
-    <div className="relative w-full min-h-[320px]">
+    <div className="relative w-full h-full">
       {banner.imageUrl ? (
         <img src={banner.imageUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
       ) : (
@@ -425,7 +428,7 @@ function ImageOnlySlide({
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       onTouchStart={() => setPaused(true)}
-      className="relative overflow-hidden min-h-[320px] bg-rk-soft"
+      className="relative overflow-hidden aspect-[3/4] bg-rk-soft"
     >
       {banner.ctaHref ? (
         <Link href={banner.ctaHref} onClick={recordClick} className="block w-full h-full no-underline">
