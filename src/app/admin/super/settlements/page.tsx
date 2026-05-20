@@ -9,14 +9,28 @@ const fmt = (n: number) => n.toLocaleString("ko-KR");
 
 export default async function SettlementsAllPage() {
   const periodMonth = new Date().toISOString().slice(0, 7);
-  const settlements = await prisma.settlement.findMany({
-    where: { periodMonth },
-    orderBy: { createdAt: "desc" },
-    include: {
-      partner: { select: { partnerName: true, ownerName: true } },
-      lead:    { select: { status: true, customerName: true } },
-    },
-  });
+  const [settlements, hqPoolMissing] = await Promise.all([
+    prisma.settlement.findMany({
+      where: { periodMonth },
+      orderBy: { createdAt: "desc" },
+      include: {
+        partner: { select: { partnerName: true, ownerName: true } },
+        lead:    { select: { status: true, customerName: true } },
+      },
+    }),
+    // HQ pool lead 중 install_done 이상까지 도달했으나 Settlement 가 없는 건 — 매출 누락.
+    // 본사가 협력점 배정 후 install_done 재처리하거나 수동으로 정산 행 추가 필요.
+    prisma.lead.findMany({
+      where: {
+        partnerId: null,
+        status: { in: ["install_done", "settle_pending", "settle_done"] },
+        settlement: null,
+      },
+      orderBy: { updatedAt: "desc" },
+      select: { id: true, customerName: true, productInterest: true, status: true, updatedAt: true },
+      take: 10,
+    }),
+  ]);
 
   const active = settlements.filter(s => s.status !== "cancelled");
   const total = active.reduce((s, r) => s + r.netPayout, 0);
@@ -108,6 +122,30 @@ export default async function SettlementsAllPage() {
       <div className="mt-3 bg-rk-tint-blue text-rk-info px-3 py-2 rounded text-[13px]">
         ⓘ 정산대기(settle_pending) lead 의 &quot;💸 송금 완료&quot; 클릭 시 → Lead.status=settle_done · Settlement.status=paid · paidAt 자동 마킹.
       </div>
+
+      {hqPoolMissing.length > 0 && (
+        <div className="mt-3 bg-rk-tint-red border border-rk-sale/30 rounded-lg p-3">
+          <div className="flex items-baseline justify-between mb-2">
+            <b className="text-rk-sale text-[14px]">⚠ HQ pool 정산 누락 — {hqPoolMissing.length}건</b>
+            <small className="text-rk-muted text-[12px]">
+              partner 미배정 + install_done 이상 도달 → Settlement 미생성
+            </small>
+          </div>
+          <ul className="m-0 pl-0 list-none divide-y divide-rk-line">
+            {hqPoolMissing.map(l => (
+              <li key={l.id} className="py-1.5 flex items-center gap-2 text-[13px]">
+                <span className="font-mono text-[11px] text-rk-faint">{l.id.slice(0, 8)}</span>
+                <b className="text-rk-ink">{l.customerName}</b>
+                <span className="text-rk-muted">· {l.productInterest}</span>
+                <span className="ml-auto text-[12px] text-rk-sale">{l.status}</span>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-2 mb-0 text-[12px] text-rk-faint">
+            ※ 본 lead 들은 매출 누락 위험. <a href="/admin/super/installs" className="text-rk-info underline">설치 큐</a>에서 협력점 배정 후 install_done 재처리하거나, 본사가 직접 정산 행을 추가하세요.
+          </p>
+        </div>
+      )}
     </>
   );
 }

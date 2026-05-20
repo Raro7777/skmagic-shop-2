@@ -420,6 +420,31 @@ export async function updateLeadStatus(input: {
     return { updated, logs: logRows };
   });
 
+  // 본사 풀(partnerId=null) lead 가 install_done 까지 도달한 경우 Settlement 미생성.
+  // 매출 누락 가능성이 있어 본사에 즉시 알림 + 로그 메모. 본사가 인지하고 협력점 배정 후
+  // install_done 을 다시 누르거나 수동 정산 보정 필요.
+  if (willCreateSettlement && !settlementPayload && !updated.partnerId) {
+    void (async () => {
+      notifyHq(
+        `⚠ <b>HQ pool 정산 누락</b>\n` +
+          `고객: ${esc(updated.customerName)}\n` +
+          `상품: ${esc(updated.productInterest)}\n` +
+          `lead.partnerId 가 비어 정산 row 가 생성되지 않았습니다.\n` +
+          `\n본사 정산 큐에서 협력점 배정 후 install_done 재처리하거나 수동 정산 행 추가 필요.`,
+      );
+    })();
+    // 운영자가 lead 히스토리에서도 인지 가능하도록 메모.
+    void prisma.leadStatusLog.create({
+      data: {
+        leadId: input.leadId,
+        previousStatus: finalStatus,
+        newStatus: finalStatus,
+        changedById: null,
+        memo: "[정산 누락] HQ pool lead — partner 미배정. 정산 row 미생성.",
+      },
+    }).catch(() => { /* 로그 실패는 본 흐름에 영향 없음 */ });
+  }
+
   // 텔레그램 알림 — apply_submitted 진입 시 (협력점이 본사 승인 요청 큐로 보냄).
   // chain 안에 apply_submitted 가 포함되면 (from 이 form_ready 등) 알림.
   if (chain.includes("apply_submitted") && from !== "apply_submitted") {
