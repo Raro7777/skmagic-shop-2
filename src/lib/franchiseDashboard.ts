@@ -45,20 +45,6 @@ export type PipelineRow = {
   selectedContractPeriod: number | null;
   selectedRentalPrice: number | null;
   rivalCompensationRequested: boolean;
-  /** 신청서 모달 prefill — 자기 점 lead 한정 원본 데이터 */
-  enrollmentPrefill: {
-    customerName: string;
-    phone: string;
-    productCode: string;
-    productName: string;
-    managementMode: "방문형" | "셀프형" | null;
-    contractPeriod: number;
-    visitInterval: string | null;
-    monthlyPrice: number;
-    isRivalCompensation: boolean;
-    giftAmount: number;
-    giftLabel: string | null;
-  };
 };
 
 export type PipelineSnapshot = {
@@ -209,19 +195,6 @@ export async function getOrderPipeline(partnerId: string): Promise<PipelineSnaps
       selectedContractPeriod: l.selectedContractPeriod,
       selectedRentalPrice,
       rivalCompensationRequested: l.rivalCompensationRequested,
-      enrollmentPrefill: {
-        customerName: l.customerName,
-        phone: l.phoneRaw,
-        productCode: l.productCode ?? "",
-        productName: l.productInterest,
-        managementMode: (l.selectedMode === "방문형" || l.selectedMode === "셀프형") ? l.selectedMode : null,
-        contractPeriod: l.selectedContractPeriod ?? 60,
-        visitInterval: null,
-        monthlyPrice: displayRental ?? 0,
-        isRivalCompensation: l.rivalCompensationRequested,
-        giftAmount: policy?.giftAmount ?? 0,
-        giftLabel: policy?.giftLabel ?? null,
-      },
     };
   });
 

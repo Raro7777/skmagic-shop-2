@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { PipelineSnapshot, PipelineRow, StageKey } from "@/lib/franchiseDashboard";
 import { STATUS_PILL, type LeadStatus } from "@/lib/leadStatus";
-import EnrollmentFormModal, { type ExistingFormData } from "./EnrollmentFormModal";
+import EnrollmentFormModal, { type ExistingFormData, type EnrollmentFormModalProps } from "./EnrollmentFormModal";
 
 const STAGE_BG: Record<string, string> = {
   consult:    "bg-rk-tint-blue",
@@ -55,7 +55,12 @@ export default function OrderPipeline({ data }: { data: PipelineSnapshot }) {
   const [error, setError] = useState<string | null>(null);
   const [reasonRow, setReasonRow] = useState<{ id: string; to: LeadStatus } | null>(null);
   const [reasonText, setReasonText] = useState("");
-  const [enrollmentModal, setEnrollmentModal] = useState<{ row: PipelineRow; existing: ExistingFormData | null; autoAdvance: boolean } | null>(null);
+  const [enrollmentModal, setEnrollmentModal] = useState<{
+    row: PipelineRow;
+    prefill: EnrollmentFormModalProps["prefill"];
+    existing: ExistingFormData | null;
+    autoAdvance: boolean;
+  } | null>(null);
 
   const sendUpdate = async (leadId: string, toStatus: LeadStatus, reason?: string) => {
     setError(null);
@@ -86,7 +91,8 @@ export default function OrderPipeline({ data }: { data: PipelineSnapshot }) {
     try {
       const r = await fetch(`/api/leads/${row.id}/enrollment`);
       const j = await r.json();
-      setEnrollmentModal({ row, existing: j.form ?? null, autoAdvance });
+      if (!j.prefill) { setError("lead 정보 로드 실패"); return; }
+      setEnrollmentModal({ row, prefill: j.prefill, existing: j.form ?? null, autoAdvance });
     } catch (e) {
       setError(e instanceof Error ? e.message : "신청서 로드 실패");
     }
@@ -254,7 +260,7 @@ export default function OrderPipeline({ data }: { data: PipelineSnapshot }) {
       {enrollmentModal && (
         <EnrollmentFormModal
           leadId={enrollmentModal.row.id}
-          prefill={enrollmentModal.row.enrollmentPrefill}
+          prefill={enrollmentModal.prefill}
           existing={enrollmentModal.existing}
           autoAdvance={enrollmentModal.autoAdvance}
           onClose={() => setEnrollmentModal(null)}
