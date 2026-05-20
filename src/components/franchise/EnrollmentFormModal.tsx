@@ -350,10 +350,13 @@ export default function EnrollmentFormModal({
     }
   }, [productDetail, currentMatrixOption, rivalApplied, contractPeriod]);
 
-  // 타사보상 불가능한 옵션이면 자동으로 끔
+  // 타사보상 불가능한 옵션이면 자동으로 끔.
+  // 단, productDetail 비동기 로딩 중에는 currentMatrixOption 미정이라 canRival 가 false 인 일시 상태 발생 →
+  // prefill.isRivalCompensation=true 로 들어와도 즉시 꺼지는 race 방지를 위해 productDetail 도착 후에만 평가.
   useEffect(() => {
+    if (!productDetail) return;
     if (rivalApplied && !canRival) setRivalApplied(false);
-  }, [canRival, rivalApplied]);
+  }, [canRival, rivalApplied, productDetail]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
