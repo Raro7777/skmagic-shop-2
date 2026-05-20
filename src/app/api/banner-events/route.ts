@@ -2,6 +2,10 @@
  * POST /api/banner-events — 컨슈머가 보낸 배너 노출/클릭 이벤트 수집.
  * 인증 없음 (public). 본사·협력점만 통계 조회 가능.
  *   body: { bannerId, eventType: "impression"|"click" }
+ *
+ * viewerPartnerId — 컨슈머가 보고 있는 협력점 사이트의 partnerCode 를
+ * Referer 또는 host(customDomain) 에서 server-derive. global 배너 효과를
+ * 협력점별로 분리 분석.
  */
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
@@ -10,6 +14,27 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const ALLOWED = ["impression", "click"] as const;
+
+async function deriveViewerPartner(req: Request): Promise<string | null> {
+  // Referer path 우선
+  const referer = req.headers.get("referer") ?? "";
+  try {
+    const u = new URL(referer);
+    const m = u.pathname.match(/^\/p\/([a-z0-9-]+)(?:\/|$)/i);
+    if (m) return m[1];
+  } catch { /* invalid referer */ }
+
+  // customDomain host
+  const host = (req.headers.get("x-forwarded-host") ?? req.headers.get("host") ?? "").replace(/:\d+$/, "").toLowerCase();
+  if (host) {
+    const p = await prisma.partner.findFirst({
+      where: { customDomain: host, customDomainStatus: "verified", status: "active" },
+      select: { partnerCode: true },
+    });
+    if (p) return p.partnerCode;
+  }
+  return null;
+}
 
 export async function POST(req: Request) {
   let body: unknown;
@@ -31,12 +56,14 @@ export async function POST(req: Request) {
   const xff = req.headers.get("x-forwarded-for");
   const ip = xff ? xff.split(",")[0].trim() : (req.headers.get("x-real-ip") ?? null);
   const userAgent = req.headers.get("user-agent");
+  const viewerPartnerId = await deriveViewerPartner(req);
 
   try {
     await prisma.bannerEvent.create({
       data: {
         bannerId: banner.id,
         partnerId: banner.partnerId,
+        viewerPartnerId,
         eventType: b.eventType,
         ip,
         userAgent,

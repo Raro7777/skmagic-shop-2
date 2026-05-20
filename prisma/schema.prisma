@@ -890,6 +890,9 @@ model BannerEvent {
   id         String   @id @default(cuid())
   bannerId   String
   partnerId  String?  // FK 없이 분석용 캐시. global 배너는 null
+  // 컨슈머가 클릭한 사이트의 협력점 — global 배너 효과를 협력점별로 분리 분석.
+  // 협력점 자기 배너 클릭 시 partnerId == viewerPartnerId.
+  viewerPartnerId String?
   eventType  String   // impression | click
   ip         String?
   userAgent  String?

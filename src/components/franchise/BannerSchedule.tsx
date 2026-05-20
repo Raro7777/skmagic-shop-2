@@ -132,8 +132,26 @@ type Template = {
   spotlightProductCode: string | null;
 };
 
+type GlobalBanner = {
+  id: string;
+  title: string;
+  subtitle: string | null;
+  imageUrl: string | null;
+  bgColor1: string;
+  bgColor2: string;
+  textColor: string;
+  ctaLabel: string | null;
+  ctaHref: string | null;
+  startsAt: string;
+  endsAt: string;
+  priority: number;
+  status: string;
+  layout: string;
+};
+
 export default function BannerSchedule() {
   const [banners, setBanners] = useState<Banner[]>([]);
+  const [globalBanners, setGlobalBanners] = useState<GlobalBanner[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<string | null>(null); // "new" or banner id
@@ -159,9 +177,10 @@ export default function BannerSchedule() {
 
   const load = useCallback(async () => {
     try {
-      const [resBanners, resConfig] = await Promise.all([
+      const [resBanners, resConfig, resGlobal] = await Promise.all([
         fetch("/api/franchise/banners", { cache: "no-store" }),
         fetch("/api/franchise/display-config", { cache: "no-store" }),
+        fetch("/api/franchise/global-banners", { cache: "no-store" }),
       ]);
       if (!resBanners.ok) {
         if (resBanners.status === 401 || resBanners.status === 403) setError("협력점 권한 필요");
@@ -171,6 +190,11 @@ export default function BannerSchedule() {
       const j = await resBanners.json();
       setBanners(j.banners);
       if (j.partnerCode) setPartnerCode(j.partnerCode);
+      // 본사 공통 배너 — read-only 섹션용. 실패해도 무시 (협력점 자기 배너는 정상 로드).
+      if (resGlobal.ok) {
+        const gj = await resGlobal.json();
+        setGlobalBanners(gj.banners ?? []);
+      }
       setError(null);
       if (resConfig.ok) {
         const c = await resConfig.json();
@@ -358,8 +382,48 @@ export default function BannerSchedule() {
     return <div className="bg-white border border-rk-line rounded-lg p-4"><div className="bg-rk-tint-red text-rk-sale text-[14px] px-3 py-2 rounded">⚠ {error}</div></div>;
   }
 
+  // 본사 공통 배너 read-only 섹션용 — 현재 진행중인 것만 노출 (운영자가 적극 인지해야 하는 정보).
+  const activeGlobalBanners = globalBanners.filter(b => {
+    if (b.status !== "active") return false;
+    const now = Date.now();
+    return new Date(b.startsAt).getTime() <= now && now <= new Date(b.endsAt).getTime();
+  });
+
   return (
     <div className="bg-white border border-rk-line rounded-lg p-4">
+      {/* 본사 공통 배너 — read-only. 협력점이 끌 수 없는 강제 push 정책 안내. */}
+      {activeGlobalBanners.length > 0 && (
+        <div className="bg-rk-tint-blue border border-rk-info/30 rounded-md p-3 mb-3">
+          <div className="flex items-baseline gap-2 mb-2">
+            <b className="text-[13px] text-rk-info">📢 본사 공통 배너 — {activeGlobalBanners.length}개 진행중</b>
+            <small className="text-[12px] text-rk-muted">본사가 모든 협력점에 일괄 게시 · 협력점에서 끌 수 없음</small>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            {activeGlobalBanners.map(b => (
+              <div key={b.id} className="bg-white border border-rk-line rounded overflow-hidden flex">
+                <div className="w-[100px] h-[60px] relative shrink-0" style={{ background: `linear-gradient(135deg, ${b.bgColor1}, ${b.bgColor2})` }}>
+                  {b.layout === "image-only" && b.imageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={b.imageUrl} alt={b.title} className="absolute inset-0 w-full h-full object-cover" />
+                  ) : (
+                    <div className="h-full flex items-center justify-center text-[11px] font-medium px-2" style={{ color: b.textColor }}>
+                      {b.title}
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1 px-2.5 py-1.5 min-w-0">
+                  <b className="text-[12px] text-rk-ink block truncate">{b.title}</b>
+                  <small className="text-[11px] text-rk-muted block">{b.startsAt.slice(0, 10)} ~ {b.endsAt.slice(0, 10)} · priority {b.priority}</small>
+                  {b.ctaHref && (
+                    <small className="text-[11px] text-rk-info block truncate font-mono">→ {b.ctaHref}</small>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center gap-2.5 mb-3 flex-wrap">
         <h3 className="text-[14px] font-semibold">🎁 이벤트 / 배너 편성</h3>
         <span className="text-[13px] text-rk-muted">우리 사이트 hero 위에 노출 · 활성 배너 {banners.filter(b => effectiveState(b) === "live").length}개 진행중</span>

@@ -8,6 +8,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { notifyHq, esc } from "@/lib/telegram";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -110,15 +111,25 @@ export async function POST(req: Request) {
   // Phase 5 — 본사 배너 active 생성 시 협력점 콘솔 공지 자동 생성 (사용자 결정 5).
   // draft 면 게시 전이라 공지 생략.
   if (banner.status === "active") {
+    const periodStr = `${banner.startsAt.toISOString().slice(0, 10)} ~ ${banner.endsAt.toISOString().slice(0, 10)}`;
     void prisma.broadcast.create({
       data: {
         tone: "event",
         badge: "📢 본사 공통 배너",
         title: `본사 공통 배너 게시 — ${banner.title}`,
-        body: `본사가 모든 활성 협력점 컨슈머 사이트에 ${banner.title} 배너를 게시했습니다. 노출 기간 ${banner.startsAt.toISOString().slice(0, 10)} ~ ${banner.endsAt.toISOString().slice(0, 10)}. 협력점 콘솔의 디자인 페이지에서 본사 공통 배너 섹션을 확인하세요.`,
+        body: `본사가 모든 활성 협력점 컨슈머 사이트에 ${banner.title} 배너를 게시했습니다. 노출 기간 ${periodStr}. 협력점 콘솔의 디자인 페이지에서 본사 공통 배너 섹션을 확인하세요.`,
         createdById: g.session.user.id,
       },
     }).catch(() => { /* 공지 생성 실패는 배너 생성 자체에 영향 없음 */ });
+
+    // 텔레그램 알림 — 본사 그룹에 게시 사실 통지 (fire-and-forget).
+    notifyHq(
+      `📢 <b>본사 공통 배너 게시</b>\n` +
+        `제목: ${esc(banner.title)}\n` +
+        `기간: ${periodStr}\n` +
+        `priority: ${banner.priority}\n` +
+        `\n전 활성 협력점 컨슈머 사이트의 메인 슬라이드에 즉시 노출됩니다.`,
+    );
   }
 
   return NextResponse.json({ ok: true, id: banner.id });
