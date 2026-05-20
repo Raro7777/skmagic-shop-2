@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ConsumerProduct, ActiveBanner } from "@/lib/partnerSite";
 import { SK_MAGIC_LOGO } from "@/lib/constants/assets";
 
@@ -31,6 +31,29 @@ export default function HeroCarousel({
   ];
   const [idx, setIdx] = useState(0);
   const [paused, setPaused] = useState(false);
+
+  // 터치 스와이프 — 가로 이동량 > SWIPE_THRESHOLD 이고 |dx| > |dy| 이면 이전/다음 슬라이드.
+  const SWIPE_THRESHOLD = 50;
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
+  const onTouchStart = (e: React.TouchEvent) => {
+    setPaused(true);
+    const t = e.touches[0];
+    touchStart.current = { x: t.clientX, y: t.clientY };
+  };
+  const onTouchEnd = (e: React.TouchEvent) => {
+    const s = touchStart.current;
+    touchStart.current = null;
+    if (!s || slides.length < 2) { setPaused(false); return; }
+    const t = e.changedTouches[0];
+    const dx = t.clientX - s.x;
+    const dy = t.clientY - s.y;
+    if (Math.abs(dx) > SWIPE_THRESHOLD && Math.abs(dx) > Math.abs(dy)) {
+      if (dx < 0) setIdx(i => (i + 1) % slides.length);
+      else setIdx(i => (i - 1 + slides.length) % slides.length);
+    }
+    // 자동 회전 재개 (UX: 스와이프 직후 2.5초간만 유지하고 싶다면 setTimeout 사용 가능)
+    setPaused(false);
+  };
 
   useEffect(() => {
     if (slides.length <= 1 || paused) return;
@@ -66,8 +89,8 @@ export default function HeroCarousel({
   // 모든 슬라이드 750:1000 비율 (3:4) 로 통일. 너비 100% 에 맞춰 세로 자동.
   // 이미지 배너 (image-only / image-bg) 가 잘리지 않고 꽉 차게.
   const sectionClass = cur.kind === "banner"
-    ? "relative overflow-hidden aspect-[3/4] flex flex-col"
-    : "relative bg-rk-navy text-white overflow-hidden aspect-[3/4] flex flex-col";
+    ? "relative overflow-hidden aspect-[3/4] flex flex-col touch-pan-y select-none"
+    : "relative bg-rk-navy text-white overflow-hidden aspect-[3/4] flex flex-col touch-pan-y select-none";
 
   const slideKey = cur.kind === "banner" ? `banner-${cur.banner.id}` : `product-${cur.product.productCode}`;
   const productHrefBase = `/p/${partnerCode}/products`;
@@ -83,6 +106,8 @@ export default function HeroCarousel({
         total={total}
         paused={paused}
         setPaused={setPaused}
+        onTouchStart={onTouchStart}
+        onTouchEnd={onTouchEnd}
       />
     );
   }
@@ -91,7 +116,8 @@ export default function HeroCarousel({
     <section
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
-      onTouchStart={() => setPaused(true)}
+      onTouchStart={onTouchStart}
+      onTouchEnd={onTouchEnd}
       className={sectionClass}
       style={sectionStyle}
     >
@@ -391,6 +417,8 @@ function ImageOnlySlide({
   setIdx,
   total,
   setPaused,
+  onTouchStart,
+  onTouchEnd,
 }: {
   banner: ActiveBanner;
   slides: Slide[];
@@ -399,6 +427,8 @@ function ImageOnlySlide({
   total: number;
   paused: boolean;
   setPaused: (p: boolean) => void;
+  onTouchStart: (e: React.TouchEvent) => void;
+  onTouchEnd: (e: React.TouchEvent) => void;
 }) {
   const recordClick = () => {
     try {
@@ -427,8 +457,9 @@ function ImageOnlySlide({
     <section
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
-      onTouchStart={() => setPaused(true)}
-      className="relative overflow-hidden aspect-[3/4] bg-rk-soft"
+      onTouchStart={onTouchStart}
+      onTouchEnd={onTouchEnd}
+      className="relative overflow-hidden aspect-[3/4] bg-rk-soft touch-pan-y select-none"
     >
       {banner.ctaHref ? (
         <Link href={banner.ctaHref} onClick={recordClick} className="block w-full h-full no-underline">
