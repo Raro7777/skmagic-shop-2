@@ -70,7 +70,8 @@ const emptyDraft = (): Draft => ({
   bgColor1: PRESETS[0].c1, bgColor2: PRESETS[0].c2, textColor: PRESETS[0].text,
   ctaLabel: "자세히 보기", ctaHref: "",
   startsAt: todayIso(), endsAt: plusDaysIso(14),
-  priority: 100, status: "active",
+  // 신규 배너는 draft 로 만들어 두고 "🚀 푸시" 버튼으로 명시적 게시.
+  priority: 100, status: "draft",
   layout: "image-only",
   spotlightProductCode: "", stampText: "", htmlContent: "",
 });
@@ -140,6 +141,30 @@ export default function GlobalBannerManager() {
     if (!window.confirm(`"${b.title}" 본사 공통 배너를 삭제할까요? (모든 협력점 사이트에서 즉시 사라짐)`)) return;
     const res = await fetch(`/api/admin/global-banners/${b.id}`, { method: "DELETE" });
     if (!res.ok) { const j = await res.json(); setError(j.error ?? "삭제 실패"); return; }
+    await load();
+  };
+
+  // 🚀 푸시 — draft → active 전환. 협력점 컨슈머 사이트 노출 시작 + Broadcast/Telegram 알림.
+  const push = async (b: Banner) => {
+    if (!window.confirm(`"${b.title}" 본사 공통 배너를 전 협력점에 푸시합니다.\n- 컨슈머 사이트 메인 슬라이드에 즉시 노출\n- 협력점 콘솔에 공지 자동 생성\n- 텔레그램 알림 발송\n진행할까요?`)) return;
+    const res = await fetch(`/api/admin/global-banners/${b.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "active" }),
+    });
+    if (!res.ok) { const j = await res.json(); setError(j.error ?? "푸시 실패"); return; }
+    await load();
+  };
+
+  // ⏸ 푸시 해제 — active → draft. 컨슈머 노출 즉시 중단 (DB row 보존, 재푸시 가능).
+  const unpush = async (b: Banner) => {
+    if (!window.confirm(`"${b.title}" 푸시를 해제합니다. 모든 협력점 사이트에서 즉시 사라지지만 DB 에는 draft 로 보존됩니다. 진행할까요?`)) return;
+    const res = await fetch(`/api/admin/global-banners/${b.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "draft" }),
+    });
+    if (!res.ok) { const j = await res.json(); setError(j.error ?? "해제 실패"); return; }
     await load();
   };
 
@@ -247,7 +272,16 @@ export default function GlobalBannerManager() {
                 {b.ctaHref && b.ctaHref.includes("{partnerCode}") && (
                   <small className="text-[11px] text-rk-info block">ⓘ 컨슈머 렌더 시 {`{partnerCode}`} 자동 치환</small>
                 )}
-                <div className="flex gap-2 mt-1.5">
+                <div className="flex gap-2 mt-1.5 items-center flex-wrap">
+                  {b.status === "active" ? (
+                    <button type="button" onClick={() => unpush(b)} className="text-[12px] text-rk-orange-deep font-semibold hover:underline cursor-pointer bg-transparent border-0">
+                      ⏸ 푸시 해제
+                    </button>
+                  ) : (
+                    <button type="button" onClick={() => push(b)} className="text-[12px] text-rk-success font-semibold hover:underline cursor-pointer bg-transparent border-0">
+                      🚀 푸시 (전 협력점 노출)
+                    </button>
+                  )}
                   <button type="button" onClick={() => startEdit(b)} disabled={editing !== null} className="text-[12px] text-rk-info hover:underline disabled:opacity-30 cursor-pointer bg-transparent border-0">편집</button>
                   <button type="button" onClick={() => remove(b)} className="text-[12px] text-rk-sale hover:underline cursor-pointer bg-transparent border-0">삭제</button>
                 </div>

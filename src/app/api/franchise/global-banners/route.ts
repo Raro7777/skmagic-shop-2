@@ -17,11 +17,21 @@ export async function GET() {
     return NextResponse.json({ error: eff.error }, { status: eff.error === "unauthorized" ? 401 : 403 });
   }
 
-  const banners = await prisma.banner.findMany({
-    where: { scope: "global" },
-    orderBy: [{ status: "asc" }, { startsAt: "desc" }],
-    take: 30,
-  });
+  const [banners, partner] = await Promise.all([
+    prisma.banner.findMany({
+      where: { scope: "global" },
+      orderBy: [{ status: "asc" }, { startsAt: "desc" }],
+      take: 30,
+    }),
+    prisma.partner.findUnique({
+      where: { partnerCode: eff.partnerId },
+      select: { displayConfig: true },
+    }),
+  ]);
+  const hiddenSet = new Set(
+    ((partner?.displayConfig as { hiddenGlobalBannerIds?: string[] } | null)?.hiddenGlobalBannerIds ?? [])
+      .filter((x): x is string => typeof x === "string"),
+  );
 
   return NextResponse.json({
     banners: banners.map(b => ({
@@ -41,6 +51,7 @@ export async function GET() {
       priority: b.priority,
       status: b.status,
       layout: b.layout,
+      hidden: hiddenSet.has(b.id),
     })),
   });
 }

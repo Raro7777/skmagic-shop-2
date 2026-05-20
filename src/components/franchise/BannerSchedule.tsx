@@ -147,6 +147,7 @@ type GlobalBanner = {
   priority: number;
   status: string;
   layout: string;
+  hidden: boolean;
 };
 
 export default function BannerSchedule() {
@@ -357,6 +358,20 @@ export default function BannerSchedule() {
     } finally { setSaving(false); }
   };
 
+  // 본사 공통 배너 hide/unhide — Partner.displayConfig.hiddenGlobalBannerIds 갱신.
+  const toggleGlobalHidden = async (globalBannerId: string, hidden: boolean) => {
+    setFlash(null);
+    const res = await fetch(`/api/franchise/global-banners/${globalBannerId}/visibility`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ hidden }),
+    });
+    if (!res.ok) { const j = await res.json().catch(() => ({})); setFlash(j.error ?? "변경 실패"); return; }
+    // 로컬 상태 즉시 반영 (load 다시 부르면 글로벌 + 본인 배너 둘 다 fetch — 가벼움)
+    setGlobalBanners(prev => prev.map(b => b.id === globalBannerId ? { ...b, hidden } : b));
+    setFlash(hidden ? "본사 배너를 우리 사이트에서 숨겼습니다." : "본사 배너를 다시 노출합니다.");
+  };
+
   const remove = async (b: Banner) => {
     if (!window.confirm(`"${b.title}" 배너를 삭제할까요?`)) return;
     setFlash(null);
@@ -391,16 +406,16 @@ export default function BannerSchedule() {
 
   return (
     <div className="bg-white border border-rk-line rounded-lg p-4">
-      {/* 본사 공통 배너 — read-only. 협력점이 끌 수 없는 강제 push 정책 안내. */}
+      {/* 본사 공통 배너 — 본사 push. 협력점은 본인 사이트에서 개별 숨김 토글 가능. */}
       {activeGlobalBanners.length > 0 && (
         <div className="bg-rk-tint-blue border border-rk-info/30 rounded-md p-3 mb-3">
-          <div className="flex items-baseline gap-2 mb-2">
+          <div className="flex items-baseline gap-2 mb-2 flex-wrap">
             <b className="text-[13px] text-rk-info">📢 본사 공통 배너 — {activeGlobalBanners.length}개 진행중</b>
-            <small className="text-[12px] text-rk-muted">본사가 모든 협력점에 일괄 게시 · 협력점에서 끌 수 없음</small>
+            <small className="text-[12px] text-rk-muted">본사가 push 한 배너 · 우리 사이트에서 끄려면 🙈 숨김 토글</small>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             {activeGlobalBanners.map(b => (
-              <div key={b.id} className="bg-white border border-rk-line rounded overflow-hidden flex">
+              <div key={b.id} className={"bg-white border rounded overflow-hidden flex " + (b.hidden ? "border-rk-line opacity-60" : "border-rk-line")}>
                 <div className="w-[100px] h-[60px] relative shrink-0" style={{ background: `linear-gradient(135deg, ${b.bgColor1}, ${b.bgColor2})` }}>
                   {b.layout === "image-only" && b.imageUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -412,11 +427,21 @@ export default function BannerSchedule() {
                   )}
                 </div>
                 <div className="flex-1 px-2.5 py-1.5 min-w-0">
-                  <b className="text-[12px] text-rk-ink block truncate">{b.title}</b>
+                  <div className="flex items-baseline justify-between gap-1.5">
+                    <b className="text-[12px] text-rk-ink truncate">{b.title}</b>
+                    {b.hidden && <span className="text-[10px] text-rk-muted shrink-0">🙈 우리 사이트 숨김</span>}
+                  </div>
                   <small className="text-[11px] text-rk-muted block">{b.startsAt.slice(0, 10)} ~ {b.endsAt.slice(0, 10)} · priority {b.priority}</small>
                   {b.ctaHref && (
                     <small className="text-[11px] text-rk-info block truncate font-mono">→ {b.ctaHref}</small>
                   )}
+                  <button
+                    type="button"
+                    onClick={() => toggleGlobalHidden(b.id, !b.hidden)}
+                    className={"mt-1 text-[11px] cursor-pointer bg-transparent border-0 hover:underline " + (b.hidden ? "text-rk-success font-semibold" : "text-rk-orange-deep font-semibold")}
+                  >
+                    {b.hidden ? "👁 다시 노출" : "🙈 우리 사이트에서 숨김"}
+                  </button>
                 </div>
               </div>
             ))}

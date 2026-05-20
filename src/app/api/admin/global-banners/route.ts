@@ -100,6 +100,7 @@ export async function POST(req: Request) {
       startsAt, endsAt,
       // 본사 우선 — 사용자 결정 4=a. priority 기본 100 (협력점은 기본 0).
       priority: typeof b.priority === "number" ? Math.max(0, Math.floor(b.priority)) : DEFAULT_GLOBAL_PRIORITY,
+      // 기본 draft — UI 에서 "🚀 푸시" 버튼으로 명시 게시(PATCH)해야 컨슈머 노출.
       status: b.status === "active" ? "active" : "draft",
       layout,
       spotlightProductCode: b.spotlightProductCode?.trim().slice(0, 32) || null,

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { notifyHq, esc } from "@/lib/telegram";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -67,7 +68,30 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   if (b.stampText !== undefined) data.stampText = b.stampText?.trim().slice(0, 60) || null;
   if (b.htmlContent !== undefined) data.htmlContent = b.htmlContent ? b.htmlContent.slice(0, 10000) : null;
 
-  await prisma.banner.update({ where: { id }, data });
+  const updated = await prisma.banner.update({ where: { id }, data });
+
+  // draft → active 전환 (= 🚀 푸시) 시 협력점 공지 + 텔레그램 알림.
+  // 이미 active 인 row 수정 시에는 발송 안 함.
+  if (banner.status !== "active" && updated.status === "active") {
+    const periodStr = `${updated.startsAt.toISOString().slice(0, 10)} ~ ${updated.endsAt.toISOString().slice(0, 10)}`;
+    void prisma.broadcast.create({
+      data: {
+        tone: "event",
+        badge: "📢 본사 공통 배너",
+        title: `본사 공통 배너 게시 — ${updated.title}`,
+        body: `본사가 모든 활성 협력점 컨슈머 사이트에 ${updated.title} 배너를 게시했습니다. 노출 기간 ${periodStr}. 협력점 콘솔의 디자인 페이지에서 본사 공통 배너 섹션을 확인하세요. (본인 사이트에서 숨기려면 해당 카드의 🙈 숨김 토글)`,
+        createdById: g.session.user.id,
+      },
+    }).catch(() => { /* ignore */ });
+    notifyHq(
+      `📢 <b>본사 공통 배너 게시</b>\n` +
+        `제목: ${esc(updated.title)}\n` +
+        `기간: ${periodStr}\n` +
+        `priority: ${updated.priority}\n` +
+        `\n전 활성 협력점 컨슈머 사이트의 메인 슬라이드에 즉시 노출됩니다 (협력점이 본인 사이트에서 숨김 가능).`,
+    );
+  }
+
   return NextResponse.json({ ok: true });
 }
 

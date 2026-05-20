@@ -447,8 +447,10 @@ export async function getPartnerSite(partnerCode: string): Promise<PartnerSiteDa
   }
 
   // Active banners — status=active이고 현재 시각이 [startsAt, endsAt] 사이.
-  // 본사 공통 배너(scope=global)와 협력점 자기 배너(scope=partner, partnerId 매칭) 둘 다 가져옴.
-  // global 은 priority 100 자동 가산으로 협력점 배너보다 우선 (사용자 결정 4=a).
+  // 본사 공통 배너(scope=global)와 협력점 자기 배너(scope=partner, partnerId 매칭) 둘 다.
+  // 협력점이 본인 사이트에서 숨김 처리한 global 배너 ID 는 제외 (opt-out).
+  const hiddenGlobalIds = ((partner.displayConfig as { hiddenGlobalBannerIds?: string[] } | null)?.hiddenGlobalBannerIds ?? [])
+    .filter((id): id is string => typeof id === "string");
   const now = new Date();
   const bannerRows = await prisma.banner.findMany({
     where: {
@@ -457,7 +459,9 @@ export async function getPartnerSite(partnerCode: string): Promise<PartnerSiteDa
       endsAt: { gte: now },
       OR: [
         { scope: "partner", partnerId: partnerCode },
-        { scope: "global" },
+        hiddenGlobalIds.length > 0
+          ? { scope: "global", NOT: { id: { in: hiddenGlobalIds } } }
+          : { scope: "global" },
       ],
     },
     orderBy: [{ priority: "desc" }, { startsAt: "asc" }],
