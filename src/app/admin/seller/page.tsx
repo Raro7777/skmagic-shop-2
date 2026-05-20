@@ -30,6 +30,30 @@ export default async function SellerDashboardPage() {
       </div>
 
       <div className="grid grid-cols-3 gap-3 mb-3.5">
+        <KpiCard
+          label="전환률"
+          value={kpi.conversionRate.toFixed(1)}
+          suffix="%"
+          tone="navy"
+          hint={`설치완료 lead / (전체 − 종료 ${kpi.closedLeads}건)`}
+        />
+        <KpiCard
+          label="누적 정산 (송금완료)"
+          value={fmt(kpi.totalPayout)}
+          suffix="원"
+          tone="success"
+          hint="paid 정산 합계 — 환수 영향 X"
+        />
+        <KpiCard
+          label="현재 진행 중"
+          value={kpi.inProgress.toLocaleString()}
+          suffix="건"
+          tone="orange"
+          hint="상담중 ~ 설치대기 전체"
+        />
+      </div>
+
+      <div className="grid grid-cols-3 gap-3 mb-3.5">
         <StatTile label="① 신규" value={kpi.pendingNew} tone="info" hint="응대 대기" href="/admin/seller/leads" />
         <StatTile label="② 진행" value={kpi.inProgress} tone="warn" hint="설치 일정 조율" href="/admin/seller/leads" />
         <StatTile label="③ 완료" value={kpi.doneThisMonth} tone="success" hint="이번 달" href="/admin/seller/leads" />

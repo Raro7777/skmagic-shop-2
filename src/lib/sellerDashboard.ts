@@ -11,6 +11,9 @@ export type SellerKpi = {
   inProgress: number;
   doneThisMonth: number;
   expectedPayout: number;       // 이번 달 영업자수수료 합계 (Settlement.sellerPayout 누적)
+  totalPayout: number;          // 누적 영업자수수료 (paid 만, 환수 영향 X)
+  conversionRate: number;       // 전체 lead 중 설치완료(install_done 이상) 도달 비율 (0~100, %)
+  closedLeads: number;          // 종료/취소 lead — 전환률 분모에서 제외 가능성 표기용
 };
 
 export type SellerLeadRow = {
@@ -101,7 +104,7 @@ async function getSellerDashboardBySellerRow(seller: SellerWithPartner): Promise
   startOfMonth.setDate(1); startOfMonth.setHours(0, 0, 0, 0);
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * HOUR);
 
-  const [statusCounts, weekCount, totalCount, doneSettlements, recentLeads] = await Promise.all([
+  const [statusCounts, weekCount, totalCount, doneSettlements, totalPaidSettlements, recentLeads] = await Promise.all([
     prisma.lead.groupBy({
       by: ["status"],
       where: { sellerId: seller.id },
@@ -111,6 +114,11 @@ async function getSellerDashboardBySellerRow(seller: SellerWithPartner): Promise
     prisma.lead.count({ where: { sellerId: seller.id } }),
     prisma.settlement.findMany({
       where: { lead: { sellerId: seller.id }, createdAt: { gte: startOfMonth } },
+      select: { sellerPayout: true },
+    }),
+    // 누적 정산 — 송금 완료(paid) 만. cancelled 는 제외. 환수는 영업자 정산에 영향 없음.
+    prisma.settlement.findMany({
+      where: { lead: { sellerId: seller.id }, status: "paid" },
       select: { sellerPayout: true },
     }),
     prisma.lead.findMany({
@@ -134,6 +142,26 @@ async function getSellerDashboardBySellerRow(seller: SellerWithPartner): Promise
   // 영업자 수수료 = Settlement.sellerPayout (영업점수수료 - 영업점마진).
   // 환원·환수는 영업점 책임이므로 영업자 표기에는 반영 안 함.
   const expectedPayout = doneSettlements.reduce((sum, s) => sum + s.sellerPayout, 0);
+  const totalPayout = totalPaidSettlements.reduce((sum, s) => sum + s.sellerPayout, 0);
+
+  // 진행 중 — consult_active 외에 신청서 작성/본사 검토/설치 대기 단계도 모두 진행으로 본다.
+  const IN_PROGRESS_STATUSES = [
+    "consult_active", "form_ready", "apply_submitted", "verify_pending",
+    "verify_failed", "verify_revise", "revise_resubmit", "install_pending",
+  ];
+  const inProgressCount = IN_PROGRESS_STATUSES.reduce((s, st) => s + countOf(st), 0);
+
+  // 전환률 = (install_done 이상 도달) / (종료 lead 제외 전체 모집단)
+  // install_done · settle_pending · settle_done 은 모두 "설치 완료" 로 본다 (정산 단계는 후속).
+  // 분모에서 consult_closed / install_cancel 제외 — 종료된 lead 는 영업자 통제 밖.
+  const DONE_STATUSES = ["install_done", "settle_pending", "settle_done"];
+  const CLOSED_STATUSES = ["consult_closed", "install_cancel"];
+  const doneCount = DONE_STATUSES.reduce((s, st) => s + countOf(st), 0);
+  const closedCount = CLOSED_STATUSES.reduce((s, st) => s + countOf(st), 0);
+  const conversionDenom = totalCount - closedCount;
+  const conversionRate = conversionDenom > 0
+    ? Math.round((doneCount / conversionDenom) * 1000) / 10  // 소수점 한 자리 (예: 42.7%)
+    : 0;
 
   const leads: SellerLeadRow[] = recentLeads.map(l => {
     const ageMs = Date.now() - l.createdAt.getTime();
@@ -176,9 +204,12 @@ async function getSellerDashboardBySellerRow(seller: SellerWithPartner): Promise
       totalLeads: totalCount,
       weekLeads: weekCount,
       pendingNew: countOf("consult_wish"),
-      inProgress: countOf("consult_active"),
+      inProgress: inProgressCount,
       doneThisMonth: doneSettlements.length,
       expectedPayout,
+      totalPayout,
+      conversionRate,
+      closedLeads: closedCount,
     },
     leads,
   };
