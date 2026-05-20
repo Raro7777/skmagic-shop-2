@@ -112,8 +112,9 @@ export default async function ProductDetailPage({
               <img src={SK_MAGIC_LOGO} alt="SK magic" className="h-[32px] w-auto shrink-0" />
 
               <div className="min-w-0">
-                <div className="font-bold text-[13px] text-rk-ink leading-tight truncate">{partner.partnerName}</div>
-                <div className="text-[12px] text-rk-muted truncate">{partner.brandLabel}</div>
+                {/* CONSUMER_BRAND_NAME 정책상 partnerName 과 brandLabel 이 동일 값이라 2줄 중복.
+                    1줄로 통합 — partnerName 하나만 노출. */}
+                <div className="font-bold text-[14px] text-rk-ink leading-tight truncate">{partner.partnerName}</div>
               </div>
             </div>
             <div className="flex gap-3 text-base text-rk-ink shrink-0">
@@ -132,9 +133,11 @@ export default async function ProductDetailPage({
           <b className="text-rk-ink truncate">{detail.modelName}</b>
         </nav>
 
-        {/* Image gallery (multi-image with thumbs, fallback to gradient) */}
+        {/* Image gallery (multi-image with thumbs, fallback to gradient).
+            중복 이미지 URL 제거 — 본사 카탈로그 데이터에서 imageUrls[0] 과 imageUrl 이
+            같은 경우가 있어 썸네일에 동일 이미지 2번 노출되던 문제. */}
         <ProductGallery
-          images={detail.imageUrls}
+          images={Array.from(new Set((detail.imageUrls ?? []).filter(Boolean)))}
           fallbackBg={productBg}
           fallbackBadges={
             <>
