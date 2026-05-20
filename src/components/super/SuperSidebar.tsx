@@ -28,6 +28,7 @@ const NAV_MASTER: NavItem[] = [
   { href: "/admin/super/products",          ico: "📦", label: "상품 마스터" },
   { href: "/admin/super/policies",          ico: "💰", label: "기준 정책" },
   { href: "/admin/super/banner-templates",  ico: "🎨", label: "배너 템플릿" },
+  { href: "/admin/super/global-banners",    ico: "📢", label: "본사 공통 배너" },
   { href: "/admin/super/broadcasts",        ico: "📢", label: "본사 공지" },
   { href: "/admin/super/crawl",             ico: "🔄", label: "상품 크롤링" },
   { href: "/admin/super/api-partners",      ico: "🔌", label: "외부 API 채널" },

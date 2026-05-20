@@ -269,8 +269,11 @@ model LiveActivity {
 // ----------------------------------------------------------------
 model Banner {
   id          String   @id @default(cuid())
-  partnerId   String
-  partner     Partner  @relation(fields: [partnerId], references: [partnerCode])
+  // scope="partner" 면 partnerId 필수, "global" 이면 null (모든 활성 협력점 사이트에 노출).
+  // 본사가 전 협력점에 push 하는 공통 배너는 scope="global".
+  partnerId   String?
+  partner     Partner? @relation(fields: [partnerId], references: [partnerCode])
+  scope       String   @default("partner") // partner | global
 
   title       String                       // "어버이날 효도 패키지"
   subtitle    String?                      // 짧은 보조 카피
@@ -886,7 +889,7 @@ model BannerTemplate {
 model BannerEvent {
   id         String   @id @default(cuid())
   bannerId   String
-  partnerId  String   // FK 없이 분석용 캐시
+  partnerId  String?  // FK 없이 분석용 캐시. global 배너는 null
   eventType  String   // impression | click
   ip         String?
   userAgent  String?

@@ -446,17 +446,22 @@ export async function getPartnerSite(partnerCode: string): Promise<PartnerSiteDa
     }
   }
 
-  // Active banners — status=active이고 현재 시각이 [startsAt, endsAt] 사이
+  // Active banners — status=active이고 현재 시각이 [startsAt, endsAt] 사이.
+  // 본사 공통 배너(scope=global)와 협력점 자기 배너(scope=partner, partnerId 매칭) 둘 다 가져옴.
+  // global 은 priority 100 자동 가산으로 협력점 배너보다 우선 (사용자 결정 4=a).
   const now = new Date();
   const bannerRows = await prisma.banner.findMany({
     where: {
-      partnerId: partnerCode,
       status: "active",
       startsAt: { lte: now },
       endsAt: { gte: now },
+      OR: [
+        { scope: "partner", partnerId: partnerCode },
+        { scope: "global" },
+      ],
     },
     orderBy: [{ priority: "desc" }, { startsAt: "asc" }],
-    take: 5,
+    take: 8,
   });
 
   // product-spotlight 레이아웃용 — 강조 상품의 이미지 미리 조회
@@ -478,7 +483,8 @@ export async function getPartnerSite(partnerCode: string): Promise<PartnerSiteDa
     bgColor2: b.bgColor2,
     textColor: b.textColor,
     ctaLabel: b.ctaLabel,
-    ctaHref: b.ctaHref,
+    // global 배너는 ctaHref 에 {partnerCode} 플레이스홀더 사용 시 현재 협력점 코드로 치환 (결정 3=c).
+    ctaHref: b.ctaHref ? b.ctaHref.replace(/\{partnerCode\}/g, partnerCode) : null,
     endsAt: b.endsAt.toISOString(),
     layout: (b.layout as ActiveBanner["layout"]) ?? "classic",
     spotlightProductCode: b.spotlightProductCode,
