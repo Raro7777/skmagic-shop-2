@@ -54,7 +54,9 @@ export default async function ProductDetailPage({
 }) {
   const { partnerCode, productCode } = await params;
   const { s: sellerCode } = await searchParams;
-  const detail = await getPartnerProductDetail(partnerCode, productCode);
+  // 영업자 컨텍스트면 sellerCode 전달 — partnerCommission 에서 sellerMargin 추가 차감되어
+  // PriceConfigurator 의 maxRentalSupport 가 영업자 cap 으로 정확히 계산됨.
+  const detail = await getPartnerProductDetail(partnerCode, productCode, sellerCode ? { sellerCode } : undefined);
   if (!detail) notFound();
 
   // Resolve seller (if any) for the form

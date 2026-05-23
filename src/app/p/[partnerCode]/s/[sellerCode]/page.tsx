@@ -11,7 +11,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { partnerCode, sellerCode } = await params;
   const [data, seller] = await Promise.all([
-    getPartnerSite(partnerCode),
+    getPartnerSite(partnerCode, { sellerCode }),
     prisma.seller.findUnique({
       where: { partnerId_sellerCode: { partnerId: partnerCode, sellerCode } },
     }),
@@ -40,7 +40,7 @@ export default async function SellerSitePage({
 }) {
   const { partnerCode, sellerCode } = await params;
   const [data, seller] = await Promise.all([
-    getPartnerSite(partnerCode),
+    getPartnerSite(partnerCode, { sellerCode }),
     prisma.seller.findUnique({
       where: { partnerId_sellerCode: { partnerId: partnerCode, sellerCode } },
     }),

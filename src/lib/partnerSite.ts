@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { pickRepresentativeHqPolicy } from "@/lib/hqPolicy";
-import { computeHqMargin } from "@/lib/marginFlow";
+import { computeHqMargin, computeSellerMargin } from "@/lib/marginFlow";
 import { rentalSupportFor } from "@/lib/rentalSupport";
 import { sanitizeBannerHtml } from "@/lib/sanitizeBannerHtml";
 
@@ -11,7 +11,11 @@ import { sanitizeBannerHtml } from "@/lib/sanitizeBannerHtml";
  */
 export const CONSUMER_BRAND_NAME = "SK매직 공식인증점";
 
-/** 상품의 옵션별 렌탈지원금 중 최대값 계산. enabled=false면 0. */
+/** 상품의 옵션별 렌탈지원금 중 최대값 계산. enabled=false면 0.
+ *  영업자 컨텍스트일 때 sellerCap 으로 (partnerCommission → sellerMargin) 같은 산식 한 번 더 cap.
+ *  본사-협력점: baseCommission − hqMargin = partnerCommission
+ *  협력점-영업자: partnerCommission − sellerMargin = 영업자 cap
+ */
 function computeMaxRentalSupport(args: {
   hqPolicies: Array<{ baseCommission: number; monthIncentive: number; marginType: string | null; marginAmount: number | null; marginPercent: number | null }>;
   tierMargin: { type: "fixed" | "percent"; amount: number; percent: number } | null;
@@ -19,6 +23,11 @@ function computeMaxRentalSupport(args: {
   rentalSupportEnabled: boolean;
   giftAmount: number;
   installAmount: number;
+  // 영업자 컨텍스트 — sellerMargin 산식 (옵션별 partnerCommission 에 적용).
+  // null 이면 협력점 컨텍스트 (sellerMargin cap 없음).
+  sellerMarginPartner?: Pick<import("@prisma/client").Partner, "sellerMarginType" | "sellerMarginAmount" | "sellerMarginPercent"> | null;
+  sellerMarginPolicies?: Array<{ productId: string; sellerMarginAmount: number | null; sellerMarginPercent: number | null }>;
+  productId?: string;
 }): number {
   if (!args.rentalSupportEnabled || args.partnerSupportAmount <= 0) return 0;
   let max = 0;
@@ -26,7 +35,18 @@ function computeMaxRentalSupport(args: {
     const base = opt.baseCommission + opt.monthIncentive;
     const hqMargin = computeHqMargin(base, opt, args.tierMargin);
     const partnerCommission = base - hqMargin;
-    const s = rentalSupportFor(partnerCommission, args.partnerSupportAmount, args.giftAmount, args.installAmount);
+    // 영업자 컨텍스트면 sellerMargin 계산해서 marginCap 으로 전달 → rentalSupportFor 가 cap 적용.
+    let marginCap: number | undefined;
+    if (args.sellerMarginPartner) {
+      const override = args.productId
+        ? args.sellerMarginPolicies?.find(p => p.productId === args.productId) ?? null
+        : null;
+      marginCap = computeSellerMargin(partnerCommission, args.sellerMarginPartner, override);
+    }
+    const s = rentalSupportFor(
+      partnerCommission, args.partnerSupportAmount, args.giftAmount, args.installAmount,
+      marginCap,
+    );
     if (s > max) max = s;
   }
   return max;
@@ -336,7 +356,10 @@ const CATEGORY_META: Record<string, { label: string; icon: string; rankPriority:
   kitchen:  { label: "주방가전",   icon: "🍳", rankPriority: 7 },
 };
 
-export async function getPartnerSite(partnerCode: string): Promise<PartnerSiteData | null> {
+export async function getPartnerSite(
+  partnerCode: string,
+  opts?: { sellerCode?: string },
+): Promise<PartnerSiteData | null> {
   const partner = await prisma.partner.findUnique({
     where: { partnerCode },
   });
@@ -356,6 +379,18 @@ export async function getPartnerSite(partnerCode: string): Promise<PartnerSiteDa
   const tierMarginConfig = tierMargin
     ? { type: tierMargin.marginType as "fixed" | "percent", amount: tierMargin.marginAmount, percent: tierMargin.marginPercent }
     : null;
+
+  // 영업자 컨텍스트 — sellerCode 가 주어지면 sellerMargin 산식을 렌탈지원금 cap 에 추가 적용.
+  // 본사-협력점(baseCommission − hqMargin = partnerCommission) 과
+  // 협력점-영업자(partnerCommission − sellerMargin) 가 같은 산식 구조.
+  const sellerMarginPartner = opts?.sellerCode ? partner : null;
+  const sellerMarginPolicies = opts?.sellerCode
+    ? products.flatMap(p => p.partnerPolicies.map(pp => ({
+        productId: p.id,
+        sellerMarginAmount: pp.sellerMarginAmount ?? null,
+        sellerMarginPercent: pp.sellerMarginPercent ?? null,
+      })))
+    : undefined;
 
   // 정렬용 영업점수수료 (= 본사수수료 − 본사마진) — 대표 옵션 기준
   const partnerCommissionByCode = new Map<string, number>();
@@ -401,6 +436,9 @@ export async function getPartnerSite(partnerCode: string): Promise<PartnerSiteDa
         rentalSupportEnabled: partner.rentalSupportEnabled,
         giftAmount: gift,
         installAmount: install,
+        sellerMarginPartner,
+        sellerMarginPolicies,
+        productId: p.id,
       }),
       maxRivalSavings: maxRivalSavings(p.priceMatrix),
       minRivalPrice: rival?.monthly ?? null,
@@ -828,7 +866,8 @@ export type ProductDetail = ConsumerProduct & {
 
 export async function getPartnerProductDetail(
   partnerCode: string,
-  productCode: string
+  productCode: string,
+  opts?: { sellerCode?: string },
 ): Promise<ProductDetail | null> {
   const partner = await prisma.partner.findUnique({ where: { partnerCode } });
   if (!partner || partner.status !== "active") return null;
@@ -893,9 +932,15 @@ export async function getPartnerProductDetail(
       // 매칭 실패 시 null — UI 측은 렌탈지원금 0 으로 처리 (안전 기본값).
       const optMode = (r.mode === "방문형" || r.mode === "셀프형") ? r.mode : productDefaultMode;
       const hq = hqByKey.get(`${optMode}|${r.contractPeriod}`);
-      const partnerCommission = hq
-        ? (hq.baseCommission + hq.monthIncentive) - computeHqMargin(hq.baseCommission + hq.monthIncentive, hq, tierMarginConfig)
+      const baseCommission = hq ? hq.baseCommission + hq.monthIncentive : null;
+      const partnerCommissionRaw = (hq && baseCommission != null)
+        ? baseCommission - computeHqMargin(baseCommission, hq, tierMarginConfig)
         : null;
+      // 영업자 컨텍스트 — partnerCommission 에서 sellerMargin 한 번 더 차감하여 영업자가 줄 수 있는
+      // 한도(marginCap) 로 사용. 협력점-영업자 산식이 본사-협력점 산식과 동일한 구조.
+      const partnerCommission = (opts?.sellerCode && partnerCommissionRaw != null)
+        ? Math.max(0, partnerCommissionRaw - computeSellerMargin(partnerCommissionRaw, partner, policy ?? null))
+        : partnerCommissionRaw;
       return {
         mode: (r.mode === "방문형" || r.mode === "셀프형") ? r.mode : null,
         contractPeriod: r.contractPeriod,
