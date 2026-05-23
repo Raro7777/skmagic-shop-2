@@ -4,6 +4,10 @@ import PartnerSiteShell from "@/components/consumer/PartnerSiteShell";
 import { getPartnerSite, applySellerFooterOverrides } from "@/lib/partnerSite";
 import { prisma } from "@/lib/prisma";
 
+// 영업자 sellerMargin / footer override / 협력점 정책 변경이 즉시 반영되어야 함.
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export async function generateMetadata({
   params,
 }: {

@@ -8,6 +8,10 @@ import PriceConfigurator from "@/components/consumer/PriceConfigurator";
 import ProductContentImages from "@/components/consumer/ProductContentImages";
 import { getPartnerProductDetail, type ConsumerProduct } from "@/lib/partnerSite";
 import { prisma } from "@/lib/prisma";
+
+// 영업자 컨텍스트(?s=)의 partnerCommission · 렌탈지원금 계산이 즉시 반영되도록 강제 동적.
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 import { SK_MAGIC_LOGO } from "@/lib/constants/assets";
 import { HQ_HOTLINE } from "@/lib/constants/hq";
 
