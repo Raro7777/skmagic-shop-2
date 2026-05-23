@@ -15,6 +15,7 @@ const NAV: Array<{ href: string; ico: string; label: string }> = [
   { href: "/admin/seller/leads",       ico: "💬", label: "내 lead" },
   { href: "/admin/seller/enrollments", ico: "📝", label: "내 신청서" },
   { href: "/admin/seller/links",       ico: "🔗", label: "공유 링크" },
+  { href: "/admin/seller/footer",      ico: "📄", label: "내 푸터 정보" },
 ];
 
 function isActive(pathname: string, href: string) {

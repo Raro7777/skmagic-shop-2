@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import PartnerSiteShell from "@/components/consumer/PartnerSiteShell";
-import { getPartnerSite } from "@/lib/partnerSite";
+import { getPartnerSite, applySellerFooterOverrides } from "@/lib/partnerSite";
 import { prisma } from "@/lib/prisma";
 
 export async function generateMetadata({
@@ -48,9 +48,28 @@ export default async function SellerSitePage({
   if (!data) notFound();
   if (!seller || seller.status !== "active") notFound();
 
+  // 영업자가 본인 푸터 override 입력했으면 협력점 값 위에 덮어씀.
+  // 각 필드 null 이면 협력점 값 유지 (미설정 시 폴백).
+  const dataWithSellerFooter = {
+    ...data,
+    partner: applySellerFooterOverrides(data.partner, {
+      companyName:     seller.companyName,
+      ownerName:       seller.ownerName,
+      address:         seller.address,
+      businessNumber:  seller.businessNumber,
+      commerceNumber:  seller.commerceNumber,
+      hotlineNumber:   seller.hotlineNumber,
+      csHours:         seller.csHours,
+      csLunchHours:    seller.csLunchHours,
+      csHolidays:      seller.csHolidays,
+      kakaoChannelUrl: seller.kakaoChannelUrl,
+      footerLogoUrl:   seller.footerLogoUrl,
+    }),
+  };
+
   return (
     <PartnerSiteShell
-      data={data}
+      data={dataWithSellerFooter}
       seller={{
         sellerCode: seller.sellerCode,
         name: seller.name,

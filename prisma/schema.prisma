@@ -98,6 +98,19 @@ model Seller {
   // 영업자 본인 텔레그램 chat_id — 본인이 받은 lead 인입 시 본인 텔레그램에 push.
   // null 이면 미발송. 본사/협력점 알림과 독립.
   telegramChatId String?
+  // 푸터 override — 영업자 페이지(/p/[partner]/s/[seller])의 푸터에서만 적용.
+  // 각 필드 null 이면 협력점 값으로 폴백. partnerSite.getPartnerSite 가 sellerOverrides 병합.
+  companyName     String?
+  ownerName       String?
+  address         String?
+  businessNumber  String?
+  commerceNumber  String?
+  hotlineNumber   String?
+  csHours         String?
+  csLunchHours    String?
+  csHolidays      String?
+  kakaoChannelUrl String?
+  footerLogoUrl   String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

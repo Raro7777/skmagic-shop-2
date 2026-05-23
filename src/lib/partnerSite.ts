@@ -250,6 +250,43 @@ export type LiveActivityItem = {
   minutesAgo: number;
 };
 
+/**
+ * 영업자 페이지(/p/[code]/s/[seller]) 에서 협력점 footer 정보를 영업자 본인 값으로 덮어씀.
+ * 각 필드 null 이면 협력점 값 유지. 헤더는 본사 정책상 SK매직 공식 로고 고정이라 적용 X.
+ */
+export function applySellerFooterOverrides<P extends PartnerSiteData["partner"]>(
+  partner: P,
+  seller: {
+    companyName: string | null;
+    ownerName: string | null;
+    address: string | null;
+    businessNumber: string | null;
+    commerceNumber: string | null;
+    hotlineNumber: string | null;
+    csHours: string | null;
+    csLunchHours: string | null;
+    csHolidays: string | null;
+    kakaoChannelUrl: string | null;
+    footerLogoUrl: string | null;
+  } | null,
+): P {
+  if (!seller) return partner;
+  return {
+    ...partner,
+    companyName:     seller.companyName     ?? partner.companyName,
+    ownerName:       seller.ownerName       ?? partner.ownerName,
+    address:         seller.address         ?? partner.address,
+    businessNumber:  seller.businessNumber  ?? partner.businessNumber,
+    commerceNumber:  seller.commerceNumber  ?? partner.commerceNumber,
+    hotlineNumber:   seller.hotlineNumber   ?? partner.hotlineNumber,
+    csHours:         seller.csHours         ?? partner.csHours,
+    csLunchHours:    seller.csLunchHours    ?? partner.csLunchHours,
+    csHolidays:      seller.csHolidays      ?? partner.csHolidays,
+    kakaoChannelUrl: seller.kakaoChannelUrl ?? partner.kakaoChannelUrl,
+    footerLogoUrl:   seller.footerLogoUrl   ?? partner.footerLogoUrl,
+  };
+}
+
 export type PartnerSiteData = {
   partner: {
     partnerCode: string;
