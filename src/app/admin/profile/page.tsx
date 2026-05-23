@@ -29,7 +29,7 @@ export default async function ProfilePage({
       partnerId: true, lastLoginAt: true, createdAt: true,
       mustChangePassword: true, passwordUpdatedAt: true,
       partner: { select: { partnerName: true } },
-      seller: { select: { sellerCode: true, name: true, phone: true } },
+      seller: { select: { sellerCode: true, name: true, phone: true, telegramChatId: true } },
     },
   });
   if (!user) redirect("/login");
@@ -100,6 +100,7 @@ export default async function ProfilePage({
               name: user.name ?? "",
               email: user.email,
               phone: user.seller?.phone ?? null,
+              telegramChatId: user.seller?.telegramChatId ?? null,
             }}
             role={user.role as "hq" | "partner_admin" | "seller"}
           />

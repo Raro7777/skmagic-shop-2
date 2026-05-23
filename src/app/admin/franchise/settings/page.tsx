@@ -85,6 +85,9 @@ export default async function SettingsPage() {
           businessNumber: partner.businessNumber,
           commerceNumber: partner.commerceNumber,
           telegramChatId: partner.telegramChatId,
+          csHours: partner.csHours,
+          csLunchHours: partner.csLunchHours,
+          csHolidays: partner.csHolidays,
         }}
       />
 

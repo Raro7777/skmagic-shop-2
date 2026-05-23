@@ -53,6 +53,9 @@ export async function PATCH(req: Request) {
     sellerMarginAmount: number;
     sellerMarginPercent: number;
     rentalSupportEnabled: boolean;
+    csHours: string | null;
+    csLunchHours: string | null;
+    csHolidays: string | null;
   }>;
 
   const data: Parameters<typeof prisma.partner.update>[0]["data"] = {};
@@ -137,6 +140,16 @@ export async function PATCH(req: Request) {
     }
     data.sellerMarginPercent = n;
   }
+  // CS 운영시간 — 자유 텍스트 (예: "평일 09:00-18:00"). 입력 정도만 trim/길이 cap.
+  if (b.csHours !== undefined) {
+    data.csHours = b.csHours?.trim().slice(0, 80) || null;
+  }
+  if (b.csLunchHours !== undefined) {
+    data.csLunchHours = b.csLunchHours?.trim().slice(0, 80) || null;
+  }
+  if (b.csHolidays !== undefined) {
+    data.csHolidays = b.csHolidays?.trim().slice(0, 80) || null;
+  }
   if (b.kakaoChannelUrl !== undefined) {
     if (!b.kakaoChannelUrl || b.kakaoChannelUrl.trim() === "") {
       data.kakaoChannelUrl = null;
@@ -164,6 +177,7 @@ export async function PATCH(req: Request) {
       ownerName: true, hotlineNumber: true, phone: true, kakaoChannelUrl: true,
       businessNumber: true, commerceNumber: true, rentalSupportAmount: true,
       sellerMarginType: true, sellerMarginAmount: true, sellerMarginPercent: true,
+      csHours: true, csLunchHours: true, csHolidays: true,
     },
   });
   return NextResponse.json({ ok: true, partner: updated });

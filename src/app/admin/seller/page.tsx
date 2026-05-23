@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getSellerDashboardBySellerId } from "@/lib/sellerDashboard";
 import { getEffectiveSeller } from "@/lib/effectiveSeller";
+import JoinConditionsButton from "@/components/JoinConditionsButton";
 
 export const metadata = { title: "내 대시보드 · 영업자" };
 export const dynamic = "force-dynamic";
@@ -17,7 +18,12 @@ export default async function SellerDashboardPage() {
 
   return (
     <>
-      <h1 className="text-[20px] font-bold mb-0.5 tracking-[-.02em]">{profile.name}님의 대시보드</h1>
+      <div className="flex items-baseline gap-2 mb-0.5 flex-wrap">
+        <h1 className="text-[20px] font-bold tracking-[-.02em]">{profile.name}님의 대시보드</h1>
+        <div className="ml-auto">
+          <JoinConditionsButton />
+        </div>
+      </div>
       <p className="text-rk-muted text-[14px] mb-[18px]">
         {profile.partnerName} · sellerCode <code className="font-mono text-rk-ink">{profile.sellerCode}</code> · 본인이 받은 lead만 표시
       </p>

@@ -5,6 +5,7 @@ import KpiGrid from "@/components/franchise/KpiGrid";
 import LiveLeads from "@/components/franchise/LiveLeads";
 import SettlementSummary from "@/components/franchise/SettlementSummary";
 import HqBroadcastBanner from "@/components/franchise/HqBroadcastBanner";
+import JoinConditionsButton from "@/components/JoinConditionsButton";
 
 export const metadata = { title: "대시보드 · 협력점 콘솔" };
 
@@ -17,9 +18,14 @@ export default async function FranchiseDashboard() {
 
   return (
     <>
-      <h1 className="text-[20px] font-bold mb-0.5 tracking-[-.02em]">
-        {partner?.partnerName ?? "협력점"} 운영 대시보드
-      </h1>
+      <div className="flex items-baseline gap-2 mb-0.5 flex-wrap">
+        <h1 className="text-[20px] font-bold tracking-[-.02em]">
+          {partner?.partnerName ?? "협력점"} 운영 대시보드
+        </h1>
+        <div className="ml-auto">
+          <JoinConditionsButton />
+        </div>
+      </div>
       <p className="text-rk-muted text-[14px] mb-[18px]">
         {partner?.region ? `${partner.region} · ` : ""}{partner?.brandLabel ?? "—"}
       </p>

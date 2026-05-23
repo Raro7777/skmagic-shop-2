@@ -16,6 +16,9 @@ type InitialProfile = {
   businessNumber: string | null;
   commerceNumber: string | null;
   telegramChatId: string | null;
+  csHours: string | null;
+  csLunchHours: string | null;
+  csHolidays: string | null;
 };
 
 export default function PartnerProfileEditor({ initial }: { initial: InitialProfile }) {
@@ -33,6 +36,9 @@ export default function PartnerProfileEditor({ initial }: { initial: InitialProf
   const [businessNumber, setBusinessNumber] = useState(initial.businessNumber ?? "");
   const [commerceNumber, setCommerceNumber] = useState(initial.commerceNumber ?? "");
   const [telegramChatId, setTelegramChatId] = useState(initial.telegramChatId ?? "");
+  const [csHours, setCsHours] = useState(initial.csHours ?? "");
+  const [csLunchHours, setCsLunchHours] = useState(initial.csLunchHours ?? "");
+  const [csHolidays, setCsHolidays] = useState(initial.csHolidays ?? "");
 
   const dirty =
     brandLabel !== initial.brandLabel ||
@@ -43,7 +49,10 @@ export default function PartnerProfileEditor({ initial }: { initial: InitialProf
     (phone || null) !== initial.phone ||
     (businessNumber || null) !== initial.businessNumber ||
     (commerceNumber || null) !== initial.commerceNumber ||
-    (telegramChatId || null) !== initial.telegramChatId;
+    (telegramChatId || null) !== initial.telegramChatId ||
+    (csHours || null) !== initial.csHours ||
+    (csLunchHours || null) !== initial.csLunchHours ||
+    (csHolidays || null) !== initial.csHolidays;
 
   const save = async () => {
     setBusy(true);
@@ -62,6 +71,9 @@ export default function PartnerProfileEditor({ initial }: { initial: InitialProf
           businessNumber: businessNumber.trim() || null,
           commerceNumber: commerceNumber.trim() || null,
           telegramChatId: telegramChatId.trim() || null,
+          csHours: csHours.trim() || null,
+          csLunchHours: csLunchHours.trim() || null,
+          csHolidays: csHolidays.trim() || null,
         }),
       });
       const j = await res.json();
@@ -83,6 +95,9 @@ export default function PartnerProfileEditor({ initial }: { initial: InitialProf
     setBusinessNumber(initial.businessNumber ?? "");
     setCommerceNumber(initial.commerceNumber ?? "");
     setTelegramChatId(initial.telegramChatId ?? "");
+    setCsHours(initial.csHours ?? "");
+    setCsLunchHours(initial.csLunchHours ?? "");
+    setCsHolidays(initial.csHolidays ?? "");
     setFlash(null);
   };
 
@@ -155,6 +170,43 @@ export default function PartnerProfileEditor({ initial }: { initial: InitialProf
           maxLength={24}
           disabled={busy}
           className="border border-rk-line rounded px-2.5 py-1.5 text-[13px] focus:outline-none focus:border-rk-navy disabled:opacity-50 rk-num"
+        />
+
+        {/* CS 운영시간 (자유 텍스트) — 컨슈머 사이트 footer/CTA 영역에 노출 */}
+        <label htmlFor="csHours" className="text-rk-muted">영업시간</label>
+        <input
+          id="csHours"
+          type="text"
+          value={csHours}
+          onChange={e => setCsHours(e.target.value)}
+          placeholder="예: 평일 09:00-18:00"
+          maxLength={80}
+          disabled={busy}
+          className="border border-rk-line rounded px-2.5 py-1.5 text-[13px] focus:outline-none focus:border-rk-navy disabled:opacity-50"
+        />
+
+        <label htmlFor="csLunchHours" className="text-rk-muted">점심시간</label>
+        <input
+          id="csLunchHours"
+          type="text"
+          value={csLunchHours}
+          onChange={e => setCsLunchHours(e.target.value)}
+          placeholder="예: 12:00-13:00"
+          maxLength={80}
+          disabled={busy}
+          className="border border-rk-line rounded px-2.5 py-1.5 text-[13px] focus:outline-none focus:border-rk-navy disabled:opacity-50"
+        />
+
+        <label htmlFor="csHolidays" className="text-rk-muted">휴무일</label>
+        <input
+          id="csHolidays"
+          type="text"
+          value={csHolidays}
+          onChange={e => setCsHolidays(e.target.value)}
+          placeholder="예: 토·일·공휴일"
+          maxLength={80}
+          disabled={busy}
+          className="border border-rk-line rounded px-2.5 py-1.5 text-[13px] focus:outline-none focus:border-rk-navy disabled:opacity-50"
         />
 
         {/* 협력점 연락처 */}

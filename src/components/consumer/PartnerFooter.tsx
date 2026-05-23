@@ -44,7 +44,20 @@ export default function PartnerFooter({ partner }: { partner: PartnerSiteData["p
         {showHotline && (
           <>
             <dt className="text-rk-faint m-0">고객센터</dt>
-            <dd className="m-0 rk-num">{partner.hotlineNumber} (평일 09:00–22:00)</dd>
+            <dd className="m-0 rk-num">
+              {partner.hotlineNumber}
+              {partner.csHours && <span className="ml-1 text-rk-faint">({partner.csHours})</span>}
+            </dd>
+          </>
+        )}
+        {(partner.csLunchHours || partner.csHolidays) && (
+          <>
+            <dt className="text-rk-faint m-0">운영안내</dt>
+            <dd className="m-0">
+              {partner.csLunchHours && <span>점심 {partner.csLunchHours}</span>}
+              {partner.csLunchHours && partner.csHolidays && <span className="mx-1 text-rk-faint">·</span>}
+              {partner.csHolidays && <span>휴무 {partner.csHolidays}</span>}
+            </dd>
           </>
         )}
       </dl>

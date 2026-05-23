@@ -23,6 +23,11 @@ model Partner {
   commerceNumber  String?  // 통신판매번호
   hotlineNumber   String   @default("1600-2434")
   kakaoChannelUrl String?
+  // CS 운영시간 — 자유 텍스트 (예: "평일 09:00-18:00", "12:00-13:00 점심", "토,일,공휴일")
+  // 컨슈머 footer/CTA 영역에 노출, 영업 중/마감 안내 자동 계산용은 아님 (정적 텍스트).
+  csHours         String?
+  csLunchHours   String?
+  csHolidays     String?
   ownerName       String?
   phone           String?
   // 협력점 텔레그램 알림 chat_id (BotFather 봇이 발송, 협력점이 settings 에서 직접 입력).
@@ -87,6 +92,9 @@ model Seller {
   // 영업자 자체 로그인용 1:1 link (role="seller" User)
   userId      String?  @unique
   user        User?    @relation("SellerUser", fields: [userId], references: [id])
+  // 영업자 본인 텔레그램 chat_id — 본인이 받은 lead 인입 시 본인 텔레그램에 push.
+  // null 이면 미발송. 본사/협력점 알림과 독립.
+  telegramChatId String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -901,4 +909,20 @@ model BannerEvent {
   @@index([bannerId])
   @@index([partnerId, eventType])
   @@index([createdAt])
+}
+
+// ----------------------------------------------------------------
+// HqSetting — 본사 차원의 단일 설정 (싱글톤 row).
+// 현재는 SK매직 가입조건(연령/신용등급/결제수단/헬프콜)을 영업자/협력점이
+// 한눈에 보기 위한 fact sheet 저장소.
+//
+// id=1 고정 (CHECK 제약). row 가 없으면 마이그레이션 스크립트가 자동 생성.
+// ----------------------------------------------------------------
+model HqSetting {
+  id              Int      @id @default(1)
+  // 가입조건 — 자유 JSON. UI 가 표시 가능한 키:
+  //   { ageMin, ageMax, creditGrade, paymentMethods, helpCallNumber, memo }
+  joinConditions  Json?
+  updatedAt       DateTime @updatedAt
+  updatedById     String?
 }

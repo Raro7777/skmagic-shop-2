@@ -24,7 +24,7 @@ export async function PATCH(req: Request) {
   try { body = await req.json(); } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
-  const b = body as Partial<{ name: string; email: string; phone: string }>;
+  const b = body as Partial<{ name: string; email: string; phone: string; telegramChatId: string }>;
 
   const data: { name?: string; email?: string } = {};
 
@@ -63,7 +63,23 @@ export async function PATCH(req: Request) {
     }
   }
 
-  if (Object.keys(data).length === 0 && normalizedPhone === undefined) {
+  // 텔레그램 chat_id — 영업자 본인만 본인 lead 알림 push 용. 형식: 숫자 또는 -로 시작하는 음수.
+  let normalizedChatId: string | null | undefined;
+  if (b.telegramChatId !== undefined) {
+    if (session.user.role !== "seller") {
+      return NextResponse.json({ error: "텔레그램 ID 는 영업자만 본인 프로필에서 변경할 수 있습니다." }, { status: 403 });
+    }
+    const raw = b.telegramChatId.trim();
+    if (!raw) {
+      normalizedChatId = null;
+    } else if (!/^-?\d{5,16}$/.test(raw)) {
+      return NextResponse.json({ error: "텔레그램 ID 형식이 올바르지 않습니다 (숫자만, 5-16자리)." }, { status: 400 });
+    } else {
+      normalizedChatId = raw;
+    }
+  }
+
+  if (Object.keys(data).length === 0 && normalizedPhone === undefined && normalizedChatId === undefined) {
     return NextResponse.json({ error: "변경된 필드가 없습니다." }, { status: 400 });
   }
 
@@ -73,10 +89,11 @@ export async function PATCH(req: Request) {
       await tx.user.update({ where: { id: session.user.id }, data });
     }
     if (session.user.role === "seller") {
-      const sellerData: { name?: string; email?: string | null; phone?: string | null } = {};
+      const sellerData: { name?: string; email?: string | null; phone?: string | null; telegramChatId?: string | null } = {};
       if (data.name !== undefined) sellerData.name = data.name;
       if (data.email !== undefined) sellerData.email = data.email;
       if (normalizedPhone !== undefined) sellerData.phone = normalizedPhone;
+      if (normalizedChatId !== undefined) sellerData.telegramChatId = normalizedChatId;
       if (Object.keys(sellerData).length > 0) {
         await tx.seller.updateMany({ where: { userId: session.user.id }, data: sellerData });
       }
@@ -89,6 +106,7 @@ export async function PATCH(req: Request) {
       name: data.name,
       email: data.email,
       phone: normalizedPhone,
+      telegramChatId: normalizedChatId,
     },
   });
 }

@@ -265,6 +265,9 @@ export type PartnerSiteData = {
     hotlineNumber: string;
     kakaoChannelUrl: string | null;
     ownerName: string | null;
+    csHours: string | null;
+    csLunchHours: string | null;
+    csHolidays: string | null;
   };
   hero: ConsumerProduct | null;
   ranking: ConsumerProduct[];           // 메인 hero 다음에 노출되는 기본 랭킹 (정수기)
@@ -547,6 +550,9 @@ export async function getPartnerSite(partnerCode: string): Promise<PartnerSiteDa
       hotlineNumber: partner.hotlineNumber,
       kakaoChannelUrl: partner.kakaoChannelUrl,
       ownerName: partner.ownerName,
+      csHours: partner.csHours,
+      csLunchHours: partner.csLunchHours,
+      csHolidays: partner.csHolidays,
     },
     hero,
     ranking,
@@ -681,6 +687,9 @@ export async function getPartnerHeader(partnerCode: string) {
     hotlineNumber: partner.hotlineNumber,
     kakaoChannelUrl: partner.kakaoChannelUrl,
     ownerName: partner.ownerName,
+    csHours: partner.csHours,
+    csLunchHours: partner.csLunchHours,
+    csHolidays: partner.csHolidays,
   };
 }
 
@@ -929,6 +938,9 @@ export async function getPartnerProductDetail(
       hotlineNumber: partner.hotlineNumber,
       kakaoChannelUrl: partner.kakaoChannelUrl,
       ownerName: partner.ownerName,
+      csHours: partner.csHours,
+      csLunchHours: partner.csLunchHours,
+      csHolidays: partner.csHolidays,
     },
     related: [],
   };

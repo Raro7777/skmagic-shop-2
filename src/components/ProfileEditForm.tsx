@@ -8,6 +8,7 @@ type Props = {
     name: string;
     email: string;
     phone: string | null;
+    telegramChatId?: string | null;
   };
   role: "hq" | "partner_admin" | "seller";
 };
@@ -18,6 +19,7 @@ export default function ProfileEditForm({ initial, role }: Props) {
   const [name, setName] = useState(initial.name);
   const [email, setEmail] = useState(initial.email);
   const [phone, setPhone] = useState(initial.phone ?? "");
+  const [telegramChatId, setTelegramChatId] = useState(initial.telegramChatId ?? "");
   const [busy, setBusy] = useState(false);
   const [flash, setFlash] = useState<{ tone: "ok" | "err"; text: string } | null>(null);
 
@@ -25,16 +27,20 @@ export default function ProfileEditForm({ initial, role }: Props) {
   const dirty =
     name.trim() !== initial.name.trim() ||
     email.trim().toLowerCase() !== initial.email.trim().toLowerCase() ||
-    (sellerMode && phone.trim() !== (initial.phone ?? "").trim());
+    (sellerMode && phone.trim() !== (initial.phone ?? "").trim()) ||
+    (sellerMode && telegramChatId.trim() !== (initial.telegramChatId ?? "").trim());
 
   const save = async () => {
     setBusy(true);
     setFlash(null);
     try {
-      const payload: { name?: string; email?: string; phone?: string } = {};
+      const payload: { name?: string; email?: string; phone?: string; telegramChatId?: string } = {};
       if (name.trim() !== initial.name.trim()) payload.name = name.trim();
       if (email.trim().toLowerCase() !== initial.email.trim().toLowerCase()) payload.email = email.trim();
       if (sellerMode && phone.trim() !== (initial.phone ?? "").trim()) payload.phone = phone.trim();
+      if (sellerMode && telegramChatId.trim() !== (initial.telegramChatId ?? "").trim()) {
+        payload.telegramChatId = telegramChatId.trim();
+      }
 
       const res = await fetch("/api/profile", {
         method: "PATCH",
@@ -57,6 +63,7 @@ export default function ProfileEditForm({ initial, role }: Props) {
     setName(initial.name);
     setEmail(initial.email);
     setPhone(initial.phone ?? "");
+    setTelegramChatId(initial.telegramChatId ?? "");
     setFlash(null);
   };
 
@@ -107,6 +114,24 @@ export default function ProfileEditForm({ initial, role }: Props) {
                 className="border border-rk-line rounded px-2.5 py-1.5 text-[13px] font-mono focus:outline-none focus:border-rk-navy disabled:opacity-50"
               />
               <small className="text-[11px] text-rk-faint">내 영업 단독 링크 카톡 공유 문구 + 상담 전화에 노출됩니다.</small>
+            </div>
+
+            <label htmlFor="profile-tg" className="text-rk-muted">텔레그램 ID</label>
+            <div className="flex flex-col gap-1">
+              <input
+                id="profile-tg"
+                type="text"
+                value={telegramChatId}
+                onChange={e => setTelegramChatId(e.target.value)}
+                placeholder="예: 123456789 (비우면 알림 미발송)"
+                maxLength={20}
+                disabled={busy}
+                className="border border-rk-line rounded px-2.5 py-1.5 text-[13px] font-mono focus:outline-none focus:border-rk-navy disabled:opacity-50"
+              />
+              <small className="text-[11px] text-rk-faint">
+                내가 받은 lead 상담 인입 시 본인 텔레그램에 즉시 알림.
+                {" "}@userinfobot 에게 /start 보내면 본인 chat_id 확인 가능.
+              </small>
             </div>
           </>
         )}
