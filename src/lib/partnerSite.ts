@@ -12,9 +12,9 @@ import { sanitizeBannerHtml } from "@/lib/sanitizeBannerHtml";
 export const CONSUMER_BRAND_NAME = "SK매직 공식인증점";
 
 /** 상품의 옵션별 렌탈지원금 중 최대값 계산. enabled=false면 0.
- *  영업자 컨텍스트일 때 sellerCap 으로 (partnerCommission → sellerMargin) 같은 산식 한 번 더 cap.
- *  본사-협력점: baseCommission − hqMargin = partnerCommission
- *  협력점-영업자: partnerCommission − sellerMargin = 영업자 cap
+ *  본사-협력점: baseCommission − hqMargin = partnerCommission  (협력점 페이지 cap)
+ *  협력점-영업자: partnerCommission − sellerMargin = sellerPayout (영업자 페이지 cap)
+ *  영업자 컨텍스트면 base 자체를 sellerPayout 으로 한 단계 더 차감.
  */
 function computeMaxRentalSupport(args: {
   hqPolicies: Array<{ baseCommission: number; monthIncentive: number; marginType: string | null; marginAmount: number | null; marginPercent: number | null }>;
@@ -24,7 +24,7 @@ function computeMaxRentalSupport(args: {
   giftAmount: number;
   installAmount: number;
   // 영업자 컨텍스트 — sellerMargin 산식 (옵션별 partnerCommission 에 적용).
-  // null 이면 협력점 컨텍스트 (sellerMargin cap 없음).
+  // null 이면 협력점 컨텍스트 (sellerMargin 차감 없음).
   sellerMarginPartner?: Pick<import("@prisma/client").Partner, "sellerMarginType" | "sellerMarginAmount" | "sellerMarginPercent"> | null;
   sellerMarginPolicies?: Array<{ productId: string; sellerMarginAmount: number | null; sellerMarginPercent: number | null }>;
   productId?: string;
@@ -35,18 +35,16 @@ function computeMaxRentalSupport(args: {
     const base = opt.baseCommission + opt.monthIncentive;
     const hqMargin = computeHqMargin(base, opt, args.tierMargin);
     const partnerCommission = base - hqMargin;
-    // 영업자 컨텍스트면 sellerMargin 계산해서 marginCap 으로 전달 → rentalSupportFor 가 cap 적용.
-    let marginCap: number | undefined;
+    // 영업자 컨텍스트면 partnerCommission 에서 sellerMargin 한 번 더 차감하여 영업자 cap.
+    let effectiveCommission = partnerCommission;
     if (args.sellerMarginPartner) {
       const override = args.productId
         ? args.sellerMarginPolicies?.find(p => p.productId === args.productId) ?? null
         : null;
-      marginCap = computeSellerMargin(partnerCommission, args.sellerMarginPartner, override);
+      const sellerMargin = computeSellerMargin(partnerCommission, args.sellerMarginPartner, override);
+      effectiveCommission = Math.max(0, partnerCommission - sellerMargin);
     }
-    const s = rentalSupportFor(
-      partnerCommission, args.partnerSupportAmount, args.giftAmount, args.installAmount,
-      marginCap,
-    );
+    const s = rentalSupportFor(effectiveCommission, args.partnerSupportAmount, args.giftAmount, args.installAmount);
     if (s > max) max = s;
   }
   return max;
