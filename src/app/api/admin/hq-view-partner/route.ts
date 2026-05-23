@@ -31,7 +31,8 @@ export async function POST(req: Request) {
     select: { partnerCode: true, partnerName: true, status: true },
   });
   if (!p) return NextResponse.json({ error: "협력점을 찾을 수 없습니다." }, { status: 404 });
-  if (p.status !== "active") {
+  // hq_template 은 본사 표준 메인페이지 편집용 special row. active 와 동일하게 진입 허용.
+  if (p.status !== "active" && p.status !== "hq_template") {
     return NextResponse.json({ error: "active 협력점만 진입 가능합니다." }, { status: 400 });
   }
 

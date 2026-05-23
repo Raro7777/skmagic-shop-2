@@ -35,7 +35,8 @@ export async function getEffectivePartner(): Promise<
         where: { partnerCode: fromCookie },
         select: { status: true },
       });
-      if (ok && ok.status === "active") {
+      // hq_template 도 본사 표준 편집용 — 본사 콘솔 임시진입 허용.
+      if (ok && (ok.status === "active" || ok.status === "hq_template")) {
         return { partnerId: fromCookie, isHqImpersonating: true };
       }
     }

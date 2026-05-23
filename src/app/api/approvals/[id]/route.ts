@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs";
 import { randomBytes, randomInt } from "crypto";
 import { BCRYPT_COST } from "@/lib/passwordPolicy";
 import { notifyHq, esc } from "@/lib/telegram";
+import { cloneHqTemplateToPartner } from "@/lib/hqTemplate";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -198,10 +199,15 @@ export async function PATCH(
         data: { partnerId: partnerCode },
       });
 
+      // 본사 표준(hq-template) → 신규 협력점 1회 복제 (Snapshot).
+      // 배너·진열·테마·정책. 푸터 정보는 위에서 이미 신청서 데이터로 채움.
+      const cloned = await cloneHqTemplateToPartner(tx, partnerCode);
+
       // P0-2: 텔레그램으로 새지 않도록 메시지 분리.
       //   sideEffect (public)      — 협력점 식별 정보만. tempPassword/로그인 이메일 미포함.
       //   sideEffectSecret (response) — HTTP 응답으로만 본사 운영자에게 임시 비번 전달.
-      sideEffect = `협력점 생성 완료 · partnerCode=${partnerCode} · 신청자=${applicantName ?? "—"} · 지역=${region ?? "—"} · 전화=${phone ?? "—"} · 매장 /p/${partnerCode}`;
+      sideEffect = `협력점 생성 완료 · partnerCode=${partnerCode} · 신청자=${applicantName ?? "—"} · 지역=${region ?? "—"} · 전화=${phone ?? "—"} · 매장 /p/${partnerCode}`
+        + (cloned.cloned ? ` · 본사표준 복제: 배너 ${cloned.copiedBanners}개·정책 ${cloned.copiedPolicies}개` : ` · ⚠ hq-template 없음 — snapshot 복제 미실행`);
       sideEffectSecret = `로그인 ${finalEmail} · 임시 비밀번호 ${tempPassword}`;
     }
 

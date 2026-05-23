@@ -33,6 +33,7 @@ const NAV_MASTER: NavItem[] = [
   { href: "/admin/super/crawl",             ico: "🔄", label: "상품 크롤링" },
   { href: "/admin/super/api-partners",      ico: "🔌", label: "외부 API 채널" },
   { href: "/admin/super/hq-settings",        ico: "📋", label: "가입조건 fact sheet" },
+  { href: "/admin/super/hq-template",        ico: "📐", label: "본사 표준 메인페이지" },
 ];
 const NAV_FINANCE: NavItem[] = [
   { href: "/admin/super/settlements", ico: "💳", label: "정산 / 수수료" },

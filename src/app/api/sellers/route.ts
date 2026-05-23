@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { HQ_VIEW_COOKIE, gatePartnerOrHq } from "@/lib/effectivePartner";
 import { normalizeKoreanPhone } from "@/lib/sellerPhone";
 import { generateSellerCode } from "@/lib/sellerCode";
+import { cloneFooterFromPartner } from "@/lib/hqTemplate";
 import { BCRYPT_COST } from "@/lib/passwordPolicy";
 
 /**
@@ -137,6 +138,10 @@ export async function POST(req: Request) {
 
     try {
       const created = await prisma.$transaction(async tx => {
+        // 영업자 생성 시점에 협력점 footer 11필드 1회 복제 (Snapshot).
+        // 이후 협력점이 footer 바꿔도 영업자에게 영향 X — 영업자는 본인 콘솔에서 자유 수정 가능.
+        const footerSnapshot = await cloneFooterFromPartner(tx, eff.partnerId);
+
         const seller = await tx.seller.create({
           data: {
             partnerId: eff.partnerId,
@@ -145,6 +150,7 @@ export async function POST(req: Request) {
             phone: normalizedPhone,
             email: b.email?.trim() || null,
             status: "active",
+            ...footerSnapshot,
           },
         });
         const user = await tx.user.create({
