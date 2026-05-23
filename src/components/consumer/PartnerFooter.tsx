@@ -8,6 +8,17 @@ export default function PartnerFooter({ partner }: { partner: PartnerSiteData["p
   const showHotline = partner.hotlineNumber && partner.hotlineNumber !== HQ_HOTLINE;
   return (
     <footer className="bg-rk-soft px-3.5 py-4 text-[13px] text-rk-muted leading-[1.7]">
+      {/* 협력점 로고 — 업로드한 경우만 푸터 상단에 표시. 헤더는 본사 정책상 SK매직 공식 로고 고정. */}
+      {partner.footerLogoUrl && (
+        <div className="mb-2.5">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={partner.footerLogoUrl}
+            alt={`${partner.companyName} 로고`}
+            className="max-h-[48px] max-w-[200px] object-contain"
+          />
+        </div>
+      )}
       <div className="flex gap-2.5 flex-wrap mb-2.5 text-[13px]">
         <Link href="/legal/terms" className="text-rk-ink font-semibold no-underline cursor-pointer">이용약관</Link>
         <Link href="/legal/privacy" className="text-rk-ink font-semibold no-underline cursor-pointer">개인정보처리방침</Link>

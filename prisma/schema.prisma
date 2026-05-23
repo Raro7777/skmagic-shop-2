@@ -33,6 +33,9 @@ model Partner {
   // 협력점 텔레그램 알림 chat_id (BotFather 봇이 발송, 협력점이 settings 에서 직접 입력).
   // null 이면 알림 미발송. 본사 알림은 env TELEGRAM_CHAT_ID_HQ 로 별도 처리.
   telegramChatId  String?
+  // 협력점 자체 로고 (푸터 노출용). 비우면 푸터에 로고 없이 텍스트 정보만.
+  // 헤더는 본사 정책상 SK매직 공식 로고 고정 — 협력점 로고는 푸터 전용.
+  footerLogoUrl   String?
   status          String   @default("active") // active | suspended | closed
   // 메인 페이지 진열 순서 (협력점 자체 편집)
   // 형태: { picks: ["WPU…", …], ranking: { water: […], air: […], bidet: […], mattress: […] } }

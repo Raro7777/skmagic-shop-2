@@ -4,6 +4,7 @@ import KakaoChannelInput from "@/components/franchise/KakaoChannelInput";
 import PartnerProfileEditor from "@/components/franchise/PartnerProfileEditor";
 import RentalSupportInput from "@/components/franchise/RentalSupportInput";
 import SellerMarginInput from "@/components/franchise/SellerMarginInput";
+import FooterLogoUpload from "@/components/franchise/FooterLogoUpload";
 import { HQ_HOTLINE } from "@/lib/constants/hq";
 
 export const metadata = { title: "사이트 설정 · 협력점 콘솔" };
@@ -102,6 +103,8 @@ export default async function SettingsPage() {
       />
 
       <KakaoChannelInput initial={partner.kakaoChannelUrl} />
+
+      <FooterLogoUpload initialUrl={partner.footerLogoUrl} />
 
       <div className="bg-rk-tint-blue text-rk-info text-[14px] p-3 rounded-md leading-[1.6]">
         ⓘ <b>상호</b>만 본사 슈퍼관리자 승인이 필요합니다. 변경이 필요하면 본사({HQ_HOTLINE})로 문의하세요.
