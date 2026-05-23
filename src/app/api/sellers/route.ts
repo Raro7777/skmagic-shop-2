@@ -8,6 +8,7 @@ import { HQ_VIEW_COOKIE, gatePartnerOrHq } from "@/lib/effectivePartner";
 import { normalizeKoreanPhone } from "@/lib/sellerPhone";
 import { generateSellerCode } from "@/lib/sellerCode";
 import { cloneFooterFromPartner } from "@/lib/hqTemplate";
+import { sendCredentialEmail } from "@/lib/notifier";
 import { BCRYPT_COST } from "@/lib/passwordPolicy";
 
 /**
@@ -167,6 +168,32 @@ export async function POST(req: Request) {
         await tx.seller.update({ where: { id: seller.id }, data: { userId: user.id } });
         return seller;
       });
+      // 협력점이 직접 부여한 이메일이면 영업자에게 자동 발송 — 자격 안내.
+      // 자동 fallback (s-{code}@rentking.kr) 은 실제 메일박스가 아니라 발송 스킵.
+      // 발송 실패해도 본 흐름은 계속 (협력점이 화면 토스트로 직접 전달 가능).
+      const isRealMailbox = !!requestedEmail;
+      let emailSent = false;
+      let emailError: string | null = null;
+      if (isRealMailbox) {
+        const proto = req.headers.get("x-forwarded-proto") ?? "https";
+        const host = req.headers.get("x-forwarded-host") ?? req.headers.get("host") ?? "skmagic-shop.com";
+        const loginUrl = `${proto}://${host}/login?callbackUrl=%2Fadmin%2Fseller`;
+        try {
+          const r = await sendCredentialEmail({
+            to: loginEmail,
+            name: created.name,
+            tempPassword,
+            role: "seller",
+            loginUrl,
+            isReset: false,
+          });
+          emailSent = r.ok;
+          if (!r.ok) emailError = r.error ?? "unknown";
+        } catch (e) {
+          emailError = e instanceof Error ? e.message : "unknown";
+        }
+      }
+
       return NextResponse.json({
         ok: true,
         seller: {
@@ -179,6 +206,11 @@ export async function POST(req: Request) {
         login: {
           email: loginEmail,
           tempPassword,
+        },
+        email: {
+          attempted: isRealMailbox,
+          sent: emailSent,
+          error: emailError,
         },
       });
     } catch (e) {

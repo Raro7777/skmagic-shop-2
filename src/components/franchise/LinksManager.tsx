@@ -115,9 +115,10 @@ export default function LinksManager({
   // 영업자 추가 직후 토스트
   // 단일: 로그인 자격(email + 임시비번) + 카톡 문구 자동 클립보드 복사 안내
   // 일괄: 성공/실패 명단 + 각 영업자별 로그인 자격 안내
+  type EmailStatus = { attempted: boolean; sent: boolean; error: string | null } | null;
   type AddedToast =
-    | { mode: "single"; name: string; copied: boolean; login: { email: string; tempPassword: string } | null }
-    | { mode: "bulk"; added: Array<{ name: string; login: { email: string; tempPassword: string } | null }>; failed: Array<{ raw: string; reason: string }> };
+    | { mode: "single"; name: string; copied: boolean; login: { email: string; tempPassword: string } | null; email: EmailStatus }
+    | { mode: "bulk"; added: Array<{ name: string; login: { email: string; tempPassword: string } | null; email: EmailStatus }>; failed: Array<{ raw: string; reason: string }> };
   const [addedToast, setAddedToast] = useState<AddedToast | null>(null);
 
   useEffect(() => {
@@ -210,7 +211,7 @@ export default function LinksManager({
     e.preventDefault();
     setAddError(null);
 
-    type AddedRow = { name: string; sellerCode: string; phone: string | null; login: { email: string; tempPassword: string } | null };
+    type AddedRow = { name: string; sellerCode: string; phone: string | null; login: { email: string; tempPassword: string } | null; email: EmailStatus };
     const added: AddedRow[] = [];
     const failed: Array<{ raw: string; reason: string }> = [];
 
@@ -238,7 +239,8 @@ export default function LinksManager({
         }
         const s = data.seller as { sellerCode: string; name: string; phone: string | null };
         const login = (data.login as { email: string; tempPassword: string } | undefined) ?? null;
-        added.push({ ...s, login });
+        const email = (data.email as EmailStatus | undefined) ?? null;
+        added.push({ ...s, login, email });
       } catch {
         setAddError("네트워크 오류");
         setAdding(false);
@@ -272,7 +274,8 @@ export default function LinksManager({
           } else {
             const s = data.seller as { sellerCode: string; name: string; phone: string | null };
             const login = (data.login as { email: string; tempPassword: string } | undefined) ?? null;
-            added.push({ ...s, login });
+            const email = (data.email as EmailStatus | undefined) ?? null;
+            added.push({ ...s, login, email });
           }
         } catch {
           failed.push({ raw: `${r.name} ${r.phone}`, reason: "네트워크 오류" });
@@ -304,11 +307,11 @@ export default function LinksManager({
         await navigator.clipboard.writeText(text);
         copied = true;
       } catch { /* 클립보드 차단되어도 추가는 성공 */ }
-      setAddedToast({ mode: "single", name: s.name, copied, login: s.login });
+      setAddedToast({ mode: "single", name: s.name, copied, login: s.login, email: s.email });
     } else {
       setAddedToast({
         mode: "bulk",
-        added: added.map(a => ({ name: a.name, login: a.login })),
+        added: added.map(a => ({ name: a.name, login: a.login, email: a.email })),
         failed,
       });
     }
@@ -456,6 +459,15 @@ export default function LinksManager({
                     <small className="text-rk-muted text-[12px] block mt-1">
                       영업자 본인이 첫 로그인 시 비밀번호를 변경해야 합니다. 위 자격은 카톡 문구에 자동 포함되어 있습니다.
                     </small>
+                    {addedToast.email && (
+                      <small className={"block text-[12px] mt-1 font-medium " + (addedToast.email.sent ? "text-rk-info" : addedToast.email.attempted ? "text-rk-sale" : "text-rk-faint")}>
+                        {addedToast.email.sent
+                          ? `📧 ${addedToast.login.email} 으로 자격 안내 이메일 자동 발송 완료`
+                          : addedToast.email.attempted
+                            ? `⚠ 이메일 발송 실패 (${addedToast.email.error ?? "unknown"}) — 카톡으로 직접 전달해주세요`
+                            : `ℹ 자동 발송된 ID 형식이라 메일 미발송 — 카톡으로 전달해주세요`}
+                      </small>
+                    )}
                   </div>
                 )}
               </>
@@ -470,11 +482,15 @@ export default function LinksManager({
                     <b className="block text-rk-success mb-1">🔑 영업자별 로그인 자격</b>
                     <ul className="m-0 p-0 list-none font-mono">
                       {addedToast.added.filter(a => a.login).map((a, i) => (
-                        <li key={i}><b>{a.name}</b> · ID {a.login!.email} · 임시 {a.login!.tempPassword}</li>
+                        <li key={i}>
+                          <b>{a.name}</b> · ID {a.login!.email} · 임시 {a.login!.tempPassword}
+                          {a.email?.sent && <span className="text-rk-info ml-1.5">📧 메일 발송됨</span>}
+                          {a.email?.attempted && !a.email.sent && <span className="text-rk-sale ml-1.5">⚠ 메일 실패</span>}
+                        </li>
                       ))}
                     </ul>
                     <small className="text-rk-muted text-[11px] block mt-1 font-sans">
-                      각 영업자에게 카톡으로 전달 — 첫 로그인 시 비밀번호 변경 강제됩니다.
+                      이메일이 자동 발송된 영업자도 카톡 백업 권장 — 첫 로그인 시 비밀번호 변경 강제됩니다.
                     </small>
                   </div>
                 )}
