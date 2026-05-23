@@ -89,7 +89,8 @@ export async function POST(req: Request) {
   const b = body as Partial<{
     name: string;
     phone: string;
-    email: string;
+    email: string;        // (구) — display 용 (현재는 안 씀, loginEmail 동기화)
+    loginEmail: string;   // 협력점이 직접 부여하는 로그인 ID. 이메일 형식 필수.
   }>;
 
   if (!b.name?.trim() || !b.phone?.trim()) {
@@ -113,18 +114,24 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "이미 등록된 전화번호입니다." }, { status: 400 });
   }
 
-  // sellerCode 자동 생성 (12자리 영문소문자+숫자). 충돌 시 최대 5회 재시도.
-  // 동시에 영업자 로그인 User(role=seller) 도 발급 → 임시 비밀번호로 /admin/seller 로그인 가능.
+  // 협력점이 직접 부여한 로그인 ID — 이메일 형식 필수, 시스템 unique. 비우면 자동 fallback.
+  // (구 동작: 입력했는데 중복이면 자동 fallback → 협력점이 모르게 변경됨. 이제는 명시적 에러.)
+  const requestedEmail = (b.loginEmail ?? b.email)?.trim().toLowerCase() || null;
+  if (requestedEmail) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(requestedEmail)) {
+      return NextResponse.json({ error: "ID(이메일) 형식이 올바르지 않습니다." }, { status: 400 });
+    }
+    const taken = await prisma.user.findUnique({ where: { email: requestedEmail }, select: { id: true } });
+    if (taken) {
+      return NextResponse.json({ error: "이미 사용 중인 ID(이메일)입니다. 다른 ID를 입력하세요." }, { status: 409 });
+    }
+  }
+
+  // sellerCode 자동 생성 (12자리 영문소문자+숫자) — URL 식별자. 충돌 시 최대 5회 재시도.
+  // 로그인 이메일은 협력점 입력값 우선, 비우면 sellerCode 기반 fallback.
   for (let attempt = 0; attempt < 5; attempt++) {
     const code = generateSellerCode();
-    // 로그인 이메일: 신청자 제공값 우선, 없으면 sellerCode 기반 fallback.
-    // 같은 이메일이 이미 점유되어 있으면 fallback 으로 회피.
-    const requestedEmail = b.email?.trim().toLowerCase() || null;
-    let loginEmail = requestedEmail ?? `s-${code}@rentking.kr`;
-    if (requestedEmail) {
-      const taken = await prisma.user.findUnique({ where: { email: requestedEmail }, select: { id: true } });
-      if (taken) loginEmail = `s-${code}@rentking.kr`;
-    }
+    const loginEmail = requestedEmail ?? `s-${code}@rentking.kr`;
     const tempPassword = generateTempPassword();
     const passwordHash = await bcrypt.hash(tempPassword, BCRYPT_COST);
 
@@ -170,7 +177,14 @@ export async function POST(req: Request) {
       });
     } catch (e) {
       const pcode = (e as { code?: string }).code;
-      if (pcode === "P2002") continue; // sellerCode 또는 email 충돌 — 재시도
+      if (pcode === "P2002") {
+        // 협력점이 직접 부여한 이메일이 user 테이블에서 충돌 → 위에서 이미 한 번 체크했지만
+        // race condition 으로 동시 등록 시 발생 가능. 재시도해도 같은 이메일 → 명확히 에러.
+        if (requestedEmail) {
+          return NextResponse.json({ error: "이미 사용 중인 ID(이메일)입니다. 다른 ID를 입력하세요." }, { status: 409 });
+        }
+        continue; // 자동 sellerCode/loginEmail fallback 충돌 — 재시도
+      }
       return NextResponse.json({ error: "생성 실패" }, { status: 500 });
     }
   }

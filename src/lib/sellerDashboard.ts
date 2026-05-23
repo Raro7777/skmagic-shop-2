@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "./prisma";
 import { STATUS_LABEL as STATUS_LABEL_MAP, LEAD_STATUSES, type LeadStatus } from "./leadStatus";
+import { computeHqMargin, computeSellerMargin } from "./marginFlow";
 
 const HOUR = 60 * 60 * 1000;
 
@@ -14,6 +15,9 @@ export type SellerKpi = {
   totalPayout: number;          // 누적 영업자수수료 (paid 만, 환수 영향 X)
   conversionRate: number;       // 전체 lead 중 설치완료(install_done 이상) 도달 비율 (0~100, %)
   closedLeads: number;          // 종료/취소 lead — 전환률 분모에서 제외 가능성 표기용
+  // 진행 중 lead 들의 예상 sellerPayout 합계 — 아직 Settlement 생성 전이지만 협력점이
+  // 책정한 sellerMargin 으로 미리 보여주기. 설치완료/취소되면 자동 빠짐.
+  expectedInProgress: number;
 };
 
 export type SellerLeadRow = {
@@ -33,7 +37,8 @@ export type SellerLeadRow = {
   statusLabel: string;
   // 환수 진행 여부 — 영업자에게는 표기만 (계약은 본사 ↔ 협력점)
   refundStatus: string | null;
-  sellerPayout: number;        // 정산된 영업자수수료 (Settlement 가 있을 때)
+  sellerPayout: number;          // 정산된 영업자수수료 (Settlement 가 있을 때)
+  expectedSellerPayout: number;  // Settlement 미생성 lead 의 예상 sellerPayout (협력점 sellerMargin 기준)
 };
 
 export type SellerProfile = {
@@ -98,6 +103,11 @@ type SellerWithPartner = Prisma.SellerGetPayload<{
   include: { partner: { select: { partnerCode: true; partnerName: true; hotlineNumber: true } } };
 }>;
 
+/** 진행 중 / 신규 / 정산 전 lead 가 정산되면 받을 sellerPayout 예측값.
+ *  HqPolicy + Partner.sellerMargin + PartnerPolicy override 를 동일하게 적용.
+ *  install_cancel / consult_closed 면 0. */
+const EXPECTED_PAYOUT_EXCLUDE = new Set<string>(["install_cancel", "consult_closed", "settle_done"]);
+
 async function getSellerDashboardBySellerRow(seller: SellerWithPartner): Promise<SellerDashboard | null> {
 
   const startOfMonth = new Date();
@@ -138,6 +148,59 @@ async function getSellerDashboardBySellerRow(seller: SellerWithPartner): Promise
     : [];
   const settlementByLead = new Map(leadSettlements.map(s => [s.leadId, s]));
 
+  // 예상 수수료 계산용 데이터 로드 — partner / tierMargin / product 들의 hqPolicies + partnerPolicies.
+  // recentLeads 의 productCode 집합만 한 번에 fetch 해서 in-memory lookup.
+  const partnerForMargin = await prisma.partner.findUnique({
+    where: { partnerCode: seller.partner.partnerCode },
+    select: {
+      sellerMarginType: true, sellerMarginAmount: true, sellerMarginPercent: true,
+      tier: true,
+    },
+  });
+  const tierMargin = partnerForMargin
+    ? await prisma.hqMarginByTier.findUnique({ where: { tier: partnerForMargin.tier ?? "basic" } })
+    : null;
+  const productCodes = Array.from(new Set(recentLeads.map(l => l.productCode).filter((x): x is string => !!x)));
+  const productsForMargin = productCodes.length > 0
+    ? await prisma.product.findMany({
+        where: { productCode: { in: productCodes } },
+        include: {
+          hqPolicies: true,
+          partnerPolicies: { where: { partnerId: seller.partner.partnerCode } },
+        },
+      })
+    : [];
+  const productByCode = new Map(productsForMargin.map(p => [p.productCode, p]));
+
+  /** lead 한 건의 예상 sellerPayout — 정산 흐름 (computeMarginFlow) 과 동일 산식, settle 전이지만 미리 계산. */
+  function computeExpectedSellerPayout(lead: typeof recentLeads[number]): number {
+    if (!partnerForMargin) return 0;
+    if (EXPECTED_PAYOUT_EXCLUDE.has(lead.status)) return 0;
+    if (!lead.productCode) return 0;
+    const product = productByCode.get(lead.productCode);
+    if (!product) return 0;
+    const mode = lead.selectedMode ?? null;
+    const period = lead.selectedContractPeriod ?? product.contractPeriod;
+    const policy =
+      product.hqPolicies.find(h => h.mode === mode && h.contractPeriod === period)
+      ?? product.hqPolicies.find(h => h.mode === mode && h.contractPeriod === 60)
+      ?? product.hqPolicies[0];
+    if (!policy) return 0;
+    const baseCommission = policy.baseCommission + policy.monthIncentive;
+    const hqMargin = computeHqMargin(
+      baseCommission,
+      policy,
+      tierMargin
+        ? { type: tierMargin.marginType as "fixed" | "percent", amount: tierMargin.marginAmount, percent: tierMargin.marginPercent }
+        : null,
+    );
+    const partnerCommission = baseCommission - hqMargin;
+    const partnerPolicyForProduct = product.partnerPolicies[0] ?? null;
+    const sellerMargin = computeSellerMargin(partnerCommission, partnerForMargin, partnerPolicyForProduct);
+    // 영업자가 받음 = partnerCommission - sellerMargin (computeMarginFlow A안 동일)
+    return Math.max(0, partnerCommission - sellerMargin);
+  }
+
   const countOf = (s: string) => statusCounts.find(r => r.status === s)?._count._all ?? 0;
   // 영업자 수수료 = Settlement.sellerPayout (영업점수수료 - 영업점마진).
   // 환원·환수는 영업점 책임이므로 영업자 표기에는 반영 안 함.
@@ -163,12 +226,20 @@ async function getSellerDashboardBySellerRow(seller: SellerWithPartner): Promise
     ? Math.round((doneCount / conversionDenom) * 1000) / 10  // 소수점 한 자리 (예: 42.7%)
     : 0;
 
+  // 진행 중 lead 들의 예상 sellerPayout 합계 — Settlement 있는 lead 는 실제값 사용, 없으면 expected.
+  let expectedInProgress = 0;
+
   const leads: SellerLeadRow[] = recentLeads.map(l => {
     const ageMs = Date.now() - l.createdAt.getTime();
     const age = ageLabel(ageMs);
     const isKnown = (LEAD_STATUSES as readonly string[]).includes(l.status);
     const stage = (isKnown ? l.status : "consult_wish") as LeadStatus;
     const settle = settlementByLead.get(l.id);
+    const expected = settle ? 0 : computeExpectedSellerPayout(l);
+    // KPI 합산용 — Settlement 없는 진행 중 lead 만.
+    if (!settle && !EXPECTED_PAYOUT_EXCLUDE.has(l.status)) {
+      expectedInProgress += expected;
+    }
     return {
       id: l.id,
       receivedAt: fmtDate(l.createdAt),
@@ -186,6 +257,7 @@ async function getSellerDashboardBySellerRow(seller: SellerWithPartner): Promise
       statusLabel: STATUS_LABEL_MAP[stage] ?? stage,
       refundStatus: settle?.refundStatus ?? null,
       sellerPayout: settle?.sellerPayout ?? 0,
+      expectedSellerPayout: expected,
     };
   });
 
@@ -210,6 +282,7 @@ async function getSellerDashboardBySellerRow(seller: SellerWithPartner): Promise
       totalPayout,
       conversionRate,
       closedLeads: closedCount,
+      expectedInProgress,
     },
     leads,
   };

@@ -36,7 +36,7 @@ export default async function SellerLeadsPage() {
         <table className="w-full bg-white border border-rk-line rounded-lg overflow-hidden text-[14px]">
           <thead className="bg-rk-soft-2">
             <tr>
-              {["접수", "고객", "상품 / 옵션", "월 렌탈가", "단계", "다음 할 일"].map((h, i) => (
+              {["접수", "고객", "상품 / 옵션", "월 렌탈가", "내 수수료", "단계", "다음 할 일"].map((h, i) => (
                 <th key={i} className="text-left px-3 py-2 font-medium text-rk-muted text-[13px] uppercase tracking-[.04em] border-b border-rk-line">{h}</th>
               ))}
             </tr>
@@ -65,6 +65,17 @@ export default async function SellerLeadsPage() {
                   )}
                 </td>
                 <td className="px-3 py-2.5 align-top rk-num">{l.selectedRentalPrice != null ? `₩${fmt(l.selectedRentalPrice)}` : "—"}</td>
+                <td className="px-3 py-2.5 align-top rk-num">
+                  {l.sellerPayout > 0 ? (
+                    <b className="text-rk-success">+₩{fmt(l.sellerPayout)}</b>
+                  ) : l.expectedSellerPayout > 0 ? (
+                    <span className="text-rk-muted" title="설치완료 시 받게 될 예상 수수료 (협력점이 책정한 영업자 마진 기준)">
+                      예상 +₩{fmt(l.expectedSellerPayout)}
+                    </span>
+                  ) : (
+                    <span className="text-rk-faint">—</span>
+                  )}
+                </td>
                 <td className="px-3 py-2.5 align-top">
                   <span className={"text-[12px] px-1.5 py-px rounded font-medium " + STATUS_PILL[l.status]}>{l.statusLabel}</span>
                 </td>

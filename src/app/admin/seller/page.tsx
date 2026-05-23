@@ -32,7 +32,17 @@ export default async function SellerDashboardPage() {
       <div className="grid grid-cols-3 gap-3 mb-3.5">
         <KpiCard label="이번 주 신규" value={kpi.weekLeads.toLocaleString()} suffix="건" tone="orange" hint="최근 7일" />
         <KpiCard label="누적 lead" value={kpi.totalLeads.toLocaleString()} suffix="건" tone="navy" hint="전체 기간" />
-        <KpiCard label="이번 달 정산 예정" value={fmt(kpi.expectedPayout)} suffix="원" tone="success" hint={`${kpi.doneThisMonth}건 완료 합계`} />
+        <KpiCard
+          label="이번 달 정산 예정"
+          value={fmt(kpi.expectedPayout + kpi.expectedInProgress)}
+          suffix="원"
+          tone="success"
+          hint={
+            kpi.expectedInProgress > 0
+              ? `정산생성 ${kpi.doneThisMonth}건 + 진행중 예상 ₩${fmt(kpi.expectedInProgress)}`
+              : `${kpi.doneThisMonth}건 완료 합계`
+          }
+        />
       </div>
 
       <div className="grid grid-cols-3 gap-3 mb-3.5">
@@ -96,9 +106,13 @@ export default async function SellerDashboardPage() {
                 </div>
                 <div className="flex flex-col items-end gap-1">
                   <span className={"text-[12px] px-1.5 py-px rounded font-medium " + STATUS_PILL[l.status]}>{l.statusLabel}</span>
-                  {l.sellerPayout > 0 && (
+                  {l.sellerPayout > 0 ? (
                     <small className="text-[11px] rk-num text-rk-success">+₩{fmt(l.sellerPayout)}</small>
-                  )}
+                  ) : l.expectedSellerPayout > 0 ? (
+                    <small className="text-[11px] rk-num text-rk-muted" title="설치완료 시 받게 될 예상 수수료 (협력점이 책정한 영업자 마진 기준)">
+                      예상 +₩{fmt(l.expectedSellerPayout)}
+                    </small>
+                  ) : null}
                   {l.refundStatus && (
                     <span
                       className="text-[10px] px-1 py-px rounded bg-rk-tint-orange text-rk-orange-deep font-medium"

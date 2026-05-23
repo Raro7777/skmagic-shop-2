@@ -93,8 +93,14 @@ export default function LinksManager({
   // customDomain 보유 시 그걸 우선 사용. 사용자가 본사 도메인 형태로 보고 싶으면 토글로 전환.
   const [useShortDomain, setUseShortDomain] = useState(true);
 
-  // Form state for adding seller (단일/일괄 통합 — 한 줄=1명, 여러 줄=일괄)
+  // Form state for adding seller
+  //   - addMode "single" : 이름·전화·로그인 ID 직접 입력 (협력점이 ID 수동 부여)
+  //   - addMode "bulk"   : textarea — 한 줄에 한 명 (이름 전화), ID 는 자동 발급
   const [showAdd, setShowAdd] = useState(false);
+  const [addMode, setAddMode] = useState<"single" | "bulk">("single");
+  const [singleName, setSingleName] = useState("");
+  const [singlePhone, setSinglePhone] = useState("");
+  const [singleLoginEmail, setSingleLoginEmail] = useState("");
   const [bulkInput, setBulkInput] = useState("");
   const [adding, setAdding] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
@@ -203,39 +209,77 @@ export default function LinksManager({
   const submitAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     setAddError(null);
-    const rows = parseBulkInput(bulkInput);
-    if (rows.length === 0) {
-      setAddError("이름과 전화번호를 한 줄 이상 입력하세요.");
-      return;
-    }
-    setAdding(true);
+
     type AddedRow = { name: string; sellerCode: string; phone: string | null; login: { email: string; tempPassword: string } | null };
     const added: AddedRow[] = [];
-    const failed: Array<{ raw: string; reason: string }> = rows
-      .filter(r => !r.ok)
-      .map(r => (r as Extract<ParsedRow, { ok: false }>));
+    const failed: Array<{ raw: string; reason: string }> = [];
 
-    for (const r of rows) {
-      if (!r.ok) continue;
+    // 단일 모드 — 이름/전화/ID(이메일) 직접 입력
+    if (addMode === "single") {
+      const name = singleName.trim();
+      const phone = singlePhone.trim();
+      if (!name || !phone) {
+        setAddError("이름과 전화번호는 필수입니다.");
+        return;
+      }
+      const loginEmail = singleLoginEmail.trim();
+      setAdding(true);
       try {
         const res = await fetch("/api/sellers", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ name: r.name, phone: r.phone }),
+          body: JSON.stringify({ name, phone, ...(loginEmail ? { loginEmail } : {}) }),
         });
         const data = await res.json();
         if (!res.ok) {
-          failed.push({ raw: `${r.name} ${r.phone}`, reason: data.error ?? "생성 실패" });
-        } else {
-          const s = data.seller as { sellerCode: string; name: string; phone: string | null };
-          const login = (data.login as { email: string; tempPassword: string } | undefined) ?? null;
-          added.push({ ...s, login });
+          setAddError(data.error ?? "생성 실패");
+          setAdding(false);
+          return;
         }
+        const s = data.seller as { sellerCode: string; name: string; phone: string | null };
+        const login = (data.login as { email: string; tempPassword: string } | undefined) ?? null;
+        added.push({ ...s, login });
       } catch {
-        failed.push({ raw: `${r.name} ${r.phone}`, reason: "네트워크 오류" });
+        setAddError("네트워크 오류");
+        setAdding(false);
+        return;
       }
+      setAdding(false);
+    } else {
+      // bulk 모드 — textarea 한 줄 = 1명, ID 는 자동 발급
+      const rows = parseBulkInput(bulkInput);
+      if (rows.length === 0) {
+        setAddError("이름과 전화번호를 한 줄 이상 입력하세요.");
+        return;
+      }
+      setAdding(true);
+      const parsedFailed: Array<{ raw: string; reason: string }> = rows
+        .filter(r => !r.ok)
+        .map(r => (r as Extract<ParsedRow, { ok: false }>));
+      failed.push(...parsedFailed);
+
+      for (const r of rows) {
+        if (!r.ok) continue;
+        try {
+          const res = await fetch("/api/sellers", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ name: r.name, phone: r.phone }),
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            failed.push({ raw: `${r.name} ${r.phone}`, reason: data.error ?? "생성 실패" });
+          } else {
+            const s = data.seller as { sellerCode: string; name: string; phone: string | null };
+            const login = (data.login as { email: string; tempPassword: string } | undefined) ?? null;
+            added.push({ ...s, login });
+          }
+        } catch {
+          failed.push({ raw: `${r.name} ${r.phone}`, reason: "네트워크 오류" });
+        }
+      }
+      setAdding(false);
     }
-    setAdding(false);
 
     if (added.length === 0 && failed.length > 0) {
       setAddError(failed.map(f => `${f.raw}: ${f.reason}`).join(" / "));
@@ -273,6 +317,9 @@ export default function LinksManager({
 
     setShowAdd(false);
     setBulkInput("");
+    setSingleName("");
+    setSinglePhone("");
+    setSingleLoginEmail("");
     fetchSellers();
   };
 
@@ -613,47 +660,118 @@ export default function LinksManager({
               </button>
             ) : (
               <form onSubmit={submitAdd} className="flex flex-col gap-2">
-                <label className="text-[12px] text-rk-muted">
-                  한 줄에 한 명씩 — <b>이름 전화번호</b> (쉼표/공백/탭 어떤 구분자든 OK)
-                </label>
-                <textarea
-                  required
-                  value={bulkInput}
-                  onChange={e => setBulkInput(e.target.value)}
-                  rows={Math.min(8, Math.max(2, bulkInput.split("\n").length + 1))}
-                  placeholder={"홍길동, 010-1234-5678\n김철수 010-2345-6789\n이영희\t010-3456-7890"}
-                  className="px-2 py-1.5 border border-rk-line rounded text-[14px] font-mono w-full resize-y"
-                />
-                {bulkInput.trim().length > 0 && (() => {
-                  const parsed = parseBulkInput(bulkInput);
-                  const ok = parsed.filter(r => r.ok).length;
-                  const bad = parsed.length - ok;
-                  return (
-                    <div className="text-[12px] text-rk-muted flex gap-2 flex-wrap">
-                      <span className={ok > 0 ? "text-rk-success" : ""}>인식 {ok}명</span>
-                      {bad > 0 && <span className="text-rk-sale">파싱 실패 {bad}줄</span>}
-                      {ok > 1 && <span className="text-rk-info">· 일괄 등록 모드</span>}
-                      {ok === 1 && <span className="text-rk-info">· 추가 후 카톡 문구 자동 복사</span>}
+                {/* 단일/일괄 모드 토글 */}
+                <div className="flex gap-1.5 mb-1">
+                  <button
+                    type="button"
+                    onClick={() => { setAddMode("single"); setAddError(null); }}
+                    className={
+                      "px-2.5 py-1 rounded text-[13px] font-medium border " +
+                      (addMode === "single"
+                        ? "bg-rk-navy text-white border-rk-navy"
+                        : "bg-white text-rk-muted border-rk-line hover:bg-rk-soft")
+                    }
+                  >
+                    👤 한 명 (ID 직접 부여)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setAddMode("bulk"); setAddError(null); }}
+                    className={
+                      "px-2.5 py-1 rounded text-[13px] font-medium border " +
+                      (addMode === "bulk"
+                        ? "bg-rk-navy text-white border-rk-navy"
+                        : "bg-white text-rk-muted border-rk-line hover:bg-rk-soft")
+                    }
+                  >
+                    👥 여러 명 (ID 자동)
+                  </button>
+                </div>
+
+                {addMode === "single" ? (
+                  <div className="grid grid-cols-[80px_1fr] gap-x-2 gap-y-1.5 items-center text-[13px]">
+                    <label htmlFor="add-name" className="text-rk-muted">이름</label>
+                    <input
+                      id="add-name"
+                      type="text"
+                      required
+                      value={singleName}
+                      onChange={e => setSingleName(e.target.value)}
+                      placeholder="홍길동"
+                      maxLength={32}
+                      className="px-2.5 py-1.5 border border-rk-line rounded"
+                    />
+                    <label htmlFor="add-phone" className="text-rk-muted">전화</label>
+                    <input
+                      id="add-phone"
+                      type="tel"
+                      required
+                      value={singlePhone}
+                      onChange={e => setSinglePhone(e.target.value)}
+                      placeholder="010-1234-5678"
+                      maxLength={24}
+                      className="px-2.5 py-1.5 border border-rk-line rounded font-mono"
+                    />
+                    <label htmlFor="add-id" className="text-rk-muted">로그인 ID</label>
+                    <div className="flex flex-col gap-0.5">
+                      <input
+                        id="add-id"
+                        type="email"
+                        value={singleLoginEmail}
+                        onChange={e => setSingleLoginEmail(e.target.value)}
+                        placeholder="seller@example.com (비우면 자동 발급)"
+                        maxLength={80}
+                        className="px-2.5 py-1.5 border border-rk-line rounded font-mono"
+                      />
+                      <small className="text-[11px] text-rk-faint">
+                        이메일 형식. 비우면 시스템이 임의 ID 자동 발급. 입력값이 이미 사용 중이면 거절됩니다.
+                      </small>
                     </div>
-                  );
-                })()}
+                  </div>
+                ) : (
+                  <>
+                    <label className="text-[12px] text-rk-muted">
+                      한 줄에 한 명씩 — <b>이름 전화번호</b> (쉼표/공백/탭 어떤 구분자든 OK). ID는 모두 자동 발급.
+                    </label>
+                    <textarea
+                      required
+                      value={bulkInput}
+                      onChange={e => setBulkInput(e.target.value)}
+                      rows={Math.min(8, Math.max(2, bulkInput.split("\n").length + 1))}
+                      placeholder={"홍길동, 010-1234-5678\n김철수 010-2345-6789\n이영희\t010-3456-7890"}
+                      className="px-2 py-1.5 border border-rk-line rounded text-[14px] font-mono w-full resize-y"
+                    />
+                    {bulkInput.trim().length > 0 && (() => {
+                      const parsed = parseBulkInput(bulkInput);
+                      const ok = parsed.filter(r => r.ok).length;
+                      const bad = parsed.length - ok;
+                      return (
+                        <div className="text-[12px] text-rk-muted flex gap-2 flex-wrap">
+                          <span className={ok > 0 ? "text-rk-success" : ""}>인식 {ok}명</span>
+                          {bad > 0 && <span className="text-rk-sale">파싱 실패 {bad}줄</span>}
+                        </div>
+                      );
+                    })()}
+                  </>
+                )}
+
                 <div className="flex gap-2 items-baseline flex-wrap">
                   <button
                     type="submit"
                     disabled={adding}
-                    className="bg-rk-navy hover:bg-rk-navy-deep text-white border-0 px-3 py-1 rounded text-[13px] cursor-pointer font-medium"
+                    className="bg-rk-navy hover:bg-rk-navy-deep text-white border-0 px-3 py-1 rounded text-[13px] cursor-pointer font-medium disabled:opacity-50"
                   >
                     {adding ? "추가 중…" : "추가"}
                   </button>
                   <button
                     type="button"
-                    onClick={() => { setShowAdd(false); setAddError(null); setBulkInput(""); }}
+                    onClick={() => { setShowAdd(false); setAddError(null); setBulkInput(""); setSingleName(""); setSinglePhone(""); setSingleLoginEmail(""); }}
                     className="bg-rk-soft text-rk-text border-0 px-3 py-1 rounded text-[13px] cursor-pointer"
                   >
                     취소
                   </button>
                   <small className="text-rk-faint text-[12px]">
-                    영업자 단독 링크는 12자리 랜덤 코드로 만들어집니다 — 전화번호는 URL에 노출되지 않습니다. 카톡은 항상 점 대표 채널로 연결됩니다.
+                    영업자 단독 링크는 12자리 랜덤 코드로 만들어집니다 — 전화번호는 URL에 노출되지 않습니다.
                   </small>
                   {addError && <small className="text-rk-sale text-[13px] basis-full mt-1">⚠ {addError}</small>}
                 </div>
