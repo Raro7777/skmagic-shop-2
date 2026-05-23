@@ -75,9 +75,18 @@ export default function PriceConfigurator({
     return [...set] as Array<"방문형" | "셀프형" | "단일">;
   }, [priceMatrix, hasMatrix]);
 
-  // 기본 mode = 첫 번째
+  // 기본 선택 — 수수료(= partnerCommission, 영업자 컨텍스트면 sellerMargin 차감 후) 가장 높은 옵션.
+  // 이렇게 하면 메인 카드의 maxRentalSupport 와 상세 페이지 첫 화면 렌탈지원금이 일치.
+  // partnerCommission null 이면 baseCommission, 둘 다 없으면 0 으로 비교.
+  const topOption = useMemo(() => {
+    if (!hasMatrix) return null;
+    const score = (o: typeof priceMatrix[number]) => o.partnerCommission ?? o.baseCommission ?? 0;
+    return priceMatrix.reduce((best, cur) => (score(cur) > score(best) ? cur : best), priceMatrix[0]);
+  }, [priceMatrix, hasMatrix]);
+
+  // 기본 mode = 최고 수수료 옵션의 mode (없으면 modes[0])
   const [selectedMode, setSelectedMode] = useState<"방문형" | "셀프형" | "단일" | null>(
-    () => modes[0] ?? null,
+    () => (topOption?.mode as "방문형" | "셀프형" | "단일" | null) ?? modes[0] ?? null,
   );
 
   // 선택된 mode의 옵션들
@@ -86,21 +95,21 @@ export default function PriceConfigurator({
     return priceMatrix.filter(o => (o.mode ?? "단일") === selectedMode);
   }, [priceMatrix, selectedMode, hasMatrix]);
 
-  // 기본 contractPeriod = 60 (있으면) 또는 첫 옵션
-  const [selectedPeriod, setSelectedPeriod] = useState<number | null>(() => {
-    if (!hasMatrix) return null;
-    const sixty = priceMatrix.find(o => o.contractPeriod === 60);
-    return sixty?.contractPeriod ?? priceMatrix[0]?.contractPeriod ?? null;
-  });
+  // 기본 contractPeriod = 최고 수수료 옵션의 contractPeriod
+  const [selectedPeriod, setSelectedPeriod] = useState<number | null>(
+    () => topOption?.contractPeriod ?? null,
+  );
 
-  // mode 변경 시 해당 mode 안에서 가까운 contractPeriod로 자동 매칭
+  // mode 변경 시 — 해당 mode 안에서 수수료 가장 높은 옵션 자동 매칭
+  // (기존엔 60개월 우선 → 메인 카드 maxRentalSupport 와 일관되게 변경)
   const onModeChange = (m: "방문형" | "셀프형" | "단일") => {
     setSelectedMode(m);
     const optsForMode = priceMatrix.filter(o => (o.mode ?? "단일") === m);
     if (optsForMode.length === 0) return;
     if (selectedPeriod && optsForMode.find(o => o.contractPeriod === selectedPeriod)) return;
-    const sixty = optsForMode.find(o => o.contractPeriod === 60);
-    setSelectedPeriod(sixty?.contractPeriod ?? optsForMode[0].contractPeriod);
+    const score = (o: typeof optsForMode[number]) => o.partnerCommission ?? o.baseCommission ?? 0;
+    const top = optsForMode.reduce((best, cur) => (score(cur) > score(best) ? cur : best), optsForMode[0]);
+    setSelectedPeriod(top.contractPeriod);
   };
 
   // 현재 선택된 옵션
