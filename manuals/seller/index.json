@@ -1,0 +1,27 @@
+[
+  {
+    "slug": "00-dashboard",
+    "title": "내 대시보드",
+    "path": "/admin/seller"
+  },
+  {
+    "slug": "01-leads",
+    "title": "내 lead",
+    "path": "/admin/seller/leads"
+  },
+  {
+    "slug": "02-enrollments",
+    "title": "내 신청서",
+    "path": "/admin/seller/enrollments"
+  },
+  {
+    "slug": "03-links",
+    "title": "공유 링크",
+    "path": "/admin/seller/links"
+  },
+  {
+    "slug": "04-footer",
+    "title": "내 푸터 정보",
+    "path": "/admin/seller/footer"
+  }
+]

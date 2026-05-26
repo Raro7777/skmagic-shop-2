@@ -1,0 +1,52 @@
+[
+  {
+    "slug": "00-dashboard",
+    "title": "운영 대시보드",
+    "path": "/admin/franchise"
+  },
+  {
+    "slug": "01-leads",
+    "title": "상담 / 문의",
+    "path": "/admin/franchise/leads"
+  },
+  {
+    "slug": "02-enrollments",
+    "title": "가입 신청서",
+    "path": "/admin/franchise/enrollments"
+  },
+  {
+    "slug": "03-sellers",
+    "title": "영업자 · 링크",
+    "path": "/admin/franchise/sellers"
+  },
+  {
+    "slug": "04-products",
+    "title": "상품 진열 · 정책",
+    "path": "/admin/franchise/products"
+  },
+  {
+    "slug": "05-design",
+    "title": "사이트 디자인",
+    "path": "/admin/franchise/design"
+  },
+  {
+    "slug": "06-settings",
+    "title": "사이트 설정",
+    "path": "/admin/franchise/settings"
+  },
+  {
+    "slug": "07-settlements",
+    "title": "정산",
+    "path": "/admin/franchise/settlements"
+  },
+  {
+    "slug": "08-marketing",
+    "title": "마케팅 분석",
+    "path": "/admin/franchise/marketing"
+  },
+  {
+    "slug": "09-reviews",
+    "title": "설치 후기",
+    "path": "/admin/franchise/reviews"
+  }
+]

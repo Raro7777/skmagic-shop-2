@@ -1,0 +1,152 @@
+[
+  {
+    "slug": "00-dashboard",
+    "title": "본사 대시보드",
+    "path": "/admin/super",
+    "url": "https://skmagic-shop.com/admin/super"
+  },
+  {
+    "slug": "01-enrollments",
+    "title": "전체 신청서",
+    "path": "/admin/super/enrollments",
+    "url": "https://skmagic-shop.com/admin/super/enrollments"
+  },
+  {
+    "slug": "02-verify",
+    "title": "인증 처리",
+    "path": "/admin/super/verify",
+    "url": "https://skmagic-shop.com/admin/super/verify"
+  },
+  {
+    "slug": "03-installs",
+    "title": "설치 완료 처리",
+    "path": "/admin/super/installs",
+    "url": "https://skmagic-shop.com/admin/super/installs"
+  },
+  {
+    "slug": "04-partners",
+    "title": "협력점 관리",
+    "path": "/admin/super/partners",
+    "url": "https://skmagic-shop.com/admin/super/partners"
+  },
+  {
+    "slug": "05-users",
+    "title": "사용자 관리",
+    "path": "/admin/super/users",
+    "url": "https://skmagic-shop.com/admin/super/users"
+  },
+  {
+    "slug": "06-audit-log",
+    "title": "감사 로그",
+    "path": "/admin/super/audit-log",
+    "url": "https://skmagic-shop.com/admin/super/audit-log"
+  },
+  {
+    "slug": "07-approvals",
+    "title": "승인 대기열",
+    "path": "/admin/super/approvals",
+    "url": "https://skmagic-shop.com/admin/super/approvals"
+  },
+  {
+    "slug": "08-duplicates",
+    "title": "중복 DB 판정",
+    "path": "/admin/super/duplicates",
+    "url": "https://skmagic-shop.com/admin/super/duplicates"
+  },
+  {
+    "slug": "09-reviews",
+    "title": "후기 승인",
+    "path": "/admin/super/reviews",
+    "url": "https://skmagic-shop.com/admin/super/reviews"
+  },
+  {
+    "slug": "10-anomalies",
+    "title": "운영 이상감지",
+    "path": "/admin/super/anomalies",
+    "url": "https://skmagic-shop.com/admin/super/anomalies"
+  },
+  {
+    "slug": "11-analytics",
+    "title": "마케팅 분석",
+    "path": "/admin/super/analytics",
+    "url": "https://skmagic-shop.com/admin/super/analytics"
+  },
+  {
+    "slug": "12-apply-share",
+    "title": "분양신청 링크 공유",
+    "path": "/admin/super/apply-share",
+    "url": "https://skmagic-shop.com/admin/super/apply-share"
+  },
+  {
+    "slug": "13-products",
+    "title": "상품 마스터",
+    "path": "/admin/super/products",
+    "url": "https://skmagic-shop.com/admin/super/products"
+  },
+  {
+    "slug": "14-policies",
+    "title": "기준 정책",
+    "path": "/admin/super/policies",
+    "url": "https://skmagic-shop.com/admin/super/policies"
+  },
+  {
+    "slug": "15-banner-templates",
+    "title": "배너 템플릿",
+    "path": "/admin/super/banner-templates",
+    "url": "https://skmagic-shop.com/admin/super/banner-templates"
+  },
+  {
+    "slug": "16-global-banners",
+    "title": "본사 공통 배너",
+    "path": "/admin/super/global-banners",
+    "url": "https://skmagic-shop.com/admin/super/global-banners"
+  },
+  {
+    "slug": "17-broadcasts",
+    "title": "본사 공지",
+    "path": "/admin/super/broadcasts",
+    "url": "https://skmagic-shop.com/admin/super/broadcasts"
+  },
+  {
+    "slug": "18-crawl",
+    "title": "상품 크롤링",
+    "path": "/admin/super/crawl",
+    "url": "https://skmagic-shop.com/admin/super/crawl"
+  },
+  {
+    "slug": "19-crawl-queue",
+    "title": "크롤 검토 큐",
+    "path": "/admin/super/crawl/queue",
+    "url": "https://skmagic-shop.com/admin/super/crawl/queue"
+  },
+  {
+    "slug": "20-api-partners",
+    "title": "외부 API 채널",
+    "path": "/admin/super/api-partners",
+    "url": "https://skmagic-shop.com/admin/super/api-partners"
+  },
+  {
+    "slug": "21-hq-settings",
+    "title": "SK매직 가입조건",
+    "path": "/admin/super/hq-settings",
+    "url": "https://skmagic-shop.com/admin/super/hq-settings"
+  },
+  {
+    "slug": "22-hq-template",
+    "title": "본사 표준 메인페이지",
+    "path": "/admin/super/hq-template",
+    "url": "https://skmagic-shop.com/admin/super/hq-template"
+  },
+  {
+    "slug": "23-settlements",
+    "title": "정산 / 수수료",
+    "path": "/admin/super/settlements",
+    "url": "https://skmagic-shop.com/admin/super/settlements"
+  },
+  {
+    "slug": "24-refunds",
+    "title": "환수 관리",
+    "path": "/admin/super/refunds",
+    "url": "https://skmagic-shop.com/admin/super/refunds"
+  }
+]

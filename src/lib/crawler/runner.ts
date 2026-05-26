@@ -256,6 +256,16 @@ export async function approveCrawledProduct(opts: {
   if (crawled.approvalStatus !== "pending") throw new Error("already reviewed");
   if (!crawled.productCode) throw new Error("missing productCode");
 
+  // 자동 분기 — changeType="new" 인데 같은 productCode 가 이미 Product 에 있으면
+  // (예: 과거 다른 경로로 생성된 status=discontinued 상품) "updated" 흐름으로 자동 전환.
+  // 그렇지 않으면 product.create 가 unique constraint 충돌로 throw.
+  const existingByCode = await prisma.product.findUnique({
+    where: { productCode: crawled.productCode },
+    select: { id: true },
+  });
+  const effectiveChangeType: "new" | "updated" | "unchanged" =
+    crawled.changeType === "new" && existingByCode ? "updated" : (crawled.changeType as "new" | "updated" | "unchanged");
+
   // rawData에 저장된 풍부한 필드(imageUrls/keyFeatures/specs/warrantyMonths) 추출
   const raw = (crawled.rawData ?? {}) as Record<string, unknown>;
   const enrichedImageUrls = Array.isArray(raw.imageUrls) ? raw.imageUrls.filter((x): x is string => typeof x === "string") : [];
@@ -269,7 +279,7 @@ export async function approveCrawledProduct(opts: {
     : [];
 
   await prisma.$transaction(async tx => {
-    if (crawled.changeType === "new") {
+    if (effectiveChangeType === "new") {
       // 신규 상품 — 가격은 크롤가로 임시 채우고 status=discontinued 로 비공개.
       // 본사 정책표(xlsx) import 후 가격 정확값이 들어왔을 때 관리자가 status=active 로 전환.
       await tx.product.create({
@@ -291,7 +301,7 @@ export async function approveCrawledProduct(opts: {
           status: "discontinued", // 정책표 적용 전까지 소비자 노출 차단
         },
       });
-    } else if (crawled.changeType === "updated") {
+    } else if (effectiveChangeType === "updated") {
       const existing = await tx.product.findUnique({ where: { productCode: crawled.productCode! } });
       if (!existing) throw new Error("target product disappeared");
 
@@ -375,13 +385,20 @@ export async function approveCrawledProduct(opts: {
       }
     }
 
+    // changeType="new" 였지만 실제로는 existing Product 가 있어서 updated 로 자동 전환된 경우
+    // reviewNote 에 흔적 남김 (감사 추적).
+    const autoConvertNote = (crawled.changeType === "new" && effectiveChangeType === "updated")
+      ? "[auto-converted from new → updated: productCode already existed]"
+      : null;
+    const finalNote = [opts.note, autoConvertNote].filter(Boolean).join(" · ") || null;
+
     await tx.crawledProduct.update({
       where: { id: crawled.id },
       data: {
         approvalStatus: "approved",
         reviewedById: opts.reviewerId ?? null,
         reviewedAt: new Date(),
-        reviewNote: opts.note ?? null,
+        reviewNote: finalNote,
       },
     });
   });
