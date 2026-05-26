@@ -67,6 +67,8 @@ export type ConsumerProduct = {
   managementType: string;
   isFeatured: boolean;
   imageUrl: string | null;          // 카드용 대표 이미지 (imageUrls[0] 또는 imageUrl)
+  // 신규 상품 — Product.createdAt 기준 최근 14일. 카테고리 랭킹/picks 자동 산출 시 맨 앞 우선 배치.
+  isNew: boolean;
   // Partner-specific differentiation
   giftAmount: number;
   giftLabel: string | null;
@@ -399,6 +401,11 @@ export async function getPartnerSite(
     partnerCommissionByCode.set(p.productCode, base - hqMargin);
   }
 
+  // 신규 판정 기준 — Product.createdAt 이 최근 14일 이내면 isNew=true.
+  // 자동 산출 영역(picks/ranking)에서 카테고리 맨 앞에 강제 배치 (신규 상품 등록 시 즉시 노출).
+  const FRESHNESS_MS = 14 * 24 * 60 * 60 * 1000;
+  const NOW_MS = Date.now();
+
   const all: ConsumerProduct[] = products.map(p => {
     const policy = p.partnerPolicies[0];
     const gift = policy?.giftAmount ?? 0;
@@ -424,6 +431,7 @@ export async function getPartnerSite(
       managementType: p.managementType,
       isFeatured: p.isFeatured,
       imageUrl: pickThumbnail(p),
+      isNew: NOW_MS - p.createdAt.getTime() < FRESHNESS_MS,
       giftAmount: gift,
       giftLabel: policy?.giftLabel ?? null,
       installFreed: install > 0,
@@ -454,9 +462,12 @@ export async function getPartnerSite(
       ? codes.map(c => codeMap.get(c)).filter((p): p is ConsumerProduct => !!p)
       : [];
 
-  // 정렬 헬퍼 — 모든 영역 동일하게 영업점수수료(= 본사수수료 − 본사마진) 높은 순
-  const commissionDesc = (a: ConsumerProduct, b: ConsumerProduct) =>
-    (partnerCommissionByCode.get(b.productCode) ?? 0) - (partnerCommissionByCode.get(a.productCode) ?? 0);
+  // 정렬 헬퍼 — 신규 우선, 그 다음 영업점수수료(= 본사수수료 − 본사마진) 높은 순.
+  // 신규(isNew=true) 상품은 createdAt 기준 14일 이내 — 자동 산출 영역에서 항상 앞에 배치.
+  const commissionDesc = (a: ConsumerProduct, b: ConsumerProduct) => {
+    if (a.isNew !== b.isNew) return a.isNew ? -1 : 1;
+    return (partnerCommissionByCode.get(b.productCode) ?? 0) - (partnerCommissionByCode.get(a.productCode) ?? 0);
+  };
 
   // Hero = displayConfig.picks[0] 우선, 없으면 영업점수수료 높은 순 fallback
   const customPicks = pickByCodes(displayConfig?.picks);
@@ -705,6 +716,7 @@ export async function listPartnerProducts(
       managementType: p.managementType,
       isFeatured: p.isFeatured,
       imageUrl: pickThumbnail(p),
+      isNew: Date.now() - p.createdAt.getTime() < 14 * 24 * 60 * 60 * 1000,
       giftAmount: gift,
       giftLabel: policy?.giftLabel ?? null,
       installFreed: install > 0,
@@ -728,9 +740,12 @@ export async function listPartnerProducts(
   const displayConfig = (partner?.displayConfig as { ranking?: Record<string, string[]> } | null) ?? null;
   const codeMap = new Map(mapped.map(p => [p.productCode, p]));
 
-  // 모든 영역 동일: 영업점수수료(= 본사수수료 − 본사마진) 높은 순 fallback
-  const commissionDesc = (a: ConsumerProduct, b: ConsumerProduct) =>
-    (partnerCommissionByCode.get(b.productCode) ?? 0) - (partnerCommissionByCode.get(a.productCode) ?? 0);
+  // 모든 영역 동일: 신규 우선 → 영업점수수료(= 본사수수료 − 본사마진) 높은 순 fallback.
+  // 신규 상품(createdAt 14일 이내)이 카테고리 리스트 최상단에 노출되도록.
+  const commissionDesc = (a: ConsumerProduct, b: ConsumerProduct) => {
+    if (a.isNew !== b.isNew) return a.isNew ? -1 : 1;
+    return (partnerCommissionByCode.get(b.productCode) ?? 0) - (partnerCommissionByCode.get(a.productCode) ?? 0);
+  };
 
   if (opts.category) {
     const customCodes = displayConfig?.ranking?.[opts.category];
@@ -970,6 +985,7 @@ export async function getPartnerProductDetail(
     managementType: product.managementType,
     isFeatured: product.isFeatured,
     imageUrl: pickThumbnail(product),
+    isNew: Date.now() - product.createdAt.getTime() < 14 * 24 * 60 * 60 * 1000,
     description: product.description,
     giftAmount: policy?.giftAmount ?? 0,
     giftLabel: policy?.giftLabel ?? null,
@@ -1106,6 +1122,7 @@ export async function getPartnerProductDetail(
       managementType: p.managementType,
       isFeatured: p.isFeatured,
       imageUrl: pickThumbnail(p),
+      isNew: Date.now() - p.createdAt.getTime() < 14 * 24 * 60 * 60 * 1000,
       giftAmount: gift,
       giftLabel: pp?.giftLabel ?? null,
       installFreed: install > 0,

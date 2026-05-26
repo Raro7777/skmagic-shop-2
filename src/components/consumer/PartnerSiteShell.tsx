@@ -456,6 +456,7 @@ function PickCard({ product, bg, href }: { product: ConsumerProduct; bg: string;
           />
         )}
         <div className="absolute top-1.5 left-1.5 flex flex-col gap-0.5 items-start z-10">
+          {product.isNew && <span className="text-[9px] px-1 py-px rounded text-white font-bold bg-rk-orange-deep">NEW</span>}
           {product.giftAmount > 0 && <span className="text-[9px] px-1 py-px rounded text-white font-semibold bg-rk-orange">사은품</span>}
           {product.isFeatured && <span className="text-[9px] px-1 py-px rounded text-white font-semibold bg-rk-navy">MD추천</span>}
         </div>

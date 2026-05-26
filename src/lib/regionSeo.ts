@@ -192,6 +192,7 @@ export async function listRegionRecommendedProducts(
       managementType: p.managementType,
       isFeatured: p.isFeatured,
       imageUrl: p.imageUrls?.[0] ?? p.imageUrl ?? null,
+      isNew: Date.now() - p.createdAt.getTime() < 14 * 24 * 60 * 60 * 1000,
       giftAmount: policy?.giftAmount ?? 0,
       giftLabel: policy?.giftLabel ?? null,
       installFreed: (policy?.installAmount ?? 0) > 0,

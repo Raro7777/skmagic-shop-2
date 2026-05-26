@@ -106,6 +106,7 @@ export default function RankingTabs({
                 <div className="text-[14px] font-medium text-rk-ink leading-[1.35] truncate">{p.name}</div>
                 <div className="text-[12px] text-rk-faint font-mono mt-0.5 truncate">{p.modelName} · {managementLabel(p)}</div>
                 <div className="flex items-center gap-1 mt-1 flex-wrap">
+                  {p.isNew && <span className="text-[9px] px-1 py-px rounded bg-rk-orange text-white font-bold">NEW</span>}
                   {p.giftLabel && <span className="text-[9px] px-1 py-px rounded bg-rk-tint-orange text-rk-orange-deep font-medium">사은품</span>}
                   {p.installFreed && <span className="text-[9px] px-1 py-px rounded bg-rk-tint-green text-rk-success font-medium">설치비 면제</span>}
                   {p.isFeatured && <span className="text-[9px] px-1 py-px rounded bg-rk-tint-blue text-rk-info font-medium">MD추천</span>}
