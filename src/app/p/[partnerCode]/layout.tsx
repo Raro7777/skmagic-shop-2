@@ -66,7 +66,8 @@ export default async function PartnerConsumerLayout({
               if (!window.wcs_add) window.wcs_add = {};
               window.wcs_add["wa"] = ${JSON.stringify(wcsId)};
               if (!window._nasa) window._nasa = {};
-              if (window.wcs) { window.wcs.inflow(); window.wcs_do(); }
+              if (window.wcs) { window.wcs.inflow(); }
+              /* wcs_do(전환) 은 상담신청 완료 시점에 ConsultForm 에서 호출 */
             `}
           </Script>
         </>

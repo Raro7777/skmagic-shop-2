@@ -114,6 +114,16 @@ export default function ConsultForm({
       if (!res.ok) {
         setError(data?.error ?? "접수 실패");
       } else {
+        // 네이버 검색광고 전환 호출 — 협력점이 wa 값 설정한 경우에만.
+        // layout.tsx 가 wcs_add["wa"] 를 미리 set 했음. 실제 전환=lead 접수 시점에 1회.
+        const w = window as unknown as {
+          wcs?: { inflow?: () => void };
+          wcs_do?: () => void;
+          wcs_add?: { wa?: string };
+        };
+        if (w.wcs && w.wcs_add?.wa && typeof w.wcs_do === "function") {
+          try { w.wcs_do(); } catch { /* tracker fail — silently ignore */ }
+        }
         setDone(data);
       }
     } catch {
