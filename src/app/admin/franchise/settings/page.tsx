@@ -89,6 +89,7 @@ export default async function SettingsPage() {
           csHours: partner.csHours,
           csLunchHours: partner.csLunchHours,
           csHolidays: partner.csHolidays,
+          naverWcsId: partner.naverWcsId,
         }}
       />
 

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { gatePartnerOrHq } from "@/lib/effectivePartner";
+import { notifyHq, esc } from "@/lib/telegram";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -9,18 +10,18 @@ export const dynamic = "force-dynamic";
  * PATCH — 협력점 자기 회사 정보 편집.
  *
  * 자율 편집 (협력점이 직접 변경):
+ *   - partnerName      상호 (변경 시 본사 텔레그램 알림 자동 발송)
  *   - brandLabel       브랜드 라벨 (헤더 서브 텍스트)
  *   - region           지역 (예: "서울 강남구")
  *   - address          주소
  *   - ownerName        대표자명
  *   - hotlineNumber    고객센터 번호
  *   - phone            협력점 연락처
+ *   - businessNumber   사업자등록번호
+ *   - commerceNumber   통신판매번호
  *   - kakaoChannelUrl  카카오톡 채널 URL
  *
  * 본사 승인 필요 (이 endpoint로는 변경 불가, 본사 콘솔에서 수정):
- *   - partnerName       상호
- *   - businessNumber    사업자등록번호
- *   - commerceNumber    통신판매번호
  *   - tier              패키지 등급
  *   - status            활성/퇴점 상태
  */
@@ -38,6 +39,7 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
   const b = body as Partial<{
+    partnerName: string;
     brandLabel: string;
     region: string | null;
     address: string | null;
@@ -56,10 +58,17 @@ export async function PATCH(req: Request) {
     csHours: string | null;
     csLunchHours: string | null;
     csHolidays: string | null;
+    naverWcsId: string | null;
   }>;
 
   const data: Parameters<typeof prisma.partner.update>[0]["data"] = {};
 
+  if (b.partnerName !== undefined) {
+    const t = b.partnerName.trim();
+    if (!t) return NextResponse.json({ error: "상호는 비울 수 없습니다." }, { status: 400 });
+    if (t.length > 80) return NextResponse.json({ error: "상호가 너무 깁니다 (≤ 80자)." }, { status: 400 });
+    data.partnerName = t;
+  }
   if (b.brandLabel !== undefined) {
     const t = b.brandLabel.trim();
     if (!t) return NextResponse.json({ error: "브랜드 라벨은 비울 수 없습니다." }, { status: 400 });
@@ -150,6 +159,14 @@ export async function PATCH(req: Request) {
   if (b.csHolidays !== undefined) {
     data.csHolidays = b.csHolidays?.trim().slice(0, 80) || null;
   }
+  if (b.naverWcsId !== undefined) {
+    const t = b.naverWcsId?.trim() ?? "";
+    // wa 값은 영문/숫자/언더스코어 형태 (네이버 발급). 길이 cap + 안전한 문자만 허용 — XSS 방지.
+    if (t && !/^[A-Za-z0-9_-]{1,64}$/.test(t)) {
+      return NextResponse.json({ error: "네이버 wa 값은 영문/숫자/언더스코어/하이픈만 허용 (≤ 64자)" }, { status: 400 });
+    }
+    data.naverWcsId = t || null;
+  }
   if (b.kakaoChannelUrl !== undefined) {
     if (!b.kakaoChannelUrl || b.kakaoChannelUrl.trim() === "") {
       data.kakaoChannelUrl = null;
@@ -169,6 +186,18 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ error: "변경된 필드가 없습니다." }, { status: 400 });
   }
 
+  // 상호(partnerName) 변경 시 본사 텔레그램 알림 — 자율 편집이지만 브랜드 가이드 점검을 위해 본사에 통보.
+  let priorPartnerName: string | null = null;
+  if (data.partnerName !== undefined) {
+    const prev = await prisma.partner.findUnique({
+      where: { partnerCode: eff.partnerId },
+      select: { partnerName: true },
+    });
+    if (prev && prev.partnerName !== data.partnerName) {
+      priorPartnerName = prev.partnerName;
+    }
+  }
+
   const updated = await prisma.partner.update({
     where: { partnerCode: eff.partnerId },
     data,
@@ -180,5 +209,16 @@ export async function PATCH(req: Request) {
       csHours: true, csLunchHours: true, csHolidays: true,
     },
   });
+
+  if (priorPartnerName) {
+    notifyHq(
+      `🏷 <b>협력점 상호 변경</b>\n` +
+        `partnerCode: <code>${esc(updated.partnerCode)}</code>\n` +
+        `이전: ${esc(priorPartnerName)}\n` +
+        `변경: ${esc(updated.partnerName)}\n` +
+        `\n브랜드 가이드 점검 후 필요 시 본사 콘솔에서 조치 부탁드립니다.`,
+    );
+  }
+
   return NextResponse.json({ ok: true, partner: updated });
 }

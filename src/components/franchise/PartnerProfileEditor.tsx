@@ -19,6 +19,7 @@ type InitialProfile = {
   csHours: string | null;
   csLunchHours: string | null;
   csHolidays: string | null;
+  naverWcsId: string | null;
 };
 
 export default function PartnerProfileEditor({ initial }: { initial: InitialProfile }) {
@@ -27,6 +28,7 @@ export default function PartnerProfileEditor({ initial }: { initial: InitialProf
   const [busy, setBusy] = useState(false);
   const [flash, setFlash] = useState<{ tone: "ok" | "err"; text: string } | null>(null);
 
+  const [partnerName, setPartnerName] = useState(initial.partnerName);
   const [brandLabel, setBrandLabel] = useState(initial.brandLabel);
   const [region, setRegion] = useState(initial.region ?? "");
   const [address, setAddress] = useState(initial.address ?? "");
@@ -39,8 +41,10 @@ export default function PartnerProfileEditor({ initial }: { initial: InitialProf
   const [csHours, setCsHours] = useState(initial.csHours ?? "");
   const [csLunchHours, setCsLunchHours] = useState(initial.csLunchHours ?? "");
   const [csHolidays, setCsHolidays] = useState(initial.csHolidays ?? "");
+  const [naverWcsId, setNaverWcsId] = useState(initial.naverWcsId ?? "");
 
   const dirty =
+    partnerName !== initial.partnerName ||
     brandLabel !== initial.brandLabel ||
     (region || null) !== initial.region ||
     (address || null) !== initial.address ||
@@ -52,7 +56,8 @@ export default function PartnerProfileEditor({ initial }: { initial: InitialProf
     (telegramChatId || null) !== initial.telegramChatId ||
     (csHours || null) !== initial.csHours ||
     (csLunchHours || null) !== initial.csLunchHours ||
-    (csHolidays || null) !== initial.csHolidays;
+    (csHolidays || null) !== initial.csHolidays ||
+    (naverWcsId || null) !== initial.naverWcsId;
 
   const save = async () => {
     setBusy(true);
@@ -62,6 +67,7 @@ export default function PartnerProfileEditor({ initial }: { initial: InitialProf
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          partnerName,
           brandLabel,
           region: region.trim() || null,
           address: address.trim() || null,
@@ -74,6 +80,7 @@ export default function PartnerProfileEditor({ initial }: { initial: InitialProf
           csHours: csHours.trim() || null,
           csLunchHours: csLunchHours.trim() || null,
           csHolidays: csHolidays.trim() || null,
+          naverWcsId: naverWcsId.trim() || null,
         }),
       });
       const j = await res.json();
@@ -86,6 +93,7 @@ export default function PartnerProfileEditor({ initial }: { initial: InitialProf
   };
 
   const reset = () => {
+    setPartnerName(initial.partnerName);
     setBrandLabel(initial.brandLabel);
     setRegion(initial.region ?? "");
     setAddress(initial.address ?? "");
@@ -98,6 +106,7 @@ export default function PartnerProfileEditor({ initial }: { initial: InitialProf
     setCsHours(initial.csHours ?? "");
     setCsLunchHours(initial.csLunchHours ?? "");
     setCsHolidays(initial.csHolidays ?? "");
+    setNaverWcsId(initial.naverWcsId ?? "");
     setFlash(null);
   };
 
@@ -115,11 +124,21 @@ export default function PartnerProfileEditor({ initial }: { initial: InitialProf
           {initial.partnerCode} <span className="text-[12px] text-rk-faint">(변경 불가)</span>
         </div>
 
-        {/* 상호 — 본사 승인 필요 */}
-        <label className="text-rk-muted">상호</label>
-        <div className="flex items-center gap-2">
-          <span className="text-rk-ink">{initial.partnerName}</span>
-          <span className="text-[11px] px-1.5 py-px rounded bg-rk-tint-orange text-rk-orange-deep">본사 변경</span>
+        {/* 상호 — 협력점 자율 편집 (변경 시 본사 텔레그램 알림 자동 발송) */}
+        <label htmlFor="partnerName" className="text-rk-muted">상호</label>
+        <div className="flex flex-col gap-1">
+          <input
+            id="partnerName"
+            type="text"
+            value={partnerName}
+            onChange={e => setPartnerName(e.target.value)}
+            maxLength={80}
+            disabled={busy}
+            className="border border-rk-line rounded px-2.5 py-1.5 text-[13px] focus:outline-none focus:border-rk-navy disabled:opacity-50"
+          />
+          {partnerName !== initial.partnerName && (
+            <small className="text-[11px] text-rk-orange-deep">⚠ 상호 변경은 본사에 알림이 자동 발송됩니다.</small>
+          )}
         </div>
 
         {/* 브랜드 라벨 */}
@@ -275,6 +294,24 @@ export default function PartnerProfileEditor({ initial }: { initial: InitialProf
           />
           <small className="text-[11px] text-rk-faint leading-[1.5]">
             본사 봇이 신규 상담/신청서를 이 chat_id 로 알림 발송합니다. 텔레그램에서 <b>@SKmagicShopBot</b> 검색 → 대화 시작 → <code className="font-mono bg-rk-soft px-1 rounded">/start</code> 메시지 보내면 봇이 응답하면서 chat_id 안내합니다 (또는 본사 운영팀 문의).
+          </small>
+        </div>
+
+        {/* 네이버 검색광고 전환 추적 — 협력점이 자체 광고 운영 시 wa 값 입력 */}
+        <label htmlFor="naverWcsId" className="text-rk-muted">네이버 광고 wa</label>
+        <div className="flex flex-col gap-1">
+          <input
+            id="naverWcsId"
+            type="text"
+            value={naverWcsId}
+            onChange={e => setNaverWcsId(e.target.value)}
+            placeholder="예: s_454608eb0263 (비우면 추적 스크립트 미적용)"
+            maxLength={64}
+            disabled={busy}
+            className="border border-rk-line rounded px-2.5 py-1.5 text-[13px] focus:outline-none focus:border-rk-navy disabled:opacity-50 rk-num"
+          />
+          <small className="text-[11px] text-rk-faint leading-[1.5]">
+            네이버 검색광고 → 전환 추적 설정에서 발급받은 <b>wa</b> 값을 입력하면, 컨슈머 페이지 진입/전환이 네이버 광고센터에 집계됩니다. 협력점 자체 광고 미운영 시 비워두세요.
           </small>
         </div>
       </div>

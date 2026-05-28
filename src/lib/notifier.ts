@@ -14,21 +14,29 @@ export type EmailJob = {
   subject: string;
   text: string;
   html?: string;
+  /**
+   * NotificationOutbox.body 에 저장될 본문 + console fallback 출력값.
+   * 임시 비밀번호 같은 secret 이 text 에 포함된 경우, 여기에 redacted placeholder 를 넘기면
+   * DB / 운영 로그에는 평문이 남지 않음. 미지정 시 text 그대로 저장.
+   */
+  outboxBody?: string;
 };
 
 export type SmsJob = {
   to: string;
   text: string;
+  outboxBody?: string;
 };
 
 /** 이메일 발송. */
 export async function sendEmail(job: EmailJob): Promise<{ ok: boolean; provider: string; error?: string }> {
   const provider = process.env.EMAIL_PROVIDER ?? "console";
+  const storedBody = job.outboxBody ?? job.text;
 
   if (provider === "resend") {
     const result = await sendViaResend(job);
     await queueOutbox({
-      channel: "email", to: job.to, subject: job.subject, body: job.text, provider,
+      channel: "email", to: job.to, subject: job.subject, body: storedBody, provider,
       status: result.ok ? "sent" : "failed",
       error: result.ok ? null : result.error,
     });
@@ -37,16 +45,27 @@ export async function sendEmail(job: EmailJob): Promise<{ ok: boolean; provider:
       : { ok: false, provider, error: result.error };
   }
 
-  // 기본: 콘솔 + DB 큐 (외부 채널 결정 후 retry 가능)
-  console.log(`📧 [email/${provider}] → ${job.to}\n  subject: ${job.subject}\n  text:\n${job.text.replace(/^/gm, "    ")}`);
-  await queueOutbox({ channel: "email", to: job.to, subject: job.subject, body: job.text, provider, status: "stub" });
+  // 기본: 콘솔 + DB 큐 (외부 채널 결정 후 retry 가능).
+  // production 에서 console provider 폴백이 발생하면 secret 누출 위험 → 경고 + redacted body 사용.
+  if (process.env.NODE_ENV === "production") {
+    console.warn(`⚠ EMAIL_PROVIDER 미설정 (production) — Resend 등 외부 채널 설정 필요. body redact 됨.`);
+    console.log(`📧 [email/${provider}] → ${job.to}\n  subject: ${job.subject}\n  (body redacted in production console)`);
+  } else {
+    console.log(`📧 [email/${provider}] → ${job.to}\n  subject: ${job.subject}\n  text:\n${storedBody.replace(/^/gm, "    ")}`);
+  }
+  await queueOutbox({ channel: "email", to: job.to, subject: job.subject, body: storedBody, provider, status: "stub" });
   return { ok: true, provider };
 }
 
 export async function sendSms(job: SmsJob): Promise<{ ok: true; provider: string }> {
   const provider = process.env.SMS_PROVIDER ?? "console";
-  console.log(`📱 [sms/${provider}] → ${job.to}\n  text: ${job.text}`);
-  await queueOutbox({ channel: "sms", to: job.to, body: job.text, provider, status: "stub" });
+  const storedBody = job.outboxBody ?? job.text;
+  if (process.env.NODE_ENV === "production") {
+    console.log(`📱 [sms/${provider}] → ${job.to}\n  (body redacted in production console)`);
+  } else {
+    console.log(`📱 [sms/${provider}] → ${job.to}\n  text: ${storedBody}`);
+  }
+  await queueOutbox({ channel: "sms", to: job.to, body: storedBody, provider, status: "stub" });
   return { ok: true, provider };
 }
 
@@ -140,5 +159,11 @@ export async function sendCredentialEmail(c: CredentialMail) {
     "",
     "— 렌트왕 본사",
   ].join("\n");
-  return sendEmail({ to: c.to, subject, text });
+  // 임시비번이 포함된 본문은 outbox / 콘솔에 평문 저장 금지 — placeholder 로 대체.
+  const outboxBody = [
+    `${c.name ?? c.to} 님 ${role} 계정 ${c.isReset ? "비밀번호 재설정" : "발급"} 안내 이메일 발송.`,
+    `(임시비밀번호 평문은 outbox 에 저장하지 않음 — 발송 직후 폐기)`,
+    `로그인: ${c.loginUrl} · 이메일: ${c.to}`,
+  ].join("\n");
+  return sendEmail({ to: c.to, subject, text, outboxBody });
 }

@@ -176,9 +176,9 @@ export async function PATCH(
           address,
           businessNumber,
           commerceNumber,
-          // 협력점 자체 hotline 입력 시 그 값으로, 없으면 schema default(본사 1600-2434).
-          // 컨슈머 footer 는 본사 default 와 같으면 "고객센터" 행 숨김 처리.
-          ...(hotlineNumber && { hotlineNumber }),
+          // 협력점 자체 hotline 입력 시 그 값, 없으면 빈 문자열 (본사 1600-2434 fallback 금지).
+          // PartnerFooter / PartnerCta 가 빈 hotline 이면 전화상담 항목을 hide 함.
+          hotlineNumber: hotlineNumber ?? "",
           status: "active",
           tier: "basic",
         },
