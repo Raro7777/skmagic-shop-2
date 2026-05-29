@@ -1,5 +1,4 @@
 import { cache } from "react";
-import Script from "next/script";
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 
@@ -51,25 +50,23 @@ export default async function PartnerConsumerLayout({
   const partner = await getPartner(partnerCode);
   const theme = partner?.theme ?? "default";
   const wcsId = partner?.naverWcsId?.trim() || null;
+  // 네이버 검색광고 전환 추적 — 협력점 wa 값 설정 시 SSR HTML 에 직접 inline 으로 inject.
+  // next/script(strategy=afterInteractive) 는 RSC payload 안에만 직렬화되어 네이버 정적 검사 도구가 인식 못 함.
+  // raw <script> 태그로 출력해야 페이지 소스 보기 / 네이버 추적 진단 도구에서 인식.
+  const wcsInitCode = wcsId
+    ? `if (!window.wcs_add) window.wcs_add = {};` +
+      `window.wcs_add["wa"] = ${JSON.stringify(wcsId)};` +
+      `if (!window._nasa) window._nasa = {};` +
+      `if (window.wcs) { window.wcs.inflow(); }` +
+      `/* wcs_do(전환)은 상담신청 완료 시점에 ConsultForm 에서 호출 */`
+    : null;
+
   return (
     <div data-theme={theme}>
-      {/* 네이버 검색광고 전환 추적 — 협력점이 자체 wa 값 설정 시 inject */}
       {wcsId && (
         <>
-          <Script
-            id="naver-wcslog-src"
-            src="//wcs.naver.net/wcslog.js"
-            strategy="afterInteractive"
-          />
-          <Script id="naver-wcslog-init" strategy="afterInteractive">
-            {`
-              if (!window.wcs_add) window.wcs_add = {};
-              window.wcs_add["wa"] = ${JSON.stringify(wcsId)};
-              if (!window._nasa) window._nasa = {};
-              if (window.wcs) { window.wcs.inflow(); }
-              /* wcs_do(전환) 은 상담신청 완료 시점에 ConsultForm 에서 호출 */
-            `}
-          </Script>
+          <script async src="//wcs.naver.net/wcslog.js" />
+          <script dangerouslySetInnerHTML={{ __html: wcsInitCode! }} />
         </>
       )}
       {children}
