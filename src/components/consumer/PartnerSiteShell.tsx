@@ -275,7 +275,7 @@ export default async function PartnerSiteShell({
             <div>
               <h2 className="text-[17px] font-bold tracking-[-.02em] m-0 text-rk-ink">매니저 추천 상품</h2>
               <small className="text-[13px] text-rk-muted block mt-0.5">
-                {seller?.name ?? partner.partnerName}이(가) 직접 큐레이션 · 5월
+                {seller?.name ?? partner.partnerName}이(가) 직접 큐레이션 · {new Date().getMonth() + 1}월
                 {(() => { const c = commonCondition(picks); return c ? ` · ${c}` : ""; })()}
               </small>
             </div>

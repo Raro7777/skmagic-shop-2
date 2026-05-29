@@ -274,12 +274,13 @@ export default function PriceConfigurator({
             <small className="text-[12px] rk-num line-through">₩{fmt(optionBase)}/월</small>
           </div>
         )}
-        {/* 1단: 운영가 → 판촉가 차감 (판촉가 있을 때만) */}
+        {/* 1단: 기준가 → 판촉가 차감 (판촉가 있을 때만). 산식: basePrice − promoPrice 가 진짜 전사할인 폭.
+              운영가(rentalPrice) 는 priceMatrix 의 중간 산정값으로 사용자 노출 없이 산식 외부에서 사용. */}
         {promoApplied && (
           <div className="flex items-baseline justify-between text-rk-orange-deep mt-0.5">
-            <small className="text-[12px]">🏷️ 5월 전사할인</small>
+            <small className="text-[12px]">🏷️ 전사할인</small>
             <small className="text-[13px] rk-num font-semibold">
-              −₩{fmt(optionOperational - (optionPromo ?? optionOperational))}/월
+              −₩{fmt((optionBase ?? optionOperational) - (optionPromo ?? optionOperational))}/월
             </small>
           </div>
         )}
