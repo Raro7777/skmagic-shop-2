@@ -4,11 +4,12 @@ import { useState } from "react";
 import { CARD_DISCOUNT_MAX } from "@/lib/constants/pricing";
 
 /**
- * SK인텔릭스 제휴 카드 혜택 — 매직몰 (2026-05 기준) 정책 반영.
- * 카드사별 전월실적 단계별 차등 + 5월 한정 무실적 신규 신청자 추가 프로모션.
+ * SK인텔릭스 제휴 카드 혜택 — 매직몰 정책 반영.
+ * 카드사별 전월실적 단계별 차등 + 월 한정 무실적 신규 신청자 추가 프로모션.
  *
- * 출처: https://www.magic-mall.co.kr (2026-05)
- * 변경 시 카드사 단계별 표·5월 한정 카드만 업데이트.
+ * 출처: https://www.magic-mall.co.kr
+ * 변경 시 CARDS 단계별 표 / MONTHLY_BONUSES 한정 카드 갱신.
+ * 라벨의 월 표시는 자동 (new Date 기반) — 매월 코드 수정 불필요.
  */
 
 type CardTier = {
@@ -28,7 +29,7 @@ const CARDS: CardTier[] = [
   { name: "현대",         tiers: [{ label: "30만↑", amount:  8000 }, { label: "70만↑", amount: 12000 }, { label: "100만↑", amount: 16000 }], maxKr: 16000 },
 ];
 
-const MAY_2026_BONUSES = [
+const MONTHLY_BONUSES = [
   { card: "KB국민 올림", text: "직전 6개월 무실적 신규 신청 + 자동납부 시 5년간 추가 9,000원" },
   { card: "삼성",       text: "직전 6개월 무실적 신청자 5년간 추가 10,000원 (월 최대 24,000원)" },
   { card: "우리",       text: "자동이체 결제 시 구간별 추가 할인" },
@@ -42,6 +43,11 @@ export default function CardBenefitsPanel() {
   const [open, setOpen] = useState(false);
   // 본사 매직몰 공식 표시상의 카드할인 최대 금액 cap (민원 방지용 — CARDS 일부는 25k 도 있음)
   const maxAmount = Math.min(CARD_DISCOUNT_MAX, Math.max(...CARDS.map(c => c.maxKr)));
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth() + 1;
+  const monthLabel = `${month}월`;
+  const ymLabel = `${year}-${String(month).padStart(2, "0")}`;
 
   return (
     <div className="bg-white border border-rk-line rounded-md text-[12px] mt-2">
@@ -55,7 +61,7 @@ export default function CardBenefitsPanel() {
           제휴카드 8개사 · 최대 월 −₩{fmt(maxAmount)} 할인
         </span>
         <span className="bg-rk-tint-red text-rk-sale text-[10px] font-bold px-1.5 py-0.5 rounded">
-          5월 한정 추가
+          {monthLabel} 한정 추가
         </span>
         <span className="text-rk-muted text-[14px]">{open ? "▴" : "▾"}</span>
       </button>
@@ -96,11 +102,11 @@ export default function CardBenefitsPanel() {
             </div>
           </div>
 
-          {/* 5월 한정 추가 프로모션 */}
+          {/* 월 한정 추가 프로모션 — 라벨은 현재 월 자동, 정책 본문(MONTHLY_BONUSES)은 카드사 변경 시 갱신 */}
           <div className="bg-rk-tint-red rounded-md p-2">
-            <div className="text-[11px] font-bold text-rk-sale mb-1">🔥 2026-05 한정 추가 혜택 (무실적 신규 신청자)</div>
+            <div className="text-[11px] font-bold text-rk-sale mb-1">🔥 {ymLabel} 한정 추가 혜택 (무실적 신규 신청자)</div>
             <ul className="m-0 pl-3.5 list-disc text-[11px] leading-[1.55] text-rk-text">
-              {MAY_2026_BONUSES.map((b, i) => (
+              {MONTHLY_BONUSES.map((b, i) => (
                 <li key={i}><b>{b.card}</b>: {b.text}</li>
               ))}
             </ul>
