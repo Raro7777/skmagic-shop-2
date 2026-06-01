@@ -14,7 +14,7 @@ export default async function LoginPage({
         <div className="flex items-center gap-2.5 mb-6">
           <div className="w-9 h-9 bg-rk-orange text-white rounded grid place-items-center font-bold text-base">SK</div>
           <div>
-            <div className="font-bold text-[16px] text-rk-ink">SK매직 공식인증점</div>
+            <div className="font-bold text-[16px] text-rk-ink">SK매직 인증파트너점</div>
             <div className="text-[11px] text-rk-muted">관리자 로그인</div>
           </div>
         </div>

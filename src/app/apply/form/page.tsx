@@ -4,7 +4,7 @@ import { HQ_HOTLINE, HQ_COMPANY_NAME } from "@/lib/constants/hq";
 
 export const metadata = {
   title: "분양 신청서 작성",
-  description: "SK매직 공식인증점 분양에 필요한 정보만 간단히 입력하고 제출하세요. 본사 검토 후 1~2 영업일 내 연락드립니다.",
+  description: "SK매직 인증파트너점 분양에 필요한 정보만 간단히 입력하고 제출하세요. 본사 검토 후 1~2 영업일 내 연락드립니다.",
 };
 
 export const dynamic = "force-dynamic";
@@ -21,7 +21,7 @@ export default function ApplyFormSimplePage() {
         <div className="max-w-[640px] mx-auto px-4 py-3 flex items-center gap-3">
           <Link href="/apply" className="flex items-center gap-2 no-underline text-rk-text">
             <div className="w-6 h-6 bg-rk-orange text-white rounded grid place-items-center font-bold text-[11px]">SK</div>
-            <b className="text-rk-ink text-[14px]">SK매직 공식인증점 모집</b>
+            <b className="text-rk-ink text-[14px]">SK매직 인증파트너점 모집</b>
           </Link>
           <Link href="/apply" className="ml-auto text-[12px] text-rk-info no-underline">상세 안내 보기 →</Link>
         </div>

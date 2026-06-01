@@ -5,11 +5,12 @@ import { rentalSupportFor } from "@/lib/rentalSupport";
 import { sanitizeBannerHtml } from "@/lib/sanitizeBannerHtml";
 
 /**
- * 컨슈머 사이트 브랜드 통일 — 모든 협력점을 "SK매직 공식인증점" 단일 브랜드로 노출.
+ * 컨슈머 사이트 브랜드 통일 — 모든 협력점을 "SK매직 인증파트너점" 단일 브랜드로 노출.
  * 협력점 고유명 (인터넷끝판왕 등) 은 admin/franchise 콘솔에서만 사용.
  * 본사 정책 결정사항 — 브랜드 일관성 + 협력점간 위계 평준화.
+ * 2026-06-01 브랜드 지킴이 검수 반영: 기존 표기 → "인증파트너점" 으로 갱신.
  */
-export const CONSUMER_BRAND_NAME = "SK매직 공식인증점";
+export const CONSUMER_BRAND_NAME = "SK매직 인증파트너점";
 
 /** 상품의 옵션별 렌탈지원금 중 최대값 계산. enabled=false면 0.
  *  본사-협력점: baseCommission − hqMargin = partnerCommission  (협력점 페이지 cap)
@@ -623,7 +624,7 @@ export async function getPartnerSite(
   return {
     partner: {
       partnerCode: partner.partnerCode,
-      // 본사 정책: 컨슈머 사이트에서는 모든 협력점을 "SK매직 공식인증점" 단일 브랜드로 노출
+      // 본사 정책: 컨슈머 사이트에서는 모든 협력점을 "SK매직 인증파트너점" 단일 브랜드로 노출
       partnerName: CONSUMER_BRAND_NAME,
       brandLabel: CONSUMER_BRAND_NAME,
       // 푸터 "상호" 표기 — 협력점 row 의 raw partnerName (법인/상호 원본)
@@ -764,7 +765,7 @@ export async function getPartnerHeader(partnerCode: string) {
   if (!partner || partner.status !== "active") return null;
   return {
     partnerCode: partner.partnerCode,
-    // 본사 정책: 컨슈머 사이트에서는 모든 협력점을 "SK매직 공식인증점" 단일 브랜드로 노출.
+    // 본사 정책: 컨슈머 사이트에서는 모든 협력점을 "SK매직 인증파트너점" 단일 브랜드로 노출.
     // 협력점 고유명(인터넷끝판왕 등)은 admin/franchise 콘솔에서만 사용.
     partnerName: CONSUMER_BRAND_NAME,
     brandLabel: CONSUMER_BRAND_NAME,

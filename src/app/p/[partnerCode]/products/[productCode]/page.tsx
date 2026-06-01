@@ -210,7 +210,7 @@ export default async function ProductDetailPage({
             </li>
             <li className="flex-1 bg-white rounded-md p-2 border border-[#F4DCC9]">
               <div className="font-bold text-rk-orange-deep mb-0.5">③ 혜택 즉시 지급</div>
-              <div className="text-rk-text leading-[1.45]">반값할인 월 요금 + 현금 캐시백 자동 적용</div>
+              <div className="text-rk-text leading-[1.45]">반값할인 월 요금 + 가입 혜택 자동 적용</div>
             </li>
           </ol>
           <small className="text-[11px] text-rk-orange-deep block mt-2 opacity-90">
