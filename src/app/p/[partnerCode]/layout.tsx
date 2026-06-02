@@ -50,23 +50,27 @@ export default async function PartnerConsumerLayout({
   const partner = await getPartner(partnerCode);
   const theme = partner?.theme ?? "default";
   const wcsId = partner?.naverWcsId?.trim() || null;
-  // 네이버 검색광고 전환 추적 — 협력점 wa 값 설정 시 SSR HTML 에 직접 inline 으로 inject.
-  // next/script(strategy=afterInteractive) 는 RSC payload 안에만 직렬화되어 네이버 정적 검사 도구가 인식 못 함.
-  // raw <script> 태그로 출력해야 페이지 소스 보기 / 네이버 추적 진단 도구에서 인식.
+  // 네이버 검색광고 전환 추적 — 네이버 공식 표준 코드 그대로 SSR HTML 에 inline.
+  // 진단 도구가 정규식으로 표준 패턴(type="text/javascript" + `var wcs_add` + `wcs.inflow()`)을
+  // 검사하므로, async/window. 같은 modern variant 는 인식 못 함. 표준 그대로 박을 것.
+  // wcs_do(전환)는 ConsultForm 의 lead 접수 success 에서 별도 호출.
   const wcsInitCode = wcsId
-    ? `if (!window.wcs_add) window.wcs_add = {};` +
-      `window.wcs_add["wa"] = ${JSON.stringify(wcsId)};` +
-      `if (!window._nasa) window._nasa = {};` +
-      `if (window.wcs) { window.wcs.inflow(); }` +
-      `/* wcs_do(전환)은 상담신청 완료 시점에 ConsultForm 에서 호출 */`
+    ? [
+        "if (!wcs_add) var wcs_add={};",
+        `wcs_add["wa"] = ${JSON.stringify(wcsId)};`,
+        "if (!_nasa) var _nasa={};",
+        "if(window.wcs){",
+        "  wcs.inflow();",
+        "}",
+      ].join("\n")
     : null;
 
   return (
     <div data-theme={theme}>
       {wcsId && (
         <>
-          <script async src="//wcs.naver.net/wcslog.js" />
-          <script dangerouslySetInnerHTML={{ __html: wcsInitCode! }} />
+          <script type="text/javascript" src="//wcs.naver.net/wcslog.js" />
+          <script type="text/javascript" dangerouslySetInnerHTML={{ __html: wcsInitCode! }} />
         </>
       )}
       {children}
