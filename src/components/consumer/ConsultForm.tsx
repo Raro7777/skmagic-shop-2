@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { getUtm } from "@/components/consumer/UtmTracker";
+import { naverTrans } from "@/lib/naverWcsTrans";
 
 /**
  * 상담 신청 모달.
@@ -114,16 +115,8 @@ export default function ConsultForm({
       if (!res.ok) {
         setError(data?.error ?? "접수 실패");
       } else {
-        // 네이버 검색광고 전환 호출 — 협력점이 wa 값 설정한 경우에만.
-        // layout.tsx 가 wcs_add["wa"] 를 미리 set 했음. 실제 전환=lead 접수 시점에 1회.
-        const w = window as unknown as {
-          wcs?: { inflow?: () => void };
-          wcs_do?: () => void;
-          wcs_add?: { wa?: string };
-        };
-        if (w.wcs && w.wcs_add?.wa && typeof w.wcs_do === "function") {
-          try { w.wcs_do(); } catch { /* tracker fail — silently ignore */ }
-        }
+        // 네이버 검색광고 전환 — 상담신청 완료(lead). wa 값 설정된 협력점에서만 호출, 중복 호출 X (success 1회).
+        naverTrans("lead");
         setDone(data);
       }
     } catch {
@@ -137,7 +130,7 @@ export default function ConsultForm({
     <>
       <button
         type="button"
-        onClick={() => setOpen(true)}
+        onClick={() => { naverTrans("custom003"); setOpen(true); }}
         className={
           buttonClassName ??
           "flex-1 bg-rk-orange hover:bg-rk-orange-deep text-white py-3 rounded-lg font-semibold text-[13px] text-center flex gap-1.5 items-center justify-center cursor-pointer border-0 transition-colors"
