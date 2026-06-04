@@ -431,6 +431,11 @@ export default async function ProductDetailPage({
 
         {/* Footer */}
         <footer className="bg-rk-soft px-3.5 py-4 text-[13px] text-rk-muted leading-[1.7]">
+          {partner.brandGuardVideoUrl && (
+            <div className="mb-3">
+              <video src={partner.brandGuardVideoUrl} autoPlay loop muted playsInline aria-label="SK매직 정품 인증 BRAND GUARD" className="w-full max-w-[360px] mx-auto block rounded-md" />
+            </div>
+          )}
           <div className="flex gap-2.5 flex-wrap mb-2.5 text-[13px]">
             <Link href="/legal/terms" className="text-rk-ink font-semibold no-underline cursor-pointer">이용약관</Link>
             <Link href="/legal/privacy" className="text-rk-ink font-semibold no-underline cursor-pointer">개인정보처리방침</Link>
