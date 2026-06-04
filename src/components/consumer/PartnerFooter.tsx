@@ -8,6 +8,18 @@ export default function PartnerFooter({ partner }: { partner: PartnerSiteData["p
   const showHotline = partner.hotlineNumber && partner.hotlineNumber !== HQ_HOTLINE;
   return (
     <footer className="bg-rk-soft px-3.5 py-4 text-[13px] text-rk-muted leading-[1.7]">
+      {/* SK매직 BRAND GUARD 정품 인증 안내 — 본사 공식 인증마크. autoplay + muted + loop + playsInline 으로 모바일 자동재생. */}
+      <div className="mb-3">
+        <video
+          src="/sk-magic-brand-guard.mp4"
+          autoPlay
+          loop
+          muted
+          playsInline
+          aria-label="SK매직 정품 인증 BRAND GUARD"
+          className="w-full max-w-[360px] mx-auto block rounded-md"
+        />
+      </div>
       {/* 협력점 로고 — 업로드한 경우만 푸터 상단에 표시. 헤더는 본사 정책상 SK매직 공식 로고 고정. */}
       {partner.footerLogoUrl && (
         <div className="mb-2.5">
