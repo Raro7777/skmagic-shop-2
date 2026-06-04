@@ -39,6 +39,9 @@ model Partner {
   // 협력점 자체 로고 (푸터 노출용). 비우면 푸터에 로고 없이 텍스트 정보만.
   // 헤더는 본사 정책상 SK매직 공식 로고 고정 — 협력점 로고는 푸터 전용.
   footerLogoUrl   String?
+  // SK매직 BRAND GUARD 정품 인증 영상 (협력점별 고유 QR). null 이면 푸터에 미노출.
+  // 본사가 협력점별로 발급한 인증 영상을 admin 에서 업로드.
+  brandGuardVideoUrl String?
   status          String   @default("active") // active | suspended | closed
   // 메인 페이지 진열 순서 (협력점 자체 편집)
   // 형태: { picks: ["WPU…", …], ranking: { water: […], air: […], bidet: […], mattress: […] } }

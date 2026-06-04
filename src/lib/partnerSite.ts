@@ -327,6 +327,7 @@ export type PartnerSiteData = {
     csLunchHours: string | null;
     csHolidays: string | null;
     footerLogoUrl: string | null;
+    brandGuardVideoUrl: string | null;
   };
   hero: ConsumerProduct | null;
   ranking: ConsumerProduct[];           // 메인 hero 다음에 노출되는 기본 랭킹 (정수기)
@@ -640,6 +641,7 @@ export async function getPartnerSite(
       csLunchHours: partner.csLunchHours,
       csHolidays: partner.csHolidays,
       footerLogoUrl: partner.footerLogoUrl,
+      brandGuardVideoUrl: partner.brandGuardVideoUrl,
     },
     hero,
     ranking,
@@ -782,6 +784,7 @@ export async function getPartnerHeader(partnerCode: string) {
     csLunchHours: partner.csLunchHours,
     csHolidays: partner.csHolidays,
     footerLogoUrl: partner.footerLogoUrl,
+    brandGuardVideoUrl: partner.brandGuardVideoUrl,
   };
 }
 
@@ -1042,6 +1045,7 @@ export async function getPartnerProductDetail(
       csLunchHours: partner.csLunchHours,
       csHolidays: partner.csHolidays,
       footerLogoUrl: partner.footerLogoUrl,
+      brandGuardVideoUrl: partner.brandGuardVideoUrl,
     },
     related: [],
   };
