@@ -199,43 +199,53 @@ export async function captureLead(input: {
 
   // 텔레그램 알림 — 본사 + 해당 협력점 + 본인 영업자 (fire-and-forget).
   // 휴대폰은 마스킹된 형태로만 노출 (개인정보 보호).
+  // ⚠ IIFE 안에 try/catch 필수 — partner/seller 조회가 throw 하면 본사 알림(notifyHq)
+  //    까지 silently drop 됨. 이전엔 try/catch 없어서 prisma 일시 에러 시 알림 전체 누락.
   void (async () => {
     let partnerName: string | null = null;
     let partnerChatId: string | null = null;
     let sellerName: string | null = null;
     let sellerChatId: string | null = null;
-    if (created.partnerId) {
-      const p = await prisma.partner.findUnique({
-        where: { partnerCode: created.partnerId },
-        select: { partnerName: true, telegramChatId: true },
-      });
-      partnerName = p?.partnerName ?? null;
-      partnerChatId = p?.telegramChatId ?? null;
+    try {
+      if (created.partnerId) {
+        const p = await prisma.partner.findUnique({
+          where: { partnerCode: created.partnerId },
+          select: { partnerName: true, telegramChatId: true },
+        });
+        partnerName = p?.partnerName ?? null;
+        partnerChatId = p?.telegramChatId ?? null;
+      }
+      if (created.sellerId) {
+        const s = await prisma.seller.findUnique({
+          where: { id: created.sellerId },
+          select: { name: true, telegramChatId: true },
+        });
+        sellerName = s?.name ?? null;
+        sellerChatId = s?.telegramChatId ?? null;
+      }
+    } catch (e) {
+      console.error("[lead-notify] partner/seller lookup failed (본사 알림은 계속 진행):", e instanceof Error ? e.message : e);
     }
-    if (created.sellerId) {
-      const s = await prisma.seller.findUnique({
-        where: { id: created.sellerId },
-        select: { name: true, telegramChatId: true },
-      });
-      sellerName = s?.name ?? null;
-      sellerChatId = s?.telegramChatId ?? null;
+    try {
+      const masked = maskPhone(phoneRaw);
+      const dupBadge = duplicateStatus === "confirmed" ? " ⚠ 중복(확정)"
+        : duplicateStatus === "possible" ? " ⚠ 중복(의심)"
+        : "";
+      const text =
+        `💬 <b>신규 상담 인입${dupBadge}</b>\n` +
+        `고객: ${esc(created.customerName)} (${esc(masked)})\n` +
+        `상품: ${esc(created.productInterest)}\n` +
+        (created.region ? `지역: ${esc(created.region)}\n` : "") +
+        (partnerName ? `협력점: ${esc(partnerName)}\n` : `귀속: 본사 풀 (협력점 미지정)\n`) +
+        (sellerName ? `영업자: ${esc(sellerName)}\n` : "") +
+        `\n협력점 콘솔 → 상담/문의에서 즉시 응대 가능합니다.`;
+      notifyHq(text);
+      notifyPartner(partnerChatId, text);
+      // 영업자 본인에게도 push (notifyPartner 와 동일 헬퍼 — chatId 만 다름).
+      notifyPartner(sellerChatId, text);
+    } catch (e) {
+      console.error("[lead-notify] notify dispatch failed:", e instanceof Error ? e.message : e);
     }
-    const masked = maskPhone(phoneRaw);
-    const dupBadge = duplicateStatus === "confirmed" ? " ⚠ 중복(확정)"
-      : duplicateStatus === "possible" ? " ⚠ 중복(의심)"
-      : "";
-    const text =
-      `💬 <b>신규 상담 인입${dupBadge}</b>\n` +
-      `고객: ${esc(created.customerName)} (${esc(masked)})\n` +
-      `상품: ${esc(created.productInterest)}\n` +
-      (created.region ? `지역: ${esc(created.region)}\n` : "") +
-      (partnerName ? `협력점: ${esc(partnerName)}\n` : `귀속: 본사 풀 (협력점 미지정)\n`) +
-      (sellerName ? `영업자: ${esc(sellerName)}\n` : "") +
-      `\n협력점 콘솔 → 상담/문의에서 즉시 응대 가능합니다.`;
-    notifyHq(text);
-    notifyPartner(partnerChatId, text);
-    // 영업자 본인에게도 push (notifyPartner 와 동일 헬퍼 — chatId 만 다름).
-    notifyPartner(sellerChatId, text);
   })();
 
   return toDomain(created);
