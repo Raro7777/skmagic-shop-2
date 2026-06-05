@@ -115,6 +115,20 @@ function effectiveRentalSupportEnabled(
   return true;
 }
 
+/**
+ * BRAND GUARD 인증 영상 effective URL.
+ *   - brandSafeMode + sellerCode 컨텍스트(영업자 페이지에서 렌탈지원금 노출) → 인증 마크 숨김.
+ *     이유: 본사 정품 인증 마크가 브랜드 지킴이 검사 회피 영역과 함께 노출되면 본사 신뢰도 훼손.
+ *   - 그 외(brandSafeMode 꺼져있거나, 컨슈머 메인 컨텍스트) → 그대로 노출.
+ */
+function effectiveBrandGuardUrl(
+  partner: { brandGuardVideoUrl: string | null; brandSafeMode: boolean },
+  sellerCode: string | undefined,
+): string | null {
+  if (partner.brandSafeMode && sellerCode) return null;
+  return partner.brandGuardVideoUrl;
+}
+
 // 옵션 단위 effective 가격 — 표시 우선순위: promoPrice ?? rentalPrice. base 는 취소선용.
 function optionPrices(opt: Record<string, unknown>): {
   base: number | null;
@@ -661,7 +675,7 @@ export async function getPartnerSite(
       csLunchHours: partner.csLunchHours,
       csHolidays: partner.csHolidays,
       footerLogoUrl: partner.footerLogoUrl,
-      brandGuardVideoUrl: partner.brandGuardVideoUrl,
+      brandGuardVideoUrl: effectiveBrandGuardUrl(partner, opts?.sellerCode),
     },
     hero,
     ranking,
@@ -1068,7 +1082,7 @@ export async function getPartnerProductDetail(
       csLunchHours: partner.csLunchHours,
       csHolidays: partner.csHolidays,
       footerLogoUrl: partner.footerLogoUrl,
-      brandGuardVideoUrl: partner.brandGuardVideoUrl,
+      brandGuardVideoUrl: effectiveBrandGuardUrl(partner, opts?.sellerCode),
     },
     related: [],
   };
