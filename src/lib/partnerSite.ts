@@ -96,6 +96,25 @@ function pickThumbnail(p: { imageUrl: string | null; imageUrls: string[] }): str
   return p.imageUrls?.[0] ?? p.imageUrl ?? null;
 }
 
+/**
+ * 브랜드 안전모드(brandSafeMode) 기반 effective 렌탈지원금 enable 판정.
+ *
+ *   - 협력점이 자체 OFF (rentalSupportEnabled=false) → 그대로 false
+ *   - brandSafeMode + 컨슈머 메인(sellerCode 없음) → 차단 (false)
+ *   - brandSafeMode + 영업자 컨텍스트(sellerCode 있음) → 풀 노출 (true)
+ *   - brandSafeMode OFF → 협력점 enable 값 그대로
+ *
+ * 메모리: 브랜드 지킴이 회피 — 광고 클릭→영업자 URL 진입 흐름에서만 렌탈지원금 노출.
+ */
+function effectiveRentalSupportEnabled(
+  partner: { rentalSupportEnabled: boolean; brandSafeMode: boolean },
+  sellerCode: string | undefined,
+): boolean {
+  if (!partner.rentalSupportEnabled) return false;
+  if (partner.brandSafeMode && !sellerCode) return false;
+  return true;
+}
+
 // 옵션 단위 effective 가격 — 표시 우선순위: promoPrice ?? rentalPrice. base 는 취소선용.
 function optionPrices(opt: Record<string, unknown>): {
   base: number | null;
@@ -441,7 +460,8 @@ export async function getPartnerSite(
         hqPolicies: p.hqPolicies,
         tierMargin: tierMarginConfig,
         partnerSupportAmount: partner.rentalSupportAmount,
-        rentalSupportEnabled: partner.rentalSupportEnabled,
+        // 브랜드 안전모드 + 컨슈머 메인 → 차단. 영업자 페이지(sellerCode 있음) 만 풀 노출.
+        rentalSupportEnabled: effectiveRentalSupportEnabled(partner, opts?.sellerCode),
         giftAmount: gift,
         installAmount: install,
         sellerMarginPartner,
@@ -669,7 +689,7 @@ export async function listPartnerProducts(
   const [partner, products] = await Promise.all([
     prisma.partner.findUnique({
       where: { partnerCode },
-      select: { tier: true, displayConfig: true, rentalSupportAmount: true, rentalSupportEnabled: true },
+      select: { tier: true, displayConfig: true, rentalSupportAmount: true, rentalSupportEnabled: true, brandSafeMode: true },
     }),
     prisma.product.findMany({
       where: {
@@ -723,11 +743,12 @@ export async function listPartnerProducts(
       giftAmount: gift,
       giftLabel: policy?.giftLabel ?? null,
       installFreed: install > 0,
+      // listPartnerProducts 는 카테고리/리스트 페이지용 (sellerCode 컨텍스트 없음) → 브랜드 안전모드 동일 차단.
       maxRentalSupport: partner ? computeMaxRentalSupport({
         hqPolicies: p.hqPolicies,
         tierMargin: tierMarginConfig,
         partnerSupportAmount: partner.rentalSupportAmount,
-        rentalSupportEnabled: partner.rentalSupportEnabled,
+        rentalSupportEnabled: effectiveRentalSupportEnabled(partner, undefined),
         giftAmount: gift,
         installAmount: install,
       }) : 0,
@@ -1001,7 +1022,9 @@ export async function getPartnerProductDetail(
     rivalHalfPrice: detailRival && detailRival.halfMonths > 0 ? detailRival.halfMonthly : null,
     lowestMode: null, // 상세 페이지는 옵션 선택 UI 에서 직접 노출 → 헤더 라벨은 그대로
     partnerRentalSupportAmount: partner.rentalSupportAmount ?? 0,
-    partnerRentalSupportEnabled: partner.rentalSupportEnabled ?? true,
+    // 브랜드 안전모드 + 컨슈머 메인 컨텍스트(sellerCode 없음) → 렌탈지원금 노출 차단.
+    // 영업자 페이지 (sellerCode 있음) 에서만 풀 노출. 협력점이 자체 OFF 면 그대로 false.
+    partnerRentalSupportEnabled: effectiveRentalSupportEnabled(partner, opts?.sellerCode),
     partnerInstallAmount: policy?.installAmount ?? 0,
     cardDiscountSavings,
     finalAfterCard: effectiveCard,
@@ -1131,11 +1154,12 @@ export async function getPartnerProductDetail(
       giftAmount: gift,
       giftLabel: pp?.giftLabel ?? null,
       installFreed: install > 0,
+      // 관련 상품 (상세 페이지 하단). 같은 sellerCode 컨텍스트 유지 — opts 따라 결정.
       maxRentalSupport: computeMaxRentalSupport({
         hqPolicies: p.hqPolicies,
         tierMargin: relatedTierConfig,
         partnerSupportAmount: partner.rentalSupportAmount,
-        rentalSupportEnabled: partner.rentalSupportEnabled,
+        rentalSupportEnabled: effectiveRentalSupportEnabled(partner, opts?.sellerCode),
         giftAmount: gift,
         installAmount: install,
       }),

@@ -55,6 +55,7 @@ export async function PATCH(req: Request) {
     sellerMarginAmount: number;
     sellerMarginPercent: number;
     rentalSupportEnabled: boolean;
+    brandSafeMode: boolean;
     csHours: string | null;
     csLunchHours: string | null;
     csHolidays: string | null;
@@ -141,6 +142,9 @@ export async function PATCH(req: Request) {
   }
   if (b.rentalSupportEnabled !== undefined) {
     data.rentalSupportEnabled = !!b.rentalSupportEnabled;
+  }
+  if (b.brandSafeMode !== undefined) {
+    data.brandSafeMode = !!b.brandSafeMode;
   }
   if (b.sellerMarginPercent !== undefined) {
     const n = Number(b.sellerMarginPercent);

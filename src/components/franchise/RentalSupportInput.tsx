@@ -8,14 +8,18 @@ const fmt = (n: number) => n.toLocaleString("ko-KR");
 export default function RentalSupportInput({
   initial,
   initialEnabled = true,
+  initialBrandSafe = true,
 }: {
   initial: number;
   initialEnabled?: boolean;
+  /** 브랜드 안전모드 — true 면 컨슈머 메인 페이지에서 렌탈지원금 숨김 (영업자 페이지만 노출). */
+  initialBrandSafe?: boolean;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [value, setValue] = useState(String(initial));
   const [enabled, setEnabled] = useState(initialEnabled);
+  const [brandSafe, setBrandSafe] = useState(initialBrandSafe);
   const [busy, setBusy] = useState(false);
   const [flash, setFlash] = useState<{ tone: "ok" | "err"; text: string } | null>(null);
 
@@ -26,7 +30,7 @@ export default function RentalSupportInput({
   const truncated = rawParsed > parsed ? rawParsed - parsed : 0;
   // 만원 미만 입력도 dirty 로 간주 — 안 그러면 "3원" 같은 미세 입력이 저장 버튼 비활성화로
   // 이어져 "입력이 안 되는" 것처럼 보임. 실제 저장은 절사된 값이 들어감.
-  const dirty = (rawParsed !== initial && parsed !== initial) || enabled !== initialEnabled;
+  const dirty = (rawParsed !== initial && parsed !== initial) || enabled !== initialEnabled || brandSafe !== initialBrandSafe;
   // 화면 표시값 — raw 값을 콤마 포맷으로. 0 이면 placeholder 노출.
   const display = rawParsed === 0 ? "" : fmt(rawParsed);
 
@@ -37,7 +41,7 @@ export default function RentalSupportInput({
       const res = await fetch("/api/franchise/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rentalSupportAmount: parsed, rentalSupportEnabled: enabled }),
+        body: JSON.stringify({ rentalSupportAmount: parsed, rentalSupportEnabled: enabled, brandSafeMode: brandSafe }),
       });
       const j = await res.json();
       if (!res.ok) { setFlash({ tone: "err", text: j.error ?? "저장 실패" }); return; }
@@ -81,6 +85,26 @@ export default function RentalSupportInput({
           </button>
           <span className={"text-[13px] font-medium " + (enabled ? "text-rk-success" : "text-rk-muted")}>
             {enabled ? "ON · 노출 중" : "OFF · 숨김 (정산 로직과 무관)"}
+          </span>
+        </div>
+
+        {/* 브랜드 안전모드 — 컨슈머 메인 차단 + 영업자 페이지만 노출 (브랜드 지킴이 회피) */}
+        <span className="text-rk-muted">영업자 페이지만 노출</span>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setBrandSafe(v => !v)}
+            disabled={busy || !enabled}
+            title={brandSafe ? "켜짐 — 컨슈머 메인에서 차단, 영업자 URL(/p/{p}/s/{s}) 만 노출" : "꺼짐 — 모든 컨슈머 페이지에 노출"}
+            className={
+              "relative w-10 h-[22px] rounded-full transition-colors border-0 cursor-pointer disabled:opacity-50 " +
+              (brandSafe ? "bg-rk-orange" : "bg-rk-line")
+            }
+          >
+            <span className="absolute top-0.5 w-[18px] h-[18px] bg-white rounded-full shadow transition-all" style={{ left: brandSafe ? 20 : 2 }} />
+          </button>
+          <span className={"text-[13px] font-medium " + (brandSafe ? "text-rk-orange-deep" : "text-rk-muted")}>
+            {brandSafe ? "🔒 안전모드 ON · 영업자 페이지만" : "🌐 풀 노출 · 모든 컨슈머 페이지"}
           </span>
         </div>
 

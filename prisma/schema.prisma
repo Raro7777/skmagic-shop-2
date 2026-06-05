@@ -42,6 +42,10 @@ model Partner {
   // SK매직 BRAND GUARD 정품 인증 영상 (협력점별 고유 QR). null 이면 푸터에 미노출.
   // 본사가 협력점별로 발급한 인증 영상을 admin 에서 업로드.
   brandGuardVideoUrl String?
+  // 브랜드 안전모드 — true 면 컨슈머 메인(브랜드 지킴이 검사 대상) 에서 렌탈지원금 노출 차단.
+  // 영업자 페이지 (/p/{p}/s/{s}) 에서만 풀 노출 → 광고 클릭 → 영업자 URL 진입 시에만 혜택 노출.
+  // 차단 대상: maxRentalSupport (렌탈지원금만). 사은품/설치비/타사보상은 그대로 노출.
+  brandSafeMode   Boolean  @default(true)
   status          String   @default("active") // active | suspended | closed
   // 메인 페이지 진열 순서 (협력점 자체 편집)
   // 형태: { picks: ["WPU…", …], ranking: { water: […], air: […], bidet: […], mattress: […] } }
