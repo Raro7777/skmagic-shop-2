@@ -130,7 +130,8 @@ export default function ConsultForm({
     <>
       <button
         type="button"
-        onClick={() => { naverTrans("custom003"); setOpen(true); }}
+        onMouseDown={() => { naverTrans("custom003"); }}
+        onClick={() => { setOpen(true); }}
         className={
           buttonClassName ??
           "flex-1 bg-rk-orange hover:bg-rk-orange-deep text-white py-3 rounded-lg font-semibold text-[13px] text-center flex gap-1.5 items-center justify-center cursor-pointer border-0 transition-colors"

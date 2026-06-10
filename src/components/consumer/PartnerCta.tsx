@@ -30,7 +30,7 @@ export default function PartnerCta({
       {telHref && (
         <a
           href={telHref}
-          onClick={() => naverTrans("custom001")}
+          onMouseDown={() => naverTrans("custom001")}
           className="flex-1 bg-rk-navy hover:bg-rk-navy-deep text-white py-3 rounded-lg font-semibold text-[13px] no-underline cursor-pointer flex items-center justify-center gap-1.5 transition-colors"
           title={`전화 ${partner.hotlineNumber}`}
         >
@@ -41,7 +41,7 @@ export default function PartnerCta({
       {kakaoUrl ? (
         <a
           href={kakaoUrl}
-          onClick={() => naverTrans("custom002")}
+          onMouseDown={() => naverTrans("custom002")}
           target="_blank"
           rel="noopener noreferrer"
           className="flex-1 bg-[#FEE500] hover:bg-[#F4DC00] text-[#1A1D24] py-3 rounded-lg font-semibold text-[13px] no-underline cursor-pointer flex items-center justify-center gap-1.5 transition-colors"
@@ -53,7 +53,7 @@ export default function PartnerCta({
       ) : telHref ? (
         <a
           href={telHref}
-          onClick={() => naverTrans("custom001")}
+          onMouseDown={() => naverTrans("custom001")}
           className="flex-1 bg-[#FEE500] text-[#1A1D24] py-3 rounded-lg font-semibold text-[13px] no-underline cursor-pointer flex items-center justify-center gap-1.5"
           title="카톡 채널 미설정 — 전화로 연결"
         >

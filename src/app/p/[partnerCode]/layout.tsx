@@ -50,17 +50,56 @@ export default async function PartnerConsumerLayout({
   const partner = await getPartner(partnerCode);
   const theme = partner?.theme ?? "default";
   const wcsId = partner?.naverWcsId?.trim() || null;
-  // 네이버 검색광고 전환 추적 — 네이버 공식 표준 코드 그대로 SSR HTML 에 inline.
-  // 진단 도구가 정규식으로 표준 패턴(type="text/javascript" + `var wcs_add` + `wcs.inflow()`)을
-  // 검사하므로, async/window. 같은 modern variant 는 인식 못 함. 표준 그대로 박을 것.
-  // wcs_do(전환)는 ConsultForm 의 lead 접수 success 에서 별도 호출.
+  // 네이버 검색광고 전환 추적 — 2026-06-08 검수 결과 반영:
+  //   1) 페이지뷰: wcs.inflow(domain) + wcs_do() 표준 형태로 재설치
+  //   2) 4개 전환 이벤트는 글로벌 함수(NA_CONV_*) 로 등록 — onMouseDown 에서 호출
+  //   - lead       : ConsultForm submit success
+  //   - custom001  : 전화상담 버튼 클릭
+  //   - custom002  : 카톡상담 버튼 클릭
+  //   - custom003  : 상담신청 버튼 클릭
   const wcsInitCode = wcsId
     ? [
         "if (!wcs_add) var wcs_add={};",
         `wcs_add["wa"] = ${JSON.stringify(wcsId)};`,
-        "if (!_nasa) var _nasa={};",
-        "if(window.wcs){",
-        "  wcs.inflow();",
+        "if(window.wcs) {",
+        '    wcs.inflow("skmagic-shop.com");',
+        "}",
+        "wcs_do();",
+        "function NA_CONV_LEAD(){",
+        "    if(window.wcs){",
+        "        if(!wcs_add) var wcs_add = {};",
+        `        wcs_add["wa"] = ${JSON.stringify(wcsId)};`,
+        "        var _conv = {};",
+        '        _conv.type = "lead";',
+        "        wcs.trans(_conv);",
+        "    }",
+        "}",
+        "function NA_CONV_CUSTOM001(){",
+        "    if(window.wcs){",
+        "        if(!wcs_add) var wcs_add = {};",
+        `        wcs_add["wa"] = ${JSON.stringify(wcsId)};`,
+        "        var _conv = {};",
+        '        _conv.type = "custom001";',
+        "        wcs.trans(_conv);",
+        "    }",
+        "}",
+        "function NA_CONV_CUSTOM002(){",
+        "    if(window.wcs){",
+        "        if(!wcs_add) var wcs_add = {};",
+        `        wcs_add["wa"] = ${JSON.stringify(wcsId)};`,
+        "        var _conv = {};",
+        '        _conv.type = "custom002";',
+        "        wcs.trans(_conv);",
+        "    }",
+        "}",
+        "function NA_CONV_CUSTOM003(){",
+        "    if(window.wcs){",
+        "        if(!wcs_add) var wcs_add = {};",
+        `        wcs_add["wa"] = ${JSON.stringify(wcsId)};`,
+        "        var _conv = {};",
+        '        _conv.type = "custom003";',
+        "        wcs.trans(_conv);",
+        "    }",
         "}",
       ].join("\n")
     : null;
