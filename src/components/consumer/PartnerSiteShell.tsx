@@ -9,6 +9,7 @@ import UtmTracker from "@/components/consumer/UtmTracker";
 import { listActivePartners, type ConsumerProduct, type PartnerSiteData } from "@/lib/partnerSite";
 import { SK_MAGIC_LOGO } from "@/lib/constants/assets";
 import { HQ_HOTLINE } from "@/lib/constants/hq";
+import { rawAnchorHtml } from "@/lib/naverConvButton";
 
 const fmt = (n: number) => n.toLocaleString("ko-KR");
 
@@ -159,25 +160,44 @@ export default async function PartnerSiteShell({
               <Link href="/admin/franchise" className="text-rk-ink no-underline cursor-pointer" aria-label="관리자">⚙</Link>
             </div>
           </div>
-          {/* 전화 / 카톡 — 한 줄에 들어가도록 */}
+          {/* 전화 / 카톡 — 한 줄에 들어가도록. 네이버 진단 도구용 onmousedown 정적 속성 (raw HTML) */}
           <div className="bg-rk-navy text-white px-3 py-2 flex items-center gap-1.5 text-[13px]">
-            <a href={`tel:${partner.hotlineNumber.replace(/[^\d+]/g, "")}`}
-               className="flex items-center gap-1 no-underline text-white cursor-pointer whitespace-nowrap shrink-0">
-              <span className="text-[14px]">📞</span>
-              <b className="text-[14px] tracking-[.02em] rk-num">{partner.hotlineNumber}</b>
-            </a>
+            <span
+              dangerouslySetInnerHTML={{
+                __html: rawAnchorHtml({
+                  href: `tel:${partner.hotlineNumber.replace(/[^\d+]/g, "")}`,
+                  conv: "custom001",
+                  className: "flex items-center gap-1 no-underline text-white cursor-pointer whitespace-nowrap shrink-0",
+                  innerHtml: `<span class="text-[14px]">📞</span><b class="text-[14px] tracking-[.02em] rk-num">${partner.hotlineNumber}</b>`,
+                }),
+              }}
+            />
             <span className="text-[12px] opacity-70 whitespace-nowrap hidden sm:inline">평일 09–22시</span>
             <div className="ml-auto flex gap-1 shrink-0">
               {partner.kakaoChannelUrl ? (
-                <a href={partner.kakaoChannelUrl} target="_blank" rel="noreferrer"
-                  className="bg-white/15 hover:bg-white/25 px-2 py-1 rounded text-[12px] font-medium no-underline text-white cursor-pointer whitespace-nowrap">
-                  카톡상담
-                </a>
+                <span
+                  dangerouslySetInnerHTML={{
+                    __html: rawAnchorHtml({
+                      href: partner.kakaoChannelUrl,
+                      conv: "custom002",
+                      target: "_blank",
+                      rel: "noreferrer",
+                      className: "bg-white/15 hover:bg-white/25 px-2 py-1 rounded text-[12px] font-medium no-underline text-white cursor-pointer whitespace-nowrap",
+                      innerHtml: "카톡상담",
+                    }),
+                  }}
+                />
               ) : (
-                <a href={`tel:${partner.hotlineNumber.replace(/[^\d+]/g, "")}`}
-                  className="bg-white/15 hover:bg-white/25 px-2 py-1 rounded text-[12px] font-medium no-underline text-white cursor-pointer whitespace-nowrap">
-                  카톡상담
-                </a>
+                <span
+                  dangerouslySetInnerHTML={{
+                    __html: rawAnchorHtml({
+                      href: `tel:${partner.hotlineNumber.replace(/[^\d+]/g, "")}`,
+                      conv: "custom001",
+                      className: "bg-white/15 hover:bg-white/25 px-2 py-1 rounded text-[12px] font-medium no-underline text-white cursor-pointer whitespace-nowrap",
+                      innerHtml: "카톡상담",
+                    }),
+                  }}
+                />
               )}
             </div>
           </div>
@@ -324,21 +344,31 @@ export default async function PartnerSiteShell({
 
         <div id="consult-form" className="sticky bottom-0 px-3.5 py-2.5 bg-white border-t border-rk-line flex gap-2 items-center z-10">
           {partner.kakaoChannelUrl ? (
-            <a
-              href={partner.kakaoChannelUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="flex-1 bg-[#FEE500] hover:bg-[#F4DC00] text-[#1A1D24] py-3 rounded-lg font-bold text-[13px] text-center flex gap-1.5 items-center justify-center no-underline cursor-pointer"
-            >
-              💬 카톡 문의
-            </a>
+            <span
+              className="flex-1 contents"
+              dangerouslySetInnerHTML={{
+                __html: rawAnchorHtml({
+                  href: partner.kakaoChannelUrl,
+                  conv: "custom002",
+                  target: "_blank",
+                  rel: "noreferrer",
+                  className: "flex-1 bg-[#FEE500] hover:bg-[#F4DC00] text-[#1A1D24] py-3 rounded-lg font-bold text-[13px] text-center flex gap-1.5 items-center justify-center no-underline cursor-pointer",
+                  innerHtml: "💬 카톡 문의",
+                }),
+              }}
+            />
           ) : (
-            <a
-              href={`tel:${(seller?.phone?.trim() || partner.hotlineNumber).replace(/[^\d+]/g, "")}`}
-              className="flex-1 bg-[#FEE500] hover:bg-[#F4DC00] text-[#1A1D24] py-3 rounded-lg font-bold text-[13px] text-center flex gap-1.5 items-center justify-center no-underline cursor-pointer"
-            >
-              📞 지금 전화상담
-            </a>
+            <span
+              className="flex-1 contents"
+              dangerouslySetInnerHTML={{
+                __html: rawAnchorHtml({
+                  href: `tel:${(seller?.phone?.trim() || partner.hotlineNumber).replace(/[^\d+]/g, "")}`,
+                  conv: "custom001",
+                  className: "flex-1 bg-[#FEE500] hover:bg-[#F4DC00] text-[#1A1D24] py-3 rounded-lg font-bold text-[13px] text-center flex gap-1.5 items-center justify-center no-underline cursor-pointer",
+                  innerHtml: "📞 지금 전화상담",
+                }),
+              }}
+            />
           )}
           <ConsultForm
             partnerCode={partner.partnerCode}
