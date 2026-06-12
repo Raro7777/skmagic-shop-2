@@ -130,7 +130,9 @@ export default function ConsultForm({
     <>
       <button
         type="button"
-        onMouseDown={() => { naverTrans("custom003"); }}
+        // 네이버 진단 도구는 정적 HTML 의 onmousedown(소문자) 속성을 정규식으로 검사.
+        // React onMouseDown 은 hydration 후 등록되어 raw HTML 에 안 보이므로 spread 로 lowercase attribute 출력.
+        {...{ onmousedown: "javascript:try{NA_CONV_CUSTOM003();}catch(e){}" } as Record<string, string>}
         onClick={() => { setOpen(true); }}
         className={
           buttonClassName ??

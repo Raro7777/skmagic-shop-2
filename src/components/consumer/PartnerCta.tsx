@@ -30,7 +30,10 @@ export default function PartnerCta({
       {telHref && (
         <a
           href={telHref}
-          onMouseDown={() => naverTrans("custom001")}
+          // 네이버 진단 도구는 정적 HTML 의 onmousedown(소문자) 속성을 정규식으로 검사.
+          // React onMouseDown 은 hydration 후 등록되어 raw HTML 에 안 보이므로,
+          // spread 로 unknown lowercase 속성 전달 → SSR 시 그대로 attribute 출력.
+          {...{ onmousedown: "javascript:try{NA_CONV_CUSTOM001();}catch(e){}" } as Record<string, string>}
           className="flex-1 bg-rk-navy hover:bg-rk-navy-deep text-white py-3 rounded-lg font-semibold text-[13px] no-underline cursor-pointer flex items-center justify-center gap-1.5 transition-colors"
           title={`전화 ${partner.hotlineNumber}`}
         >
@@ -41,7 +44,7 @@ export default function PartnerCta({
       {kakaoUrl ? (
         <a
           href={kakaoUrl}
-          onMouseDown={() => naverTrans("custom002")}
+          {...{ onmousedown: "javascript:try{NA_CONV_CUSTOM002();}catch(e){}" } as Record<string, string>}
           target="_blank"
           rel="noopener noreferrer"
           className="flex-1 bg-[#FEE500] hover:bg-[#F4DC00] text-[#1A1D24] py-3 rounded-lg font-semibold text-[13px] no-underline cursor-pointer flex items-center justify-center gap-1.5 transition-colors"
@@ -53,7 +56,7 @@ export default function PartnerCta({
       ) : telHref ? (
         <a
           href={telHref}
-          onMouseDown={() => naverTrans("custom001")}
+          {...{ onmousedown: "javascript:try{NA_CONV_CUSTOM001();}catch(e){}" } as Record<string, string>}
           className="flex-1 bg-[#FEE500] text-[#1A1D24] py-3 rounded-lg font-semibold text-[13px] no-underline cursor-pointer flex items-center justify-center gap-1.5"
           title="카톡 채널 미설정 — 전화로 연결"
         >
