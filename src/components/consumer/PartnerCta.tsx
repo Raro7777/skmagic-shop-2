@@ -3,7 +3,7 @@
 import ConsultForm from "@/components/consumer/ConsultForm";
 import type { PartnerSiteData } from "@/lib/partnerSite";
 import { HQ_HOTLINE } from "@/lib/constants/hq";
-import { naverTrans } from "@/lib/naverWcsTrans";
+import { rawAnchorHtml } from "@/lib/naverConvButton";
 
 export default function PartnerCta({
   partner,
@@ -26,43 +26,50 @@ export default function PartnerCta({
       className="sticky bottom-0 px-3 py-2.5 bg-white border-t border-rk-line flex gap-1.5 items-center z-40 shadow-[0_-4px_12px_rgba(0,0,0,0.08)]"
       style={{ paddingBottom: "calc(0.625rem + env(safe-area-inset-bottom, 0px))" }}
     >
-      {/* 전화 상담 — 협력점 자체 핫라인이 있을 때만 노출 (본사 1600-2434 노출 차단) */}
+      {/* 전화/카톡 a 태그는 네이버 진단 도구 인식을 위해 raw HTML 로 출력 (onmousedown 정적 속성).
+          Tailwind class 가 build 시 추출되도록 같은 className 을 별도 dummy JSX 에 사용 (purge 회피). */}
       {telHref && (
-        <a
-          href={telHref}
-          // 네이버 진단 도구는 정적 HTML 의 onmousedown(소문자) 속성을 정규식으로 검사.
-          // React onMouseDown 은 hydration 후 등록되어 raw HTML 에 안 보이므로,
-          // spread 로 unknown lowercase 속성 전달 → SSR 시 그대로 attribute 출력.
-          {...{ onmousedown: "javascript:try{NA_CONV_CUSTOM001();}catch(e){}" } as Record<string, string>}
-          className="flex-1 bg-rk-navy hover:bg-rk-navy-deep text-white py-3 rounded-lg font-semibold text-[13px] no-underline cursor-pointer flex items-center justify-center gap-1.5 transition-colors"
-          title={`전화 ${partner.hotlineNumber}`}
-        >
-          📞 전화상담
-        </a>
+        <span
+          className="flex-1 contents"
+          dangerouslySetInnerHTML={{
+            __html: rawAnchorHtml({
+              href: telHref,
+              conv: "custom001",
+              className: "flex-1 bg-rk-navy hover:bg-rk-navy-deep text-white py-3 rounded-lg font-semibold text-[13px] no-underline cursor-pointer flex items-center justify-center gap-1.5 transition-colors",
+              title: `전화 ${partner.hotlineNumber}`,
+              innerHtml: "📞 전화상담",
+            }),
+          }}
+        />
       )}
-      {/* 카톡 상담 */}
       {kakaoUrl ? (
-        <a
-          href={kakaoUrl}
-          {...{ onmousedown: "javascript:try{NA_CONV_CUSTOM002();}catch(e){}" } as Record<string, string>}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex-1 bg-[#FEE500] hover:bg-[#F4DC00] text-[#1A1D24] py-3 rounded-lg font-semibold text-[13px] no-underline cursor-pointer flex items-center justify-center gap-1.5 transition-colors"
-          title={`${partner.partnerName} 카톡채널`}
-        >
-          <img src="https://internet-king.kr/gaeun_landing/kakao.png" alt="" className="w-[18px] h-[18px] shrink-0" />
-          카톡상담
-        </a>
+        <span
+          className="flex-1 contents"
+          dangerouslySetInnerHTML={{
+            __html: rawAnchorHtml({
+              href: kakaoUrl,
+              conv: "custom002",
+              target: "_blank",
+              rel: "noopener noreferrer",
+              className: "flex-1 bg-[#FEE500] hover:bg-[#F4DC00] text-[#1A1D24] py-3 rounded-lg font-semibold text-[13px] no-underline cursor-pointer flex items-center justify-center gap-1.5 transition-colors",
+              title: `${partner.partnerName} 카톡채널`,
+              innerHtml: `<img src="https://internet-king.kr/gaeun_landing/kakao.png" alt="" class="w-[18px] h-[18px] shrink-0"/>카톡상담`,
+            }),
+          }}
+        />
       ) : telHref ? (
-        <a
-          href={telHref}
-          {...{ onmousedown: "javascript:try{NA_CONV_CUSTOM001();}catch(e){}" } as Record<string, string>}
-          className="flex-1 bg-[#FEE500] text-[#1A1D24] py-3 rounded-lg font-semibold text-[13px] no-underline cursor-pointer flex items-center justify-center gap-1.5"
-          title="카톡 채널 미설정 — 전화로 연결"
-        >
-          <img src="https://internet-king.kr/gaeun_landing/kakao.png" alt="" className="w-[18px] h-[18px] shrink-0" />
-          카톡상담
-        </a>
+        <span
+          className="flex-1 contents"
+          dangerouslySetInnerHTML={{
+            __html: rawAnchorHtml({
+              href: telHref,
+              conv: "custom001",
+              className: "flex-1 bg-[#FEE500] text-[#1A1D24] py-3 rounded-lg font-semibold text-[13px] no-underline cursor-pointer flex items-center justify-center gap-1.5",
+              title: "카톡 채널 미설정 — 전화로 연결",
+              innerHtml: `<img src="https://internet-king.kr/gaeun_landing/kakao.png" alt="" class="w-[18px] h-[18px] shrink-0"/>카톡상담`,
+            }),
+          }}
+        />
       ) : null}
       {/* 상담 신청 (폼 열림) */}
       <ConsultForm

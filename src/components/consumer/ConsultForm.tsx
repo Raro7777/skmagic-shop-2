@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { getUtm } from "@/components/consumer/UtmTracker";
 import { naverTrans } from "@/lib/naverWcsTrans";
+import { rawButtonHtml } from "@/lib/naverConvButton";
 
 /**
  * 상담 신청 모달.
@@ -128,19 +129,19 @@ export default function ConsultForm({
 
   return (
     <>
-      <button
-        type="button"
-        // 네이버 진단 도구는 정적 HTML 의 onmousedown(소문자) 속성을 정규식으로 검사.
-        // React onMouseDown 은 hydration 후 등록되어 raw HTML 에 안 보이므로 spread 로 lowercase attribute 출력.
-        {...{ onmousedown: "javascript:try{NA_CONV_CUSTOM003();}catch(e){}" } as Record<string, string>}
+      {/* 네이버 진단 도구 표준 패턴 (정적 onmousedown) — dangerouslySetInnerHTML 로 raw button.
+          부모 span 의 onClick 이 자식 button 의 click 을 bubble 로 받아 setOpen 트리거. */}
+      <span
+        className="flex-1 contents"
         onClick={() => { setOpen(true); }}
-        className={
-          buttonClassName ??
-          "flex-1 bg-rk-orange hover:bg-rk-orange-deep text-white py-3 rounded-lg font-semibold text-[13px] text-center flex gap-1.5 items-center justify-center cursor-pointer border-0 transition-colors"
-        }
-      >
-        {buttonLabel ?? "✍ 상담 신청"}
-      </button>
+        dangerouslySetInnerHTML={{
+          __html: rawButtonHtml({
+            conv: "custom003",
+            className: buttonClassName ?? "flex-1 bg-rk-orange hover:bg-rk-orange-deep text-white py-3 rounded-lg font-semibold text-[13px] text-center flex gap-1.5 items-center justify-center cursor-pointer border-0 transition-colors",
+            innerHtml: buttonLabel ?? "✍ 상담 신청",
+          }),
+        }}
+      />
 
       {open && (
         <div
