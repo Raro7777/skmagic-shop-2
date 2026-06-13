@@ -14,6 +14,7 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 import { SK_MAGIC_LOGO } from "@/lib/constants/assets";
 import { HQ_HOTLINE } from "@/lib/constants/hq";
+import { rawAnchorHtml } from "@/lib/naverConvButton";
 
 const fmt = (n: number) => n.toLocaleString("ko-KR");
 
@@ -450,33 +451,45 @@ export default async function ProductDetailPage({
           </dl>
         </footer>
 
-        {/* Sticky bottom CTA */}
+        {/* Sticky bottom CTA — 네이버 진단 도구용 onmousedown 정적 속성 (raw HTML) */}
         <div className="sticky bottom-0 px-3.5 py-2.5 bg-white border-t border-rk-line flex gap-2 items-center z-10">
-          <a
-            href={`tel:${effectivePhone.replace(/\D/g, "")}`}
-            className="bg-rk-soft hover:bg-rk-line text-rk-ink px-3 py-3 rounded-lg font-semibold text-[14px] no-underline cursor-pointer flex items-center justify-center"
-            title={`전화 ${effectivePhone}`}
-          >
-            📞
-          </a>
+          <span
+            dangerouslySetInnerHTML={{
+              __html: rawAnchorHtml({
+                href: `tel:${effectivePhone.replace(/\D/g, "")}`,
+                conv: "custom001",
+                className: "bg-rk-soft hover:bg-rk-line text-rk-ink px-3 py-3 rounded-lg font-semibold text-[14px] no-underline cursor-pointer flex items-center justify-center",
+                title: `전화 ${effectivePhone}`,
+                innerHtml: "📞",
+              }),
+            }}
+          />
           {partner.kakaoChannelUrl ? (
-            <a
-              href={partner.kakaoChannelUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="bg-[#FEE500] hover:bg-[#F4DC00] text-[#1A1D24] px-3 py-3 rounded-lg font-semibold text-[14px] no-underline cursor-pointer flex items-center justify-center"
-              title={`${partner.partnerName} 카톡채널`}
-            >
-              💬
-            </a>
+            <span
+              dangerouslySetInnerHTML={{
+                __html: rawAnchorHtml({
+                  href: partner.kakaoChannelUrl,
+                  conv: "custom002",
+                  target: "_blank",
+                  rel: "noreferrer",
+                  className: "bg-[#FEE500] hover:bg-[#F4DC00] text-[#1A1D24] px-3 py-3 rounded-lg font-semibold text-[14px] no-underline cursor-pointer flex items-center justify-center",
+                  title: `${partner.partnerName} 카톡채널`,
+                  innerHtml: "💬",
+                }),
+              }}
+            />
           ) : (
-            <a
-              href={`tel:${effectivePhone.replace(/\D/g, "")}`}
-              className="bg-[#FEE500] hover:bg-[#F4DC00] text-[#1A1D24] px-3 py-3 rounded-lg font-semibold text-[14px] no-underline cursor-pointer flex items-center justify-center"
-              title="카톡 채널 미설정 — 전화로 연결"
-            >
-              💬
-            </a>
+            <span
+              dangerouslySetInnerHTML={{
+                __html: rawAnchorHtml({
+                  href: `tel:${effectivePhone.replace(/\D/g, "")}`,
+                  conv: "custom001",
+                  className: "bg-[#FEE500] hover:bg-[#F4DC00] text-[#1A1D24] px-3 py-3 rounded-lg font-semibold text-[14px] no-underline cursor-pointer flex items-center justify-center",
+                  title: "카톡 채널 미설정 — 전화로 연결",
+                  innerHtml: "💬",
+                }),
+              }}
+            />
           )}
           <ConsultForm
             partnerCode={partner.partnerCode}
