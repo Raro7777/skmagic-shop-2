@@ -86,6 +86,7 @@ model Partner {
   sellers      Seller[]
   banners      Banner[]
   reviews      Review[]
+  productPromotions PartnerProductPromotion[]
 
   @@index([status])
 }
@@ -951,4 +952,24 @@ model HqSetting {
   joinConditions  Json?
   updatedAt       DateTime @updatedAt
   updatedById     String?
+}
+
+// ----------------------------------------------------------------
+// PartnerProductPromotion — 협력점이 상품 카드에 노출하는 프로모션 뱃지.
+// 활성 조건: enabled && badgeText && (startsAt..endsAt 범위 내 또는 무제한).
+// ----------------------------------------------------------------
+model PartnerProductPromotion {
+  id          String    @id @default(cuid())
+  partnerId   String    // FK Partner.partnerCode (일관성)
+  partner     Partner   @relation(fields: [partnerId], references: [partnerCode], onDelete: Cascade)
+  productCode String
+  enabled     Boolean   @default(true)
+  badgeText   String
+  startsAt    DateTime?
+  endsAt      DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([partnerId, productCode])
+  @@index([partnerId])
 }

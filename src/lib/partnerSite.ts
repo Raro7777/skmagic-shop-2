@@ -90,6 +90,10 @@ export type ConsumerProduct = {
   // pickLowestPrice 가 채택한 옵션의 mode — 메인 카드 관리방식 라벨에 반영.
   // 셀프형이 더 저렴하면 자가관리형으로 안내 (null 이면 기존 managementType 사용).
   lowestMode: "방문형" | "셀프형" | null;
+  // 협력점이 PartnerProductPromotion 으로 등록한 활성 뱃지 문구 (없으면 null/undefined).
+  // 활성 조건: enabled && badgeText && now() 가 startsAt..endsAt 범위 내 (또는 무제한).
+  // 컨슈머 메인 카드 경로(getPartnerSite)에서만 채움 — 검색/지역 SEO 경로는 undefined.
+  promotionBadge?: string | null;
 };
 
 function pickThumbnail(p: { imageUrl: string | null; imageUrls: string[] }): string | null {
@@ -400,7 +404,7 @@ export async function getPartnerSite(
   });
   if (!partner || partner.status !== "active") return null;
 
-  const [products, tierMargin] = await Promise.all([
+  const [products, tierMargin, promotions] = await Promise.all([
     prisma.product.findMany({
       where: { status: "active" },
       include: {
@@ -410,7 +414,21 @@ export async function getPartnerSite(
       orderBy: [{ isFeatured: "desc" }, { rentalPrice: "asc" }],
     }),
     prisma.hqMarginByTier.findUnique({ where: { tier: partner.tier } }),
+    prisma.partnerProductPromotion.findMany({
+      where: { partnerId: partnerCode, enabled: true },
+    }),
   ]);
+
+  // 활성 promotion 인덱스 — enabled + badgeText + 현재 시간이 startsAt..endsAt 범위 내.
+  // startsAt/endsAt 가 null 이면 무제한. 충족 시 productCode 별로 뱃지 문구 노출.
+  const promoNowMs = Date.now();
+  const promotionByCode = new Map<string, string>();
+  for (const promo of promotions) {
+    if (!promo.badgeText.trim()) continue;
+    if (promo.startsAt && promo.startsAt.getTime() > promoNowMs) continue;
+    if (promo.endsAt && promo.endsAt.getTime() < promoNowMs) continue;
+    promotionByCode.set(promo.productCode, promo.badgeText);
+  }
   const tierMarginConfig = tierMargin
     ? { type: tierMargin.marginType as "fixed" | "percent", amount: tierMargin.marginAmount, percent: tierMargin.marginPercent }
     : null;
@@ -487,6 +505,7 @@ export async function getPartnerSite(
       rivalHalfMonths: rival?.halfMonths ?? 0,
       rivalHalfPrice: rival && rival.halfMonths > 0 ? rival.halfMonthly : null,
       lowestMode: lowest.mode,
+      promotionBadge: promotionByCode.get(p.productCode) ?? null,
     };
   });
 
@@ -700,7 +719,7 @@ export async function listPartnerProducts(
   partnerCode: string,
   opts: { category?: string } = {}
 ): Promise<ConsumerProduct[]> {
-  const [partner, products] = await Promise.all([
+  const [partner, products, promotions] = await Promise.all([
     prisma.partner.findUnique({
       where: { partnerCode },
       select: { tier: true, displayConfig: true, rentalSupportAmount: true, rentalSupportEnabled: true, brandSafeMode: true },
@@ -715,8 +734,21 @@ export async function listPartnerProducts(
         hqPolicies: true,
       },
     }),
+    prisma.partnerProductPromotion.findMany({
+      where: { partnerId: partnerCode, enabled: true },
+    }),
   ]);
   const tierMargin = partner ? await prisma.hqMarginByTier.findUnique({ where: { tier: partner.tier } }) : null;
+
+  // 활성 promotion 인덱스 (카테고리/리스트 페이지에서도 뱃지 노출)
+  const promoNowMs = Date.now();
+  const promotionByCode = new Map<string, string>();
+  for (const promo of promotions) {
+    if (!promo.badgeText.trim()) continue;
+    if (promo.startsAt && promo.startsAt.getTime() > promoNowMs) continue;
+    if (promo.endsAt && promo.endsAt.getTime() < promoNowMs) continue;
+    promotionByCode.set(promo.productCode, promo.badgeText);
+  }
   const tierMarginConfig = tierMargin
     ? { type: tierMargin.marginType as "fixed" | "percent", amount: tierMargin.marginAmount, percent: tierMargin.marginPercent }
     : null;
@@ -771,6 +803,7 @@ export async function listPartnerProducts(
       rivalHalfMonths: rival?.halfMonths ?? 0,
       rivalHalfPrice: rival && rival.halfMonths > 0 ? rival.halfMonthly : null,
       lowestMode: lowest.mode,
+      promotionBadge: promotionByCode.get(p.productCode) ?? null,
     };
   });
 

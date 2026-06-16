@@ -9,6 +9,7 @@ import {
   SortableContext, arrayMove, verticalListSortingStrategy, useSortable, sortableKeyboardCoordinates,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import PromotionsManager from "@/components/franchise/PromotionsManager";
 
 type Product = {
   productCode: string;
@@ -25,11 +26,12 @@ type DisplayConfig = {
 };
 
 const fmt = (n: number) => n.toLocaleString("ko-KR");
-const SLOTS: Array<{ key: string; label: string; type: "picks" | "ranking"; ranking?: string }> = [
+const SLOTS: Array<{ key: string; label: string; type: "picks" | "ranking" | "promotion"; ranking?: string }> = [
   { key: "picks",         label: "🌟 점장 추천 (메인 picks)", type: "picks" },
   { key: "ranking_water", label: "💧 정수기 랭킹",            type: "ranking", ranking: "water" },
   { key: "ranking_air",   label: "💨 공기청정기 랭킹",        type: "ranking", ranking: "air" },
   { key: "ranking_bidet", label: "🚿 비데 랭킹",              type: "ranking", ranking: "bidet" },
+  { key: "promotion",     label: "🏷️ 프로모션 상품",          type: "promotion" },
 ];
 
 const MAX_SIZE: Record<string, number> = {
@@ -205,6 +207,7 @@ export default function ProductDisplayEditor() {
           >
             {s.label}
             {(() => {
+              if (s.type === "promotion") return null;
               const codes = s.type === "picks" ? (config.picks ?? []) : (config.ranking?.[s.ranking!] ?? []);
               return codes.length > 0 ? <span className="ml-1.5 opacity-80">{codes.length}</span> : null;
             })()}
@@ -212,6 +215,9 @@ export default function ProductDisplayEditor() {
         ))}
       </div>
 
+      {activeSlot === "promotion" ? (
+        <PromotionsManager />
+      ) : (
       <div className="grid grid-cols-2 gap-3">
         {/* 좌: 추가 가능한 상품 */}
         <div>
@@ -287,11 +293,15 @@ export default function ProductDisplayEditor() {
         </div>
       </div>
 
-      <div className="bg-rk-tint-blue text-rk-info px-3 py-2 rounded text-[13px] mt-3 leading-[1.6]">
-        💡 <b>점장 추천</b>은 메인 페이지의 "오늘의 점장 픽" 영역에 위→아래 순서로 노출됩니다.
-        <b> 카테고리 랭킹</b>은 해당 카테고리 페이지(예: /products?cat=water) 상단에 노출됩니다.
-        설정 안 한 영역은 사은품 차별화 기준으로 자동 산출됩니다.
-      </div>
+      )}
+
+      {activeSlot !== "promotion" && (
+        <div className="bg-rk-tint-blue text-rk-info px-3 py-2 rounded text-[13px] mt-3 leading-[1.6]">
+          💡 <b>점장 추천</b>은 메인 페이지의 "오늘의 점장 픽" 영역에 위→아래 순서로 노출됩니다.
+          <b> 카테고리 랭킹</b>은 해당 카테고리 페이지(예: /products?cat=water) 상단에 노출됩니다.
+          설정 안 한 영역은 사은품 차별화 기준으로 자동 산출됩니다.
+        </div>
+      )}
     </div>
   );
 }
