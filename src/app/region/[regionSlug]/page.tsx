@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import ProductThumb from "@/components/consumer/ProductThumb";
+import PromotionBadge from "@/components/consumer/PromotionBadge";
 import { findRegion, listRegionRecommendedProducts, categoryLabel } from "@/lib/regionSeo";
 import { SITE_URL } from "@/lib/constants/site";
 
@@ -186,6 +187,7 @@ export default async function RegionPage({
                     <small className="text-[10px] text-rk-muted">월</small>
                     <b className="text-[16px] font-bold tracking-[-.02em] text-rk-ink rk-num">{fmt(p.rentalPrice)}<small className="text-[11px] font-medium">원~</small></b>
                   </div>
+                  <PromotionBadge text={p.promotionBadge} />
                   {p.cardDiscountPrice != null && (
                     <div className="mt-px text-[10px] text-rk-sale font-medium">
                       카드 최대 <b className="font-bold rk-num">{fmt(p.cardDiscountPrice)}원</b>

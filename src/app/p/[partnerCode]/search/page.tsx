@@ -4,6 +4,7 @@ import PartnerHeader from "@/components/consumer/PartnerHeader";
 import PartnerFooter from "@/components/consumer/PartnerFooter";
 import PartnerCta from "@/components/consumer/PartnerCta";
 import ProductThumb from "@/components/consumer/ProductThumb";
+import PromotionBadge from "@/components/consumer/PromotionBadge";
 import SearchInput from "./SearchInput";
 import { getPartnerHeader } from "@/lib/partnerSite";
 import { searchPartnerProducts } from "@/lib/search";
@@ -132,6 +133,7 @@ function ResultCard({ product, href }: { product: ConsumerProduct; href: string 
         <small className="text-[12px] text-rk-muted">월</small>
         <b className="text-[15px] font-bold tracking-[-.02em] text-rk-ink rk-num">{fmt(product.rentalPrice)}원~</b>
       </div>
+      <PromotionBadge text={product.promotionBadge} />
       {product.cardDiscountPrice != null && (
         <div className="mt-px text-[12px] text-rk-sale font-medium">
           카드할인 시 최대 <b className="font-bold rk-num">월 {fmt(product.cardDiscountPrice)}원</b>

@@ -4,6 +4,7 @@ import PartnerHeader from "@/components/consumer/PartnerHeader";
 import PartnerFooter from "@/components/consumer/PartnerFooter";
 import PartnerCta from "@/components/consumer/PartnerCta";
 import ProductThumb from "@/components/consumer/ProductThumb";
+import PromotionBadge from "@/components/consumer/PromotionBadge";
 import { getPartnerHeader, listPartnerProducts, type ConsumerProduct } from "@/lib/partnerSite";
 
 const fmt = (n: number) => n.toLocaleString("ko-KR");
@@ -121,6 +122,7 @@ function ProductCard({ product, href }: { product: ConsumerProduct; href: string
         <small className="text-[12px] text-rk-muted">월</small>
         <b className="text-[15px] font-bold tracking-[-.02em] text-rk-ink rk-num">{fmt(product.rentalPrice)}원~</b>
       </div>
+      <PromotionBadge text={product.promotionBadge} />
       {/* 카드할인 / 사은품 / 캐시백 — 텍스트로도 명시 노출. 썸네일 위 작은 배지로만 보면 사용자가 놓치기 쉬워서 정보 영역에 명시적으로 한 줄 추가 */}
       {product.cardDiscountPrice != null && (
         <div className="mt-px text-[12px] text-rk-sale font-medium">

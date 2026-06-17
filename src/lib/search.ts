@@ -8,19 +8,33 @@ export async function searchPartnerProducts(
   const q = query.trim();
   if (!q) return [];
 
-  const products = await prisma.product.findMany({
-    where: {
-      status: "active",
-      OR: [
-        { name:        { contains: q, mode: "insensitive" } },
-        { modelName:   { contains: q, mode: "insensitive" } },
-        { description: { contains: q, mode: "insensitive" } },
-      ],
-    },
-    include: { partnerPolicies: { where: { partnerId: partnerCode } } },
-    orderBy: [{ isFeatured: "desc" }, { rentalPrice: "asc" }],
-    take: 50,
-  });
+  const [products, promotions] = await Promise.all([
+    prisma.product.findMany({
+      where: {
+        status: "active",
+        OR: [
+          { name:        { contains: q, mode: "insensitive" } },
+          { modelName:   { contains: q, mode: "insensitive" } },
+          { description: { contains: q, mode: "insensitive" } },
+        ],
+      },
+      include: { partnerPolicies: { where: { partnerId: partnerCode } } },
+      orderBy: [{ isFeatured: "desc" }, { rentalPrice: "asc" }],
+      take: 50,
+    }),
+    prisma.partnerProductPromotion.findMany({
+      where: { partnerId: partnerCode, enabled: true },
+    }),
+  ]);
+
+  const promoNowMs = Date.now();
+  const promotionByCode = new Map<string, string>();
+  for (const promo of promotions) {
+    if (!promo.badgeText.trim()) continue;
+    if (promo.startsAt && promo.startsAt.getTime() > promoNowMs) continue;
+    if (promo.endsAt && promo.endsAt.getTime() < promoNowMs) continue;
+    promotionByCode.set(promo.productCode, promo.badgeText);
+  }
 
   return products.map(p => {
     const policy = p.partnerPolicies[0];
@@ -47,6 +61,7 @@ export async function searchPartnerProducts(
       rivalHalfMonths: 0,
       rivalHalfPrice: null,
       lowestMode: null,
+      promotionBadge: promotionByCode.get(p.productCode) ?? null,
     };
   });
 }

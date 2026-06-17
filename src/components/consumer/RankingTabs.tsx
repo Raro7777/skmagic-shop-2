@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import type { CategoryEntry, ConsumerProduct } from "@/lib/partnerSite";
 import ProductThumb from "./ProductThumb";
+import PromotionBadge from "./PromotionBadge";
 
 const fmt = (n: number) => n.toLocaleString("ko-KR");
 
@@ -121,6 +122,7 @@ export default function RankingTabs({
                 )}
                 <div className="text-[11px] text-rk-muted whitespace-nowrap">{p.promoApplied ? "🏷️ 전사할인가" : "월"}</div>
                 <b className="text-[15px] font-bold tracking-[-.02em] text-rk-ink rk-num whitespace-nowrap block">{fmt(p.rentalPrice)}원~</b>
+                <PromotionBadge text={p.promotionBadge} />
                 {p.cardDiscountPrice != null && (
                   <div className="text-[12px] text-rk-sale font-medium whitespace-nowrap">카드 최대 {fmt(p.cardDiscountPrice)}원~</div>
                 )}

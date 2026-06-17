@@ -168,15 +168,30 @@ export async function listRegionRecommendedProducts(
   partnerCode: string,
   limit = 6,
 ): Promise<ConsumerProduct[]> {
-  const products = await prisma.product.findMany({
-    where: {
-      status: "active",
-      ...(category && { category }),
-    },
-    include: { partnerPolicies: { where: { partnerId: partnerCode } } },
-    orderBy: [{ isFeatured: "desc" }, { rentalPrice: "asc" }],
-    take: limit,
-  });
+  const [products, promotions] = await Promise.all([
+    prisma.product.findMany({
+      where: {
+        status: "active",
+        ...(category && { category }),
+      },
+      include: { partnerPolicies: { where: { partnerId: partnerCode } } },
+      orderBy: [{ isFeatured: "desc" }, { rentalPrice: "asc" }],
+      take: limit,
+    }),
+    prisma.partnerProductPromotion.findMany({
+      where: { partnerId: partnerCode, enabled: true },
+    }),
+  ]);
+
+  const promoNowMs = Date.now();
+  const promotionByCode = new Map<string, string>();
+  for (const promo of promotions) {
+    if (!promo.badgeText.trim()) continue;
+    if (promo.startsAt && promo.startsAt.getTime() > promoNowMs) continue;
+    if (promo.endsAt && promo.endsAt.getTime() < promoNowMs) continue;
+    promotionByCode.set(promo.productCode, promo.badgeText);
+  }
+
   return products.map(p => {
     const policy = p.partnerPolicies[0];
     return {
@@ -202,6 +217,7 @@ export async function listRegionRecommendedProducts(
       rivalHalfMonths: 0,
       rivalHalfPrice: null,
       lowestMode: null,
+      promotionBadge: promotionByCode.get(p.productCode) ?? null,
     };
   });
 }
