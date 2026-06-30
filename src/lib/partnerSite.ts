@@ -426,7 +426,8 @@ export async function getPartnerSite(
   for (const promo of promotions) {
     if (!promo.badgeText.trim()) continue;
     if (promo.startsAt && promo.startsAt.getTime() > promoNowMs) continue;
-    if (promo.endsAt && promo.endsAt.getTime() < promoNowMs) continue;
+    // endsAt 은 inclusive day — 입력일이 "2026-06-30" 이면 한국시간 6/30 23:59 까지 활성.
+    if (promo.endsAt && promo.endsAt.getTime() + 24 * 60 * 60 * 1000 < promoNowMs) continue;
     promotionByCode.set(promo.productCode, promo.badgeText);
   }
   const tierMarginConfig = tierMargin
@@ -746,7 +747,8 @@ export async function listPartnerProducts(
   for (const promo of promotions) {
     if (!promo.badgeText.trim()) continue;
     if (promo.startsAt && promo.startsAt.getTime() > promoNowMs) continue;
-    if (promo.endsAt && promo.endsAt.getTime() < promoNowMs) continue;
+    // endsAt 은 inclusive day — 입력일이 "2026-06-30" 이면 한국시간 6/30 23:59 까지 활성.
+    if (promo.endsAt && promo.endsAt.getTime() + 24 * 60 * 60 * 1000 < promoNowMs) continue;
     promotionByCode.set(promo.productCode, promo.badgeText);
   }
   const tierMarginConfig = tierMargin

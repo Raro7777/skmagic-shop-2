@@ -188,7 +188,7 @@ export async function listRegionRecommendedProducts(
   for (const promo of promotions) {
     if (!promo.badgeText.trim()) continue;
     if (promo.startsAt && promo.startsAt.getTime() > promoNowMs) continue;
-    if (promo.endsAt && promo.endsAt.getTime() < promoNowMs) continue;
+    if (promo.endsAt && promo.endsAt.getTime() + 24 * 60 * 60 * 1000 < promoNowMs) continue;
     promotionByCode.set(promo.productCode, promo.badgeText);
   }
 

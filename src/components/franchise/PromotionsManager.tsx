@@ -268,6 +268,6 @@ function isPromotionActive(p: Promotion): boolean {
   if (!p.badgeText.trim()) return false;
   const now = Date.now();
   if (p.startsAt && new Date(p.startsAt).getTime() > now) return false;
-  if (p.endsAt && new Date(p.endsAt).getTime() < now) return false;
+  if (p.endsAt && new Date(p.endsAt).getTime() + 24 * 60 * 60 * 1000 < now) return false;
   return true;
 }
