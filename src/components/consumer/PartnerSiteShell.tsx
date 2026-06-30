@@ -7,6 +7,7 @@ import RankingTabs from "@/components/consumer/RankingTabs";
 import ConsultForm from "@/components/consumer/ConsultForm";
 import UtmTracker from "@/components/consumer/UtmTracker";
 import PromotionBadge from "@/components/consumer/PromotionBadge";
+import KakaoFab from "@/components/consumer/KakaoFab";
 import { listActivePartners, type ConsumerProduct, type PartnerSiteData } from "@/lib/partnerSite";
 import { SK_MAGIC_LOGO } from "@/lib/constants/assets";
 import { HQ_HOTLINE } from "@/lib/constants/hq";
@@ -105,6 +106,8 @@ export default async function PartnerSiteShell({
   return (
     <div className="bg-rk-soft-2 min-h-screen flex justify-center items-start gap-6 max-md:p-0 md:py-8">
       <UtmTracker />
+      <KakaoFab kakaoChannelUrl={partner.kakaoChannelUrl} partnerName={partner.partnerName} />
+
       {/* Left tip sidebar — 컨슈머 노출 금지. 개발/내부 전용 */}
       <aside className="hidden w-[220px] sticky top-8 text-[14px] text-rk-muted leading-[1.65]">
         <h6 className="text-[13px] text-rk-faint tracking-[.12em] uppercase mb-2">분양 사이트</h6>
@@ -330,6 +333,7 @@ export default async function PartnerSiteShell({
             <Link href="/legal/privacy" className="text-rk-ink font-semibold no-underline cursor-pointer">개인정보처리방침</Link>
             <Link href={`/p/${partner.partnerCode}/help`} className="text-rk-text no-underline cursor-pointer">고객센터</Link>
             <Link href={`/p/${partner.partnerCode}/help`} className="text-rk-text no-underline cursor-pointer">설치 A/S</Link>
+            <Link href="/apply" className="text-rk-orange-deep font-semibold no-underline cursor-pointer">📝 협력점 분양 신청</Link>
           </div>
           <dl className="grid grid-cols-[auto_1fr] gap-x-2 gap-y-1 m-0">
             <dt className="text-rk-faint m-0">상호</dt><dd className="m-0">{partner.companyName}</dd>

@@ -1,6 +1,7 @@
 "use client";
 
 import ConsultForm from "@/components/consumer/ConsultForm";
+import KakaoFab from "@/components/consumer/KakaoFab";
 import type { PartnerSiteData } from "@/lib/partnerSite";
 import { HQ_HOTLINE } from "@/lib/constants/hq";
 import { rawAnchorHtml } from "@/lib/naverConvButton";
@@ -22,6 +23,8 @@ export default function PartnerCta({
 
   // sticky: 항상 뷰포트 하단에 고정 (항목 11)
   return (
+    <>
+    <KakaoFab kakaoChannelUrl={kakaoUrl ?? null} partnerName={partner.partnerName} />
     <div
       className="sticky bottom-0 px-3 py-2.5 bg-white border-t border-rk-line flex gap-1.5 items-center z-40 shadow-[0_-4px_12px_rgba(0,0,0,0.08)]"
       style={{ paddingBottom: "calc(0.625rem + env(safe-area-inset-bottom, 0px))" }}
@@ -83,5 +86,6 @@ export default function PartnerCta({
         buttonClassName="flex-1 bg-rk-orange hover:bg-rk-orange-deep text-white py-3 rounded-lg font-semibold text-[13px] cursor-pointer border-0 transition-colors flex items-center justify-center gap-1.5"
       />
     </div>
+    </>
   );
 }
