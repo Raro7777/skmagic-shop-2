@@ -2,9 +2,14 @@
 
 import { useState } from "react";
 
-const PLANS = ["베이직 (월 ₩30,000)", "스탠다드 (월 ₩50,000)", "프리미엄 (월 ₩80,000)", "상담 후 결정"];
+const PLANS = [
+  "🎁 프리미엄 이벤트 (1년간 무료)",
+  "베이직 (월 ₩30,000)",
+  "스탠다드 (월 ₩50,000)",
+  "프리미엄 (월 ₩80,000)",
+  "상담 후 결정",
+];
 const TEAM_SIZES = ["나 혼자 (1인)", "2~3명", "4~9명", "10명 이상", "회사 형태로 운영 중"];
-const BRANDS = ["SK매직만", "SK매직 + 코웨이", "SK매직 + 청호나이스", "다브랜드 (모두)"];
 
 type Done = { applicationId: string; message: string };
 
@@ -18,9 +23,8 @@ export default function ApplyForm() {
   const [businessNumber, setBusinessNumber] = useState("");
   const [commerceNumber, setCommerceNumber] = useState("");
   const [hotlineNumber, setHotlineNumber] = useState("");
-  const [brands, setBrands] = useState(BRANDS[0]);
   const [team, setTeam] = useState(TEAM_SIZES[0]);
-  const [plan, setPlan] = useState(PLANS[1]);
+  const [plan, setPlan] = useState(PLANS[0]); // 기본값 = 프리미엄 이벤트 (1년간 무료)
   const [memo, setMemo] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -29,7 +33,7 @@ export default function ApplyForm() {
   const reset = () => {
     setName(""); setStore(""); setPhone(""); setEmail(""); setRegion("");
     setAddress(""); setBusinessNumber(""); setCommerceNumber(""); setHotlineNumber("");
-    setBrands(BRANDS[0]); setTeam(TEAM_SIZES[0]); setPlan(PLANS[1]); setMemo("");
+    setTeam(TEAM_SIZES[0]); setPlan(PLANS[0]); setMemo("");
     setError(null); setDone(null); setBusy(false);
   };
 
@@ -67,7 +71,6 @@ export default function ApplyForm() {
           businessNumber: businessNumber.trim(),
           commerceNumber: commerceNumber.trim(),
           hotlineNumber: hotlineNumber.trim(),
-          brandsOfInterest: brands,
           teamSize: team,
           plan,
           memo,
@@ -116,9 +119,20 @@ export default function ApplyForm() {
   return (
     <form onSubmit={submit} className="bg-white border border-rk-line rounded-lg p-6 md:p-8">
       <h3 className="text-[20px] font-bold text-rk-ink mb-1.5 tracking-[-.01em]">📝 분양 신청서</h3>
-      <p className="text-[14px] text-rk-text m-0 mb-5 leading-[1.6]">
-        모든 항목 작성 후 제출 — 본사 운영팀 검토 후 1~2 영업일 내 연락드립니다.
+      <p className="text-[14px] text-rk-text m-0 mb-3 leading-[1.6]">
+        본사 운영팀 검토 후 1~2 영업일 내 연락드립니다.
       </p>
+      <div className="bg-rk-tint-orange border-2 border-rk-orange rounded-lg px-4 py-3 mb-5">
+        <div className="flex items-start gap-2">
+          <span className="text-[20px] leading-none">⚡</span>
+          <div className="flex-1">
+            <b className="text-rk-orange-deep text-[14px] block mb-0.5">필수 항목만 체크하시면 됩니다!</b>
+            <p className="text-[13px] text-rk-orange-deep m-0 leading-[1.5]">
+              라벨 옆 <b className="text-rk-sale">빨간 별표(<span className="rk-num">*</span>)</b> 붙은 5개 필드만 작성해도 접수 가능해요. 나머지는 선택 사항.
+            </p>
+          </div>
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <Field label="신청자 이름" required>
@@ -144,11 +158,6 @@ export default function ApplyForm() {
         </Field>
         <Field label="협력점 고객센터 번호">
           <input value={hotlineNumber} onChange={e => setHotlineNumber(e.target.value)} placeholder="02-1234-5678 (없으면 비워두세요)" inputMode="tel" className={INPUT + " rk-num"} />
-        </Field>
-        <Field label="관심 브랜드">
-          <select value={brands} onChange={e => setBrands(e.target.value)} className={INPUT}>
-            {BRANDS.map(b => <option key={b} value={b}>{b}</option>)}
-          </select>
         </Field>
         <Field label="자체 영업조직 규모">
           <select value={team} onChange={e => setTeam(e.target.value)} className={INPUT}>
