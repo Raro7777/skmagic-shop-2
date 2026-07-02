@@ -15,6 +15,7 @@ export const revalidate = 0;
 import { SK_MAGIC_LOGO } from "@/lib/constants/assets";
 import { HQ_HOTLINE } from "@/lib/constants/hq";
 import { rawAnchorHtml } from "@/lib/naverConvButton";
+import KakaoFab from "@/components/consumer/KakaoFab";
 
 const fmt = (n: number) => n.toLocaleString("ko-KR");
 
@@ -451,6 +452,7 @@ export default async function ProductDetailPage({
           </dl>
         </footer>
 
+        <KakaoFab kakaoChannelUrl={partner.kakaoChannelUrl} partnerName={partner.partnerName} />
         {/* Sticky bottom CTA — 네이버 진단 도구용 onmousedown 정적 속성 (raw HTML) */}
         <div className="sticky bottom-0 px-3.5 py-2.5 bg-white border-t border-rk-line flex gap-2 items-center z-10">
           <span

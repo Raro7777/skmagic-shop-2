@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { listActivePartners } from "@/lib/partnerSite";
 import { listAllRegionSlugs } from "@/lib/regionSeo";
 import Footer from "@/components/hub/Footer";
+import KakaoFab from "@/components/consumer/KakaoFab";
 import { formatMonthly, formatKrw } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
@@ -21,7 +22,7 @@ const CATEGORY_ICON: Record<string, string> = {
 };
 
 export default async function HubPage() {
-  const [partners, regions, featuredProducts, categoryCounts] = await Promise.all([
+  const [partners, regions, featuredProducts, categoryCounts, hqFabPartner] = await Promise.all([
     listActivePartners(),
     listAllRegionSlugs(),
     prisma.product.findMany({
@@ -35,6 +36,17 @@ export default async function HubPage() {
       where: { status: "active" },
       _count: { _all: true },
     }),
+    // Hub 카카오 플로팅용 — 본사 푸터 협력점(HQ_FOOTER_PARTNER_CODE) 또는 첫 active 협력점의 kakao URL.
+    process.env.HQ_FOOTER_PARTNER_CODE
+      ? prisma.partner.findUnique({
+          where: { partnerCode: process.env.HQ_FOOTER_PARTNER_CODE },
+          select: { kakaoChannelUrl: true, partnerName: true },
+        })
+      : prisma.partner.findFirst({
+          where: { status: "active", kakaoChannelUrl: { not: null } },
+          orderBy: { createdAt: "asc" },
+          select: { kakaoChannelUrl: true, partnerName: true },
+        }),
   ]);
 
   const defaultPartner = partners[0]?.partnerCode ?? null;
@@ -44,6 +56,7 @@ export default async function HubPage() {
 
   return (
     <div className="bg-rk-soft-2 min-h-screen flex flex-col">
+      <KakaoFab kakaoChannelUrl={hqFabPartner?.kakaoChannelUrl ?? null} partnerName={hqFabPartner?.partnerName ?? "SK매직 인증파트너점"} />
       {/* ─────────────────────── 헤더 ─────────────────────── */}
       <header className="bg-white border-b border-rk-line">
         <div className="max-w-[1100px] mx-auto px-6 py-4 flex justify-between items-center flex-wrap gap-3">

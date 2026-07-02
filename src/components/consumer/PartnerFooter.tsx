@@ -38,6 +38,7 @@ export default function PartnerFooter({ partner }: { partner: PartnerSiteData["p
         <Link href="/legal/privacy" className="text-rk-ink font-semibold no-underline cursor-pointer">개인정보처리방침</Link>
         <Link href={`/p/${partner.partnerCode}/help`} className="text-rk-text no-underline cursor-pointer">고객센터</Link>
         <Link href={`/p/${partner.partnerCode}/help`} className="text-rk-text no-underline cursor-pointer">설치 A/S</Link>
+        <Link href="/apply" className="text-rk-orange-deep font-semibold no-underline cursor-pointer">📝 협력점 분양 신청</Link>
       </div>
       <dl className="grid grid-cols-[auto_1fr] gap-x-2 gap-y-1 m-0">
         <dt className="text-rk-faint m-0">상호</dt>
