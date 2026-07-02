@@ -275,6 +275,34 @@ export default async function PartnerSiteShell({
 
         {/* QUICK nav 비활성 — 아래 카테고리 랭킹 탭과 중복되어 제거. 필요 시 주석 복구. */}
 
+        {/* 이달의 혜택 — 협력점 등록 카드 3장. 활성 조건 통과한 것만 노출. */}
+        {data.benefits.length > 0 && (
+          <section className="bg-white px-4 pt-4 pb-3 border-b-8 border-rk-soft">
+            <div className="flex items-baseline gap-2 mb-2.5">
+              <h2 className="text-[17px] font-bold tracking-[-.02em] m-0 text-rk-ink">🎁 이달의 혜택</h2>
+              <small className="text-[13px] text-rk-muted">지금만 드리는 특별한 혜택</small>
+            </div>
+            <div className={"grid gap-2 " + (data.benefits.length === 1 ? "grid-cols-1" : data.benefits.length === 2 ? "grid-cols-2" : "grid-cols-3")}>
+              {data.benefits.map(b => {
+                const content = (
+                  <div className="h-full flex flex-col items-center text-center gap-1 bg-gradient-to-br from-[#FFF3E9] to-[#FFE2CC] border border-[#F4DCC9] rounded-lg px-2.5 py-3 hover:border-rk-orange hover:shadow-[0_2px_8px_rgba(242,106,31,0.15)] transition-all">
+                    <span className="text-[28px] leading-none">{b.iconEmoji}</span>
+                    <b className="text-[13px] text-rk-orange-deep font-bold leading-[1.25] line-clamp-2">{b.title}</b>
+                    {b.description && (
+                      <small className="text-[11px] text-rk-orange-deep/80 leading-[1.35] line-clamp-2">{b.description}</small>
+                    )}
+                  </div>
+                );
+                return b.linkHref ? (
+                  <Link key={b.id} href={b.linkHref} className="no-underline">{content}</Link>
+                ) : (
+                  <a key={b.id} href="#consult-form" className="no-underline">{content}</a>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
         <div className="bg-rk-tint-orange px-3.5 py-2 text-[14px] text-rk-orange-deep flex items-center gap-1.5 border-b border-[#F4DCC9]">
           <span className="text-sm">🚚</span>
           <span><b className="font-semibold">오늘 신청 → 최단 {nextInstallLabel()} 설치 가능</b> · {partner.region} 한정</span>
