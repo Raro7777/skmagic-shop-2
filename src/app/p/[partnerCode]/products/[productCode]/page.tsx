@@ -117,7 +117,7 @@ export default async function ProductDetailPage({
           <div className="flex items-center px-3 py-3 gap-2">
             <Link href={`/p/${partner.partnerCode}`} className="text-[20px] text-rk-ink no-underline">←</Link>
             <div className="flex items-center gap-2 flex-1 min-w-0">
-              {detail.showBrandCertification && <img src={SK_MAGIC_LOGO} alt="SK magic" className="h-[32px] w-auto shrink-0" />}
+              <img src={SK_MAGIC_LOGO} alt="SK magic" className="h-[32px] w-auto shrink-0" />
 
               <div className="min-w-0">
                 {/* CONSUMER_BRAND_NAME 정책상 partnerName 과 brandLabel 이 동일 값이라 2줄 중복.
