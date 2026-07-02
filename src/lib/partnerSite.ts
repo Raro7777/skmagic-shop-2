@@ -381,6 +381,16 @@ export type PartnerSiteData = {
   liveActivities: LiveActivityItem[];
   // 최근 후기 (메인 페이지 캐러셀 노출용).
   reviews: ReviewListItem[];
+  // 협력점 등록 "이달의 혜택" — 활성 조건 통과한 카드만 (최대 3장). order 순.
+  benefits: BenefitCard[];
+};
+
+export type BenefitCard = {
+  id: string;
+  title: string;
+  description: string;
+  iconEmoji: string;
+  linkHref: string;
 };
 
 // 안마의자(massage)/건조기(dryer)는 일시 비활성 — 컨슈머 노출 안 함.
@@ -404,7 +414,7 @@ export async function getPartnerSite(
   });
   if (!partner || partner.status !== "active") return null;
 
-  const [products, tierMargin, promotions] = await Promise.all([
+  const [products, tierMargin, promotions, benefitRows] = await Promise.all([
     prisma.product.findMany({
       where: { status: "active" },
       include: {
@@ -417,7 +427,22 @@ export async function getPartnerSite(
     prisma.partnerProductPromotion.findMany({
       where: { partnerId: partnerCode, enabled: true },
     }),
+    prisma.partnerBenefit.findMany({
+      where: { partnerId: partnerCode, enabled: true },
+      orderBy: [{ order: "asc" }, { updatedAt: "desc" }],
+    }),
   ]);
+
+  // 이달의 혜택 — 활성 필터 (title 존재 + now ∈ [startsAt, endsAt+1d]) + 최대 3장.
+  const benefitNowMs = Date.now();
+  const benefits: BenefitCard[] = [];
+  for (const b of benefitRows) {
+    if (!b.title.trim()) continue;
+    if (b.startsAt && b.startsAt.getTime() > benefitNowMs) continue;
+    if (b.endsAt && b.endsAt.getTime() + 24 * 60 * 60 * 1000 < benefitNowMs) continue;
+    benefits.push({ id: b.id, title: b.title, description: b.description, iconEmoji: b.iconEmoji, linkHref: b.linkHref });
+    if (benefits.length >= 3) break;
+  }
 
   // 활성 promotion 인덱스 — enabled + badgeText + 현재 시간이 startsAt..endsAt 범위 내.
   // startsAt/endsAt 가 null 이면 무제한. 충족 시 productCode 별로 뱃지 문구 노출.
@@ -713,6 +738,7 @@ export async function getPartnerSite(
     })(),
     liveActivities,
     reviews,
+    benefits,
   };
 }
 

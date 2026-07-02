@@ -87,6 +87,7 @@ model Partner {
   banners      Banner[]
   reviews      Review[]
   productPromotions PartnerProductPromotion[]
+  benefits          PartnerBenefit[]
 
   @@index([status])
 }
@@ -958,6 +959,28 @@ model HqSetting {
 // PartnerProductPromotion — 협력점이 상품 카드에 노출하는 프로모션 뱃지.
 // 활성 조건: enabled && badgeText && (startsAt..endsAt 범위 내 또는 무제한).
 // ----------------------------------------------------------------
+// ----------------------------------------------------------------
+// PartnerBenefit — 협력점이 컨슈머 메인에 노출하는 "이달의 혜택" 카드.
+// 최대 3장 슬롯. order 로 정렬. active 조건: enabled + (now ∈ [startsAt..endsAt] 또는 무제한).
+// ----------------------------------------------------------------
+model PartnerBenefit {
+  id           String    @id @default(cuid())
+  partnerId    String    // FK Partner.partnerCode
+  partner      Partner   @relation(fields: [partnerId], references: [partnerCode], onDelete: Cascade)
+  title        String
+  description  String    @default("")
+  iconEmoji    String    @default("🎁")
+  linkHref     String    @default("")  // 빈값이면 클릭 시 상담폼 등 default
+  order        Int       @default(0)
+  enabled      Boolean   @default(true)
+  startsAt     DateTime?
+  endsAt       DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([partnerId, order])
+}
+
 model PartnerProductPromotion {
   id          String    @id @default(cuid())
   partnerId   String    // FK Partner.partnerCode (일관성)
