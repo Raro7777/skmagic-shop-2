@@ -33,6 +33,19 @@ export default auth(async (req) => {
   const path = req.nextUrl.pathname;
   const host = (req.headers.get("host") ?? "").replace(/:\d+$/, "").toLowerCase();
 
+  // ─── 0) 시스템 호스트(vercel.app 프리뷰 등) 루트 진입 시 hub root partner 로 rewrite ───
+  //  Preview 환경에서 라이브(skmagic-shop.com 루트=우성종합통신 페이지)와 동일한 UX 를 원할 때
+  //  HUB_ROOT_PARTNER_CODE env 를 설정해두면 루트("/") 접근이 해당 협력점 사이트로 rewrite.
+  //  라이브 production 도메인(skmagic-shop.com)은 아래 customDomain rewrite 로 이미 처리되므로 무영향.
+  if (host && isSystemHost(host) && path === "/") {
+    const hubRoot = process.env.HUB_ROOT_PARTNER_CODE?.trim();
+    if (hubRoot) {
+      const url = req.nextUrl.clone();
+      url.pathname = `/p/${hubRoot}`;
+      return NextResponse.rewrite(url);
+    }
+  }
+
   // ─── 1) 협력점 customDomain rewrite ───
   if (host && !isSystemHost(host)) {
     // 정적 자산 (public/ 안의 파일들) 은 rewrite 대상 아님 — 그대로 root path 에서 서빙되어야 함.
