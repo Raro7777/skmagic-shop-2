@@ -150,7 +150,7 @@ export default async function PartnerSiteShell({
               style={{ color: "inherit" }}
               aria-label="홈으로"
             >
-              <img src={SK_MAGIC_LOGO} alt="SK magic" className="h-[36px] w-auto" />
+              {data.showBrandCertification && <img src={SK_MAGIC_LOGO} alt="SK magic" className="h-[36px] w-auto" />}
 
               <div className="min-w-0">
                 <div className="font-bold text-[16px] text-rk-ink tracking-[-.02em] leading-tight whitespace-nowrap">{partner.partnerName}</div>
@@ -270,6 +270,7 @@ export default async function PartnerSiteShell({
             partnerName={partner.partnerName}
             sellerName={seller?.name}
             partnerCode={partner.partnerCode}
+            showBrandCertification={data.showBrandCertification}
           />
         )}
 

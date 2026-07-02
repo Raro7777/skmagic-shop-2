@@ -120,6 +120,19 @@ function effectiveRentalSupportEnabled(
 }
 
 /**
+ * SK매직 공식 로고/인증 이미지 노출 가부.
+ *   - brandSafeMode + sellerCode → 숨김 (렌탈지원금 노출 컨텍스트에서 본사 마크 회피)
+ *   - 그 외 → 노출
+ * BRAND GUARD 영상과 같은 조건. UI 컴포넌트에서 이 boolean 으로 헤더/캐러셀 로고 숨김.
+ */
+export function effectiveBrandCertificationVisible(
+  partner: { brandSafeMode: boolean },
+  sellerCode: string | undefined,
+): boolean {
+  return !(partner.brandSafeMode && sellerCode);
+}
+
+/**
  * BRAND GUARD 인증 영상 effective URL.
  *   - brandSafeMode + sellerCode 컨텍스트(영업자 페이지에서 렌탈지원금 노출) → 인증 마크 숨김.
  *     이유: 본사 정품 인증 마크가 브랜드 지킴이 검사 회피 영역과 함께 노출되면 본사 신뢰도 훼손.
@@ -383,6 +396,8 @@ export type PartnerSiteData = {
   reviews: ReviewListItem[];
   // 협력점 등록 "이달의 혜택" — 활성 조건 통과한 카드만 (최대 3장). order 순.
   benefits: BenefitCard[];
+  // SK매직 공식 로고 노출 여부. brandSafeMode + 영업자 컨텍스트에서 false.
+  showBrandCertification: boolean;
 };
 
 export type BenefitCard = {
@@ -739,6 +754,7 @@ export async function getPartnerSite(
     liveActivities,
     reviews,
     benefits,
+    showBrandCertification: effectiveBrandCertificationVisible(partner, opts?.sellerCode),
   };
 }
 
@@ -858,7 +874,7 @@ export async function listPartnerProducts(
   return mapped.sort(commissionDesc);
 }
 
-export async function getPartnerHeader(partnerCode: string) {
+export async function getPartnerHeader(partnerCode: string, opts?: { sellerCode?: string }) {
   const partner = await prisma.partner.findUnique({ where: { partnerCode } });
   if (!partner || partner.status !== "active") return null;
   return {
@@ -881,6 +897,8 @@ export async function getPartnerHeader(partnerCode: string) {
     csHolidays: partner.csHolidays,
     footerLogoUrl: partner.footerLogoUrl,
     brandGuardVideoUrl: partner.brandGuardVideoUrl,
+    // 렌탈지원금 노출 컨텍스트에서 SK매직 공식 로고 숨김 (본사 신뢰도 보호).
+    showBrandCertification: effectiveBrandCertificationVisible(partner, opts?.sellerCode),
   };
 }
 
@@ -975,6 +993,8 @@ export type ProductDetail = ConsumerProduct & {
   reviews: ReviewSummary;
   partner: PartnerSiteData["partner"];
   related: ConsumerProduct[];
+  // SK매직 공식 로고 노출 여부. brandSafeMode + 영업자 컨텍스트에서 false.
+  showBrandCertification: boolean;
 };
 
 export async function getPartnerProductDetail(
@@ -1100,6 +1120,8 @@ export async function getPartnerProductDetail(
     // 브랜드 안전모드 + 컨슈머 메인 컨텍스트(sellerCode 없음) → 렌탈지원금 노출 차단.
     // 영업자 페이지 (sellerCode 있음) 에서만 풀 노출. 협력점이 자체 OFF 면 그대로 false.
     partnerRentalSupportEnabled: effectiveRentalSupportEnabled(partner, opts?.sellerCode),
+    // SK매직 공식 로고 노출 — 렌탈지원금 노출 컨텍스트에서 hidden.
+    showBrandCertification: effectiveBrandCertificationVisible(partner, opts?.sellerCode),
     partnerInstallAmount: policy?.installAmount ?? 0,
     cardDiscountSavings,
     finalAfterCard: effectiveCard,

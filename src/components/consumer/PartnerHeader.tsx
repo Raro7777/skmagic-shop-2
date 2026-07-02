@@ -11,6 +11,7 @@ export default function PartnerHeader({
   seller,
   showFullNav = false,
   backHref,
+  showBrandCertification = true,
 }: {
   partner: PartnerSiteData["partner"];
   seller?: SellerInfo | null;
@@ -18,6 +19,8 @@ export default function PartnerHeader({
   showFullNav?: boolean;
   /** Optional override for back link (defaults to partner home) */
   backHref?: string;
+  /** SK매직 공식 로고 노출 여부 (렌탈지원금 노출 컨텍스트에서 false) */
+  showBrandCertification?: boolean;
 }) {
   return (
     <header className="bg-white border-b border-rk-line">
@@ -25,7 +28,7 @@ export default function PartnerHeader({
         <>
           <div className="px-4 py-3 flex items-center gap-2.5">
             <Link href={`/p/${partner.partnerCode}`} className="flex items-center gap-2 no-underline text-inherit">
-              <img src={SK_MAGIC_LOGO} alt="SK magic" className="h-[36px] w-auto" />
+              {showBrandCertification && <img src={SK_MAGIC_LOGO} alt="SK magic" className="h-[36px] w-auto" />}
 
               <div className="min-w-0">
                 <div className="font-bold text-[16px] text-rk-ink tracking-[-.02em] leading-tight whitespace-nowrap">{partner.partnerName}</div>

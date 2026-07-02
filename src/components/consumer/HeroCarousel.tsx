@@ -18,12 +18,14 @@ export default function HeroCarousel({
   partnerName,
   sellerName,
   partnerCode,
+  showBrandCertification = true,
 }: {
   items: ConsumerProduct[];
   banners?: ActiveBanner[];
   partnerName: string;
   sellerName?: string;
   partnerCode: string;
+  showBrandCertification?: boolean;
 }) {
   const slides: Slide[] = [
     ...(banners ?? []).map(b => ({ kind: "banner" as const, banner: b })),
@@ -121,11 +123,13 @@ export default function HeroCarousel({
       className={sectionClass}
       style={sectionStyle}
     >
-      {/* SK magic 인증 배지 — 우측 상단 고정 */}
-      <div className="absolute top-3 right-3 z-[5] flex items-center gap-1.5 bg-white px-2 py-1 rounded-md shadow-sm">
-        <img src={SK_MAGIC_LOGO} alt="SK magic 공식" className="h-[18px] w-auto" />
-        <span className="text-[10px] font-bold text-rk-ink leading-none">공식 인증</span>
-      </div>
+      {/* SK magic 인증 배지 — 우측 상단 고정. 렌탈지원금 노출 컨텍스트에서 숨김 (본사 신뢰도 보호). */}
+      {showBrandCertification && (
+        <div className="absolute top-3 right-3 z-[5] flex items-center gap-1.5 bg-white px-2 py-1 rounded-md shadow-sm">
+          <img src={SK_MAGIC_LOGO} alt="SK magic 공식" className="h-[18px] w-auto" />
+          <span className="text-[10px] font-bold text-rk-ink leading-none">공식 인증</span>
+        </div>
+      )}
 
       <div key={slideKey} className="hero-slide-fade flex-1 flex flex-col">
         {cur.kind === "product" ? (
